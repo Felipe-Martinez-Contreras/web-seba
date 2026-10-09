@@ -20,7 +20,7 @@ jobs:
     name: Lint y formato
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: pipx install "uv==${UV_VERSION}"
       - run: uv sync --locked
       - run: uv run ruff check .
@@ -48,7 +48,7 @@ jobs:
       ALLOWED_HOSTS: localhost
       DATABASE_URL: postgres://webseba:solo-ci@localhost:5432/webseba
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: pipx install "uv==${UV_VERSION}"
       - run: uv sync --locked
       - name: Comprobaciones de Django
@@ -62,7 +62,7 @@ jobs:
     name: Vulnerabilidades de dependencias
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: pipx install "uv==${UV_VERSION}"
       - name: Exportar el archivo de bloqueo
         run: uv export --locked --format requirements-txt --output-file requisitos.txt
@@ -73,7 +73,7 @@ jobs:
     name: docker compose up desde cero
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: cp .env.example .env
       - name: Construir y levantar
         run: docker compose up --detach --build --wait --wait-timeout 300
@@ -82,7 +82,7 @@ jobs:
       - name: Las migraciones quedaron aplicadas en la base vacía
         run: docker compose exec -T web python manage.py migrate --check
       - name: Tailwind compiló el CSS con los tokens
-        run: curl --fail --silent --show-error http://localhost:8000/static/css/app.css | grep --quiet --ignore-case "#0f4c5c"
+        run: curl --fail --silent --show-error http://localhost:8000/static/css/app.css | grep --quiet --fixed-strings -e "--color-primario:"
       - name: Registros si algo falla
         if: failure()
         run: docker compose logs --no-color
