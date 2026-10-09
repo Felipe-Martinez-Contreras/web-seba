@@ -1,0 +1,72 @@
+name: web-seba
+
+services:
+  db:
+    # PostgreSQL 18.6, fijado por digest.
+    image: postgres:18-alpine@sha256:77f585114c32fbca283dc835b0596f4e52b51b4c6662d7810b2f4084f60a1873
+    command: ["postgres", "-c", "shared_buffers=64MB", "-c", "max_connections=20"]
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - db_datos:/var/lib/postgresql
+    # Sin puerto publicado: el 5432 del equipo puede estar ocupado (docs/PLAN.md, D3).
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 30s
+      start_interval: 2s
+    mem_limit: 256m
+
+  web:
+    build:
+      context: .
+      target: dev
+    command: ["sh", "docker/arrancar-dev.sh"]
+    env_file: .env
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - .:/app
+      - css_compilado:/opt/estaticos/css
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/salud/', timeout=3)"
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 120s
+      start_interval: 3s
+    mem_limit: 512m
+
+  # Opcional: recompila el CSS al guardar. Uso: docker compose --profile css up
+  tailwind:
+    profiles: ["css"]
+    build:
+      context: .
+      target: dev
+    command:
+      - tailwindcss
+      - --input
+      - static_src/css/app.css
+      - --output
+      - /opt/estaticos/css/app.css
+      - --watch
+    tty: true
+    volumes:
+      - .:/app
+      - css_compilado:/opt/estaticos/css
+    mem_limit: 384m
+
+volumes:
+  db_datos:
+  css_compilado:
