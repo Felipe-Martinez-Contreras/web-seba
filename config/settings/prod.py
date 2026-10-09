@@ -1,5 +1,7 @@
 """Producción. Se niega a arrancar si la configuración mínima falta o es insegura."""
 
+import os
+
 from django.core.exceptions import ImproperlyConfigured
 
 from .base import *  # noqa: F403
@@ -18,6 +20,14 @@ if not ALLOWED_HOSTS:
     raise ImproperlyConfigured("Falta la variable de entorno ALLOWED_HOSTS.")
 if "*" in ALLOWED_HOSTS:
     raise ImproperlyConfigured("ALLOWED_HOSTS no admite el comodín '*'.")
+
+# Debe declararse siempre, aunque sea vacía: detrás de un proxy, sin ella todos los
+# clientes compartirían la IP del proxy y el bloqueo por IP los afectaría a todos.
+if "PROXY_CONFIANZA_REDES" not in os.environ:
+    raise ImproperlyConfigured(
+        "Falta la variable de entorno PROXY_CONFIANZA_REDES. Indique las redes del proxy "
+        "o déjela vacía si la aplicación recibe las conexiones directamente."
+    )
 
 CSRF_TRUSTED_ORIGINS = env.lista("CSRF_TRUSTED_ORIGINS")
 

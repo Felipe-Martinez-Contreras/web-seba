@@ -6,6 +6,7 @@ from django.contrib.messages import constants as message_constants
 from django.utils.csp import CSP
 
 from config import env
+from core.ip import interpretar_redes
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -28,6 +29,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "core.middleware.IpClienteMiddleware",
     "django.middleware.csp.ContentSecurityPolicyMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -114,6 +116,18 @@ MESSAGE_TAGS = {
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"
+
+# IP real del cliente (AUT-04). Redes CIDR de los proxies de confianza, separadas por comas.
+# Vacío: no se lee ningún encabezado y la IP es la de la conexión.
+PROXY_CONFIANZA_REDES = env.lista("PROXY_CONFIANZA_REDES")
+PROXY_CONFIANZA_ENCABEZADO = env.texto("PROXY_CONFIANZA_ENCABEZADO", "X-Forwarded-For")
+interpretar_redes(PROXY_CONFIANZA_REDES)
+
+# Bloqueo temporal por intentos fallidos de acceso (AUT-04).
+ACCESO_INTENTOS_MAXIMOS = env.entero("ACCESO_INTENTOS_MAXIMOS", 5)
+ACCESO_INTENTOS_MAXIMOS_IP = env.entero("ACCESO_INTENTOS_MAXIMOS_IP", 30)
+ACCESO_VENTANA_MINUTOS = env.entero("ACCESO_VENTANA_MINUTOS", 15)
+ACCESO_BLOQUEO_MINUTOS = env.entero("ACCESO_BLOQUEO_MINUTOS", 15)
 
 X_FRAME_OPTIONS = "DENY"
 SECURE_CONTENT_TYPE_NOSNIFF = True

@@ -15,6 +15,7 @@ ENTORNO_VALIDO = {
     "SECRET_KEY": CLAVE_VALIDA,
     "ALLOWED_HOSTS": "ejemplo.cl",
     "DATABASE_URL": "postgres://usuario:clave@db.ejemplo.cl:5432/base",
+    "PROXY_CONFIANZA_REDES": "10.0.0.0/8",
 }
 
 
@@ -54,6 +55,20 @@ def test_prod_trata_una_variable_vacia_como_faltante(variable):
     resultado = _importar_prod({**ENTORNO_VALIDO, variable: "  "})
     assert resultado.returncode != 0
     assert variable in resultado.stderr
+
+
+def test_prod_exige_declarar_los_proxies_de_confianza_aunque_sea_vacio():
+    sin_variable = {k: v for k, v in ENTORNO_VALIDO.items() if k != "PROXY_CONFIANZA_REDES"}
+    resultado = _importar_prod(sin_variable)
+    assert resultado.returncode != 0
+    assert "PROXY_CONFIANZA_REDES" in resultado.stderr
+    assert _importar_prod({**ENTORNO_VALIDO, "PROXY_CONFIANZA_REDES": ""}).returncode == 0
+
+
+def test_prod_rechaza_una_red_de_proxy_invalida():
+    resultado = _importar_prod({**ENTORNO_VALIDO, "PROXY_CONFIANZA_REDES": "cualquiera"})
+    assert resultado.returncode != 0
+    assert "PROXY_CONFIANZA_REDES" in resultado.stderr
 
 
 def test_prod_se_niega_a_arrancar_con_la_clave_de_ejemplo():
