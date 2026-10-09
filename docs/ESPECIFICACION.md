@@ -133,8 +133,8 @@ Usa UUID como identificador en las URL de empresas, carpetas, documentos y versi
 | Carpeta | UUID, empresa, nombre, orden, descripción | Nombre único dentro de la empresa |
 | Documento | UUID, empresa, carpeta, título, descripción, versión vigente, eliminado en, eliminado por | La carpeta pertenece a la misma empresa; "eliminado en" marca la papelera |
 | VersionDocumento | UUID, documento, número, clave de almacenamiento, nombre original saneado, tipo MIME detectado, extensión, tamaño, SHA-256, subido por, subido en | Las versiones no se editan; solo se agregan |
-| Servicio | Nombre, slug, resumen, descripción, orden, activo | Se edita desde el panel |
-| DatosNegocio | Nombre comercial, presentación, teléfono, email público, WhatsApp, comuna o región, horario, texto de la política de privacidad | Registro único, editable desde el panel |
+| Servicio | Nombre, slug, ícono (de una lista fija del set de íconos), resumen, descripción, orden, activo | Se edita desde el panel |
+| DatosNegocio | Nombre comercial, titular y bajada de la portada, presentación, teléfono, email público, WhatsApp, comuna o región, horario, redes sociales (Instagram, LinkedIn, Facebook; opcionales), texto de la política de privacidad | Registro único, editable desde el panel |
 | Solicitud | UUID, tipo (consulta o cotización), nombre, email, teléfono, empresa, servicio, rango de trabajadores, comuna, mensaje, consentimiento y su fecha, estado, notas internas, estado de notificación, error, intentos, notificada en | No guarda la IP del visitante |
 | EventoAuditoria | Fecha, actor, RUT intentado, acción, empresa, tipo y UUID del objeto, IP, detalle breve | Solo se agregan; nunca se editan ni se borran desde la aplicación |
 
@@ -147,13 +147,13 @@ Cada requisito tiene un código. Mantén en `docs/TRAZABILIDAD.md` la relación 
 ### 7.1 Sitio público (PUB)
 
 - **PUB-01** Páginas: Inicio, Servicios, Contacto, Solicitar cotización, Acceso clientes, Política de privacidad, y páginas 404 y 500 propias.
-- **PUB-02** Inicio: propuesta de valor y presentación del profesional (desde DatosNegocio), resumen de servicios activos con enlace, llamada a "Solicitar cotización" y datos de contacto.
+- **PUB-02** Inicio, según la referencia visual (sección 9): portada con fotografía, titular y bajada (desde DatosNegocio) y los botones "Solicitar cotización" y "Conozca nuestros servicios"; sección "Nuestros servicios" con una tarjeta por servicio activo (ícono, nombre y resumen, enlazada a la página Servicios); sección de contacto con fotografía y el formulario de cotización de SOL-02 incrustado; pie de página.
 - **PUB-03** Servicios: listado de servicios activos en su orden. Cada uno tiene un botón "Solicitar cotización" que abre el formulario con ese servicio preseleccionado (`?servicio=<slug>`).
-- **PUB-04** Navegación: nombre o logo, Servicios, Contacto, botón "Solicitar cotización" y enlace "Acceso clientes". El pie muestra el contacto y el enlace a la política de privacidad.
+- **PUB-04** Navegación: logo, Inicio, Servicios, Contacto y botón "Acceso clientes"; en móvil, menú desplegable. El pie muestra el logo, los enlaces, los datos de contacto, el enlace a la política de privacidad y, solo si están registradas, las redes sociales.
 - **PUB-05** Si un dato no existe, su sección no se muestra. Nada de lorem ipsum ni textos de relleno.
 - **PUB-06** Comando `contenido_pendiente` que lista los marcadores [COMPLETAR] del contenido. El inicio del panel muestra el mismo aviso.
 - **PUB-07** SEO básico: `title` y `meta description` por página, Open Graph, `sitemap.xml` y `robots.txt`. Portal, panel, activación y recuperación llevan `noindex` y no aparecen en el sitemap.
-- **PUB-08** Sin fotos de stock genéricas. Solo imágenes entregadas por el responsable; si no hay, el diseño funciona sin ellas.
+- **PUB-08** Fotografías: mientras no existan fotos propias del profesional, se usan fotos de bancos gratuitos con licencia de uso comercial (por ejemplo, Unsplash o Pexels), del rubro (obras, industria, elementos de protección personal) y sin logos ni marcas de terceros visibles. Cada foto se registra en `docs/FOTOS.md` con su URL de origen, autor y licencia; se optimiza (WebP, ancho máximo 1.920 px, menos de 300 KB) y se sirve como estático propio. Reemplazarla por una foto real solo requiere cambiar el archivo. Ninguna foto se presenta como si mostrara al profesional, a sus clientes o sus obras.
 
 ### 7.2 Formularios y solicitudes (SOL)
 
@@ -165,13 +165,13 @@ Cada requisito tiene un código. Mantén en `docs/TRAZABILIDAD.md` la relación 
 - **SOL-06** Tras guardar, redirige (POST/redirect/GET) a una confirmación que no menciona correos: "Recibimos su solicitud. Le responderemos al correo o teléfono indicado."
 - **SOL-07** En el MVP no se envía correo automático al visitante. Así el formulario no puede usarse para enviar correos a terceros.
 - **SOL-08** Correo al profesional: asunto con tipo y nombre, datos de la solicitud y enlace a su detalle en el panel. `Reply-To` es el email del visitante. Sin adjuntos.
-- **SOL-09** Bandeja en el panel: filtros por tipo, estado y fechas; búsqueda por nombre, email o empresa; orden por fecha; paginación; estado de notificación visible.
-- **SOL-10** Detalle: todos los datos con fecha y hora, cambio de estado (Nueva → En seguimiento → Cerrada, o Descartada), notas internas y botón "Reintentar notificación" si falló.
+- **SOL-09** Bandeja "Solicitudes" en el panel, con las pestañas Consultas y Cotizaciones: filtros por estado y fechas; búsqueda por nombre, email o empresa; orden por fecha; paginación; estado de seguimiento como insignia de color y estado de notificación visible.
+- **SOL-10** Detalle: todos los datos con fecha y hora, cambio de estado (Pendiente → En proceso → Resuelta, o Descartada), notas internas y botón "Reintentar notificación" si falló. Las respuestas al visitante se envían por correo fuera de la plataforma; no hay mensajería interna.
 - **SOL-11** Comando `reintentar_notificaciones` para el cron del hosting, con un máximo de intentos configurable.
 
 ### 7.3 Autenticación y cuentas (AUT)
 
-- **AUT-01** Un único formulario de acceso con RUT y contraseña. Acepta el RUT con o sin puntos y guion, y la K en mayúscula o minúscula; lo normaliza y valida el dígito verificador antes de consultar.
+- **AUT-01** Un único formulario de acceso con RUT y contraseña, según la referencia visual. Acepta el RUT con o sin puntos y guion, y la K en mayúscula o minúscula; lo normaliza y valida el dígito verificador antes de consultar. El campo de contraseña tiene un botón accesible para mostrarla u ocultarla. No hay casilla "Recordarme": la sesión sigue AUT-09.
 - **AUT-02** Ante credenciales inválidas, un mensaje genérico ("RUT o contraseña incorrectos") que no revela si el RUT existe, con tiempos de respuesta similares.
 - **AUT-03** Redirección según rol: el cliente va al portal; el administrador pasa por la verificación 2FA y luego al panel.
 - **AUT-04** Bloqueo temporal: 5 intentos fallidos en 15 minutos para una misma combinación de RUT e IP bloquean durante 15 minutos (configurable), además de un límite por IP. Mensaje genérico, evento en auditoría y desbloqueo manual desde el panel. La IP real se toma del encabezado del proxy de confianza configurado, nunca de cualquier `X-Forwarded-For`.
@@ -186,8 +186,8 @@ Cada requisito tiene un código. Mantén en `docs/TRAZABILIDAD.md` la relación 
 
 ### 7.4 Panel de administración (ADM)
 
-- **ADM-01** Estructura: barra lateral con Inicio, Empresas, Solicitudes, Auditoría, Contenido del sitio y Mi cuenta. En móvil, la barra se convierte en menú.
-- **ADM-02** Inicio del panel con datos reales: empresas activas, solicitudes nuevas, documentos subidos en los últimos 30 días, últimas solicitudes y avisos (notificaciones fallidas, contenido [COMPLETAR], cuentas pendientes de activación).
+- **ADM-01** Estructura según la referencia visual: barra lateral azul marino con Inicio, Clientes, Solicitudes, Auditoría y Configuración (Contenido del sitio y Mi cuenta), y Cerrar sesión al pie. "Clientes" es el nombre visible de las empresas; el modelo sigue llamándose Empresa. Documentos y usuarios se gestionan dentro de la ficha de cada cliente; no hay listados globales. En móvil, la barra se convierte en menú.
+- **ADM-02** Inicio del panel con datos reales: tarjetas de indicadores (clientes activos, consultas pendientes, cotizaciones pendientes y documentos subidos en los últimos 30 días), tabla de solicitudes recientes con su estado, lista de clientes recientes y avisos (notificaciones fallidas, contenido [COMPLETAR], cuentas pendientes de activación).
 - **ADM-03** Empresas: listado con búsqueda por RUT o razón social, filtro por estado y paginación. Crear y editar con validación de RUT y unicidad. Desactivar y reactivar con confirmación. Sin borrado definitivo desde el panel.
 - **ADM-04** Al crear una empresa, una opción marcada por defecto crea las carpetas base definidas en la configuración: Matrices de riesgos, Protocolos MINSAL, Reglamento interno, Formatos de inspección y Documentos preventivos.
 - **ADM-05** Ficha de empresa con tres pestañas: Documentos, Usuarios y Actividad (auditoría filtrada por la empresa).
@@ -213,13 +213,14 @@ Cada requisito tiene un código. Mantén en `docs/TRAZABILIDAD.md` la relación 
 
 ### 7.6 Portal del cliente (CLI)
 
-- **CLI-01** Inicio del portal: nombre de la empresa, carpetas con su cantidad de documentos y "Documentos recientes" (los 10 últimos subidos o reemplazados), con la etiqueta "Nuevo" si tienen menos de 14 días.
+- **CLI-01** Inicio del portal, según la referencia visual: saludo con el nombre de la empresa, tarjeta de la empresa (razón social y RUT), buscador, "Tus carpetas" como lista (ícono, nombre, cantidad de documentos y fecha de última actualización) y "Documentos recientes" (los 10 últimos subidos o reemplazados, con ícono por tipo, tamaño y fecha), con la etiqueta "Nuevo" si tienen menos de 14 días. Estructura: barra lateral azul marino con Inicio, Carpetas y Mi cuenta, y Cerrar sesión al pie; barra superior con buscador y menú del usuario.
 - **CLI-02** Vista de carpeta: título, tipo, tamaño y fecha de actualización de cada documento, con las acciones Ver (si aplica) y Descargar. Orden por fecha o nombre, y estado vacío claro.
 - **CLI-03** Búsqueda por título dentro de los documentos de su empresa, con estado "sin resultados".
 - **CLI-04** Mi cuenta: nombre, RUT y correo; cambio de contraseña; cierre de sesión.
 - **CLI-05** El cliente no ve versiones anteriores, papelera, notas internas ni acciones de edición. El servidor rechaza cualquier petición de modificación, aunque se construya a mano.
 - **CLI-06** Si la empresa aún no tiene documentos, se muestra un estado vacío con un texto neutro y el contacto del profesional.
 - **CLI-07** Desde el inicio del portal se llega a cualquier documento en dos clics como máximo.
+- **CLI-08** Ficha del documento: migas de pan (Carpetas › carpeta › documento), ícono por tipo, título, descripción, tamaño, fecha de actualización y los botones Descargar y Ver en pantalla. "Ver en pantalla" abre el archivo en una pestaña nueva con el visor del navegador (DOC-05), solo para PDF, JPG y PNG. No hay visor incrustado en la página.
 
 ### 7.7 Auditoría (AUD)
 
@@ -245,28 +246,34 @@ Cada requisito tiene un código. Mantén en `docs/TRAZABILIDAD.md` la relación 
 
 ## 9. Diseño visual y experiencia (UX)
 
-**Principios.** Sobrio, claro y confiable. Manda el contenido: pocos elementos, bien alineados y con espacio. Toma como referencia la calma y la jerarquía de los buenos productos SaaS, sin copiar ninguno.
+**Referencia visual.** El estilo sigue el mockup `docs/diseno/mockup-referencia.jpg`, descrito pantalla por pantalla en `docs/DISENO.md`. Toma de él el estilo: colores, tipografía, espaciado, forma de los componentes y estructura de cada pantalla. No copies sus textos, nombres de empresas, RUT, fechas ni cifras: son de ejemplo. Donde el mockup y esta especificación difieran en funcionalidad, manda la especificación; las diferencias están listadas en `docs/DISENO.md`.
 
-**Prohibido:** gradientes decorativos, glassmorphism, sombras pesadas, animaciones de entrada o parallax, carruseles, contadores animados, grillas de tarjetas para todo, íconos decorativos en cada línea, fotos de stock genéricas, testimonios o logos de clientes inventados, emojis en la interfaz y textos de relleno.
+**Principios.** Sobrio, claro y confiable: azul marino profundo, mucho blanco, bordes finos y una jerarquía tipográfica clara. Manda el contenido: pocos elementos, bien alineados y con espacio.
 
-**Tokens de diseño.** Son un punto de partida, reemplazables por la marca real. Defínelos como variables CSS y en la configuración de Tailwind.
+**Prohibido:** gradientes decorativos (salvo el velo oscuro sobre fotografías, que asegura el contraste del texto), glassmorphism, sombras pesadas, animaciones de entrada o parallax, carruseles, contadores animados, íconos decorativos sin función, testimonios o logos de clientes inventados, emojis en la interfaz y textos de relleno. Las tarjetas se usan donde el mockup las usa (servicios, indicadores del panel, tarjeta de la empresa), no para todo.
+
+**Tokens de diseño.** Defínelos como variables CSS con `@theme` de Tailwind. Son reemplazables por la marca real cuando exista.
 
 | Token | Valor | Uso |
 | --- | --- | --- |
-| Primario | #0F4C5C (hover #0C3D4A, fondo suave #EEF6F7) | Botones principales, enlaces y foco |
-| Acento | #D97706 | Solo detalles, siempre con texto oscuro encima; nunca como color de texto sobre blanco |
+| Primario (azul marino) | #1B2D4F (hover #142340, fondo suave #EEF2F8) | Botones principales, barras laterales, carpetas, enlaces y foco |
+| Texto sobre primario | #FFFFFF; secundario #C7D0DD | Barra lateral, portada y velos |
+| Ítem activo de la barra lateral | Fondo #FFFFFF, texto #1B2D4F | Navegación del portal y del panel |
 | Texto principal | #0F172A | Cuerpo y títulos |
-| Texto secundario | #64748B | Metadatos y ayudas |
-| Bordes de campos | #64748B | Inputs y selects, con contraste de al menos 3:1 |
-| Divisores | #E2E8F0 | Líneas decorativas |
-| Superficies | #FFFFFF y #F8FAFC | Fondo y secciones alternas |
-| Éxito, error, advertencia, info | #15803D, #B91C1C, #B45309, #1D4ED8 | Estados y alertas |
+| Texto secundario | #5B6678 | Metadatos y ayudas |
+| Bordes de campos | #7B8597 | Inputs y selects, con contraste de al menos 3:1 |
+| Divisores y bordes de tarjetas | #E3E8EF | Líneas, tablas y tarjetas |
+| Fondo de la aplicación | #F5F7FA; superficies #FFFFFF | Fondo general y tarjetas |
+| Velo sobre fotografías | #1B2D4F al 70–80 % de opacidad | Portada y bloques con texto sobre foto |
+| Insignias de estado | Pendiente #B91C1C sobre #FDECEC; En proceso #1D4ED8 sobre #EAF1FD; Resuelta #15803D sobre #E8F6EE; Descartada o inactivo #475569 sobre #F1F5F9 | Solicitudes, usuarios y empresas |
+| Íconos por tipo de archivo | PDF #DC2626; Word #2563EB; Excel #16A34A; PowerPoint #EA580C; imagen #7C3AED | Solo el ícono, nunca el texto |
+| Error, advertencia, éxito, información | #B91C1C, #B45309, #15803D, #1D4ED8 | Alertas y validaciones |
 
-- **Tipografía:** IBM Plex Sans autoalojada (woff2, pesos 400, 500 y 600) con `system-ui` de respaldo. Base de 16 px, interlineado de 1,5 a 1,6, escala 14/16/18/20/24/30/36 y cifras tabulares en tablas.
-- **Espacio y forma:** múltiplos de 4 px, radios de 6 a 8 px, una sola sombra sutil para elementos flotantes, contenido de hasta 1.140 px de ancho y líneas de texto de no más de 70 caracteres.
-- **Íconos:** un solo set de línea (por ejemplo, Lucide) en SVG, solo donde ayudan a reconocer una acción o un tipo de archivo.
+- **Tipografía:** Inter autoalojada (woff2, pesos 400, 500, 600 y 700; licencia OFL) con `system-ui` de respaldo; reemplaza a IBM Plex Sans. Base de 16 px, interlineado de 1,5, escala 13/14/16/18/20/24/30/40 y cifras tabulares en tablas e indicadores. El texto más chico (13 px) se reserva para metadatos y siempre cumple el contraste AA.
+- **Espacio y forma:** múltiplos de 4 px; radios de 8 px en tarjetas, campos y paneles, y de 6 px en botones; bordes de 1 px; una sola sombra muy sutil para tarjetas y menús flotantes; contenido público de hasta 1.200 px de ancho; barras laterales de 240 px.
+- **Íconos:** Lucide, de línea y en SVG, como en el mockup.
 
-**Componentes reutilizables** (plantillas parciales): botón (primario, secundario, fantasma y peligro, con estados de carga y deshabilitado); campos con etiqueta, ayuda y error; alerta; diálogo de confirmación; tabla que en móvil pasa a lista; paginación; insignia de estado; migas de pan; estado vacío; zona de subida con progreso; barra lateral del panel; encabezado y pie públicos. Muéstralos todos en una página de referencia disponible solo en desarrollo.
+**Componentes reutilizables** (plantillas parciales): botón (primario, secundario con borde, fantasma y peligro, con estados de carga y deshabilitado); campos con etiqueta, ayuda y error; campo de contraseña con botón mostrar u ocultar; alerta; diálogo de confirmación; portada con fotografía y velo; tarjeta de servicio; tarjeta de indicador; tarjeta de empresa; fila de carpeta; fila de documento con ícono por tipo; tabla con insignias que en móvil pasa a lista; pestañas; paginación; insignia de estado; migas de pan; estado vacío; zona de subida con progreso; barra lateral del portal y del panel; barra superior con buscador y menú del usuario; encabezado y pie públicos. Muéstralos todos en la página de referencia de componentes, disponible solo en desarrollo.
 
 **Estados obligatorios** en cada vista y formulario:
 
@@ -275,11 +282,11 @@ Cada requisito tiene un código. Mantén en `docs/TRAZABILIDAD.md` la relación 
 - Éxito: confirmación clara después de cada acción.
 - Vacío y sin resultados: un texto que explica qué pasa y qué se puede hacer.
 
-**Accesibilidad**, con WCAG 2.2 AA como objetivo: HTML semántico, `lang="es-CL"`, enlace para saltar al contenido, foco visible, uso completo con teclado, etiquetas asociadas a los campos, información que no depende solo del color, áreas táctiles de 44 px en móvil, textos alternativos y respeto por `prefers-reduced-motion`.
+**Accesibilidad**, con WCAG 2.2 AA como objetivo: HTML semántico, `lang="es-CL"`, enlace para saltar al contenido, foco visible, uso completo con teclado, etiquetas asociadas a los campos, información que no depende solo del color (las insignias llevan texto), áreas táctiles de 44 px en móvil, texto alternativo en las fotografías y respeto por `prefers-reduced-motion`. Si algún gris del mockup no cumple AA, usa los tokens de esta sección.
 
-**Responsive:** móvil primero; revisa en 360, 768 y 1280 px.
+**Responsive:** móvil primero; revisa en 360, 768 y 1280 px. En móvil, las barras laterales se convierten en menú y el acceso de clientes se ve como en la pantalla 7 del mockup.
 
-**Tono:** español de Chile, formal y cercano, con trato de "usted". Mensajes breves y botones con verbos ("Subir documentos", "Solicitar cotización").
+**Tono:** español de Chile, formal y cercano, con trato de "usted". Mensajes breves y botones con verbos ("Subir documentos", "Solicitar cotización"). Donde el mockup tutea ("Ingresa con tu RUT"), usa "usted".
 
 ## 10. Requisitos no funcionales (RNF)
 
@@ -395,4 +402,4 @@ Nunca declares como completo algo simulado, sin pruebas o que no ejecutaste.
 
 ## 16. Fuera de alcance
 
-No implementes: registro público, subida de archivos por clientes, precios o cotizaciones automáticas, pagos, blog, chat, varios idiomas, app móvil, API pública, roles de equipo con permisos parciales, usuarios con acceso a varias empresas, subcarpetas, vencimientos y alertas de documentos, avisos al cliente por documentos nuevos, antivirus, firma electrónica ni borrado definitivo de empresas desde el panel. Si alguno parece necesario, propónlo en tu reporte.
+No implementes: registro público, subida de archivos por clientes, precios o cotizaciones automáticas, pagos, blog, chat, varios idiomas, app móvil, API pública, roles de equipo con permisos parciales, usuarios con acceso a varias empresas, subcarpetas, vencimientos y alertas de documentos, avisos al cliente por documentos nuevos, antivirus, firma electrónica, borrado definitivo de empresas desde el panel, visor de documentos incrustado, sesión persistente ("Recordarme"), listados globales de documentos o usuarios, historial de descargas para el cliente ni mensajería interna. Si alguno parece necesario, propónlo en tu reporte.
