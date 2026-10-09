@@ -37,18 +37,18 @@ Estados: `Pendiente`, `En curso`, `Verificado` (prueba automática en verde) y `
 
 | Código | Requisito | Etapa | Archivos | Prueba | Estado |
 | --- | --- | --- | --- | --- | --- |
-| AUT-01 | Acceso con RUT normalizado y validado; botón para mostrar la contraseña; sin "Recordarme" | 2 | — | — | Pendiente |
-| AUT-02 | Mensaje genérico ante credenciales inválidas | 2 | — | — | Pendiente |
-| AUT-03 | Redirección según rol | 2 | — | — | Pendiente |
-| AUT-04 | Bloqueo temporal por RUT e IP | 2 | — | — | Pendiente |
-| AUT-05 | Argon2id y validadores de contraseña | 2 | — | — | Pendiente |
-| AUT-06 | Activación con enlace de un solo uso | 2 | — | — | Pendiente |
-| AUT-07 | Recuperación con mensaje único | 2 | — | — | Pendiente |
-| AUT-08 | Cambio de contraseña y cierre de otras sesiones | 2 | — | — | Pendiente |
-| AUT-09 | Cookies seguras, expiración y cierre por POST | 2 | — | — | Pendiente |
-| AUT-10 | 2FA obligatorio para administradores | 2 | — | — | Pendiente |
-| AUT-11 | Corte inmediato al desactivar usuario o empresa | 2 | — | — | Pendiente |
-| AUT-12 | Comando para crear el primer administrador | 2 | — | — | Pendiente |
+| AUT-01 | Acceso con RUT normalizado y validado; botón para mostrar la contraseña; sin "Recordarme" | 2 | `cuentas/forms.py`, `cuentas/views.py` (`acceso`), `cuentas/templates/cuentas/acceso.html`, `templates/base_acceso.html` | `cuentas/tests/test_acceso.py` (`test_el_formulario_de_acceso_*`, `test_el_rut_se_acepta_*`, `test_el_rut_con_k_*`) | Verificado. Aspecto revisado con capturas a 360, 768 y 1280 px el 09-10-2026 |
+| AUT-02 | Mensaje genérico ante credenciales inválidas | 2 | `cuentas/backends.py`, `cuentas/services.py` (`intentar_acceso`) | `test_la_respuesta_es_identica_exista_o_no_el_rut`, `test_cada_intento_ejecuta_exactamente_una_verificacion_de_contrasena`, `test_cada_intento_fallido_hace_las_mismas_consultas`; medición en `SEGURIDAD.md` | Verificado |
+| AUT-03 | Redirección según rol | 2 | `cuentas/views.py` (`_continuar`), `core/navegacion.py`, `portal/`, `panel/` | `test_el_cliente_entra_al_portal_y_queda_registrado`, `test_el_administrador_pasa_primero_por_el_segundo_factor` | Verificado |
+| AUT-04 | Bloqueo temporal por RUT e IP | 2 | `core/ip.py`, `core/middleware.py`, `core/limites.py`, `cuentas/bloqueo.py`, `panel/views.py` (`DesbloquearUsuario`), comando `desbloquear_acceso` | `core/tests/test_ip.py`, `cuentas/tests/test_bloqueo.py`, `test_acceso_bloqueo.py`, `test_comandos.py` | Verificado. El botón de desbloqueo llega con la lista de usuarios (Etapa 3) |
+| AUT-05 | Argon2id y validadores de contraseña | 2 | `config/settings/base.py` (`PASSWORD_HASHERS`, `AUTH_PASSWORD_VALIDATORS`), `cuentas/forms.py` | `test_contrasenas_con_argon2_y_minimo_de_12_caracteres`, `test_una_contrasena_debil_se_rechaza_sin_consumir_el_enlace`, `test_la_contrasena_nueva_pasa_por_los_validadores` | Verificado |
+| AUT-06 | Activación con enlace de un solo uso | 2 | `cuentas/models.py` (`EnlaceAcceso`), `cuentas/services.py` (`generar_enlace`, `usar_enlace`), `cuentas/views.py` (`definir_contrasena`) | `cuentas/tests/test_enlaces.py` | En curso: enlace y activación verificados; enviarlo o copiarlo desde el panel es de la Etapa 3 (ADM-06) |
+| AUT-07 | Recuperación con mensaje único | 2 | `cuentas/services.py` (`solicitar_recuperacion`, `enviar_enlace_de_recuperacion`), `core/tareas.py`, `core/correo.py` | `cuentas/tests/test_recuperacion.py` | Verificado |
+| AUT-08 | Cambio de contraseña y cierre de otras sesiones | 2 | `cuentas/views.py` (`MiCuenta`), `cuentas/services.py` (`cambiar_contrasena`) | `cuentas/tests/test_sesiones.py` (`test_cambiar_la_contrasena_*`, `test_el_cliente_no_puede_cambiar_su_correo_*`), `test_restablecer_cierra_la_sesion_abierta_en_otro_dispositivo` | Verificado |
+| AUT-09 | Cookies seguras, expiración y cierre por POST | 2 | `config/settings/base.py` (`SESSION_*`), `config/settings/prod.py`, `cuentas/views.py` (`salir`) | `cuentas/tests/test_sesiones.py` (`test_configuracion_de_las_sesiones`, `test_en_produccion_las_cookies_son_seguras`, `test_la_sesion_vence_*`), `test_el_cierre_de_sesion_es_solo_por_post` | Verificado |
+| AUT-10 | 2FA obligatorio para administradores | 2 | `cuentas/dos_factores.py`, `cuentas/views.py` (`verificacion`, `configurar_2fa`, `codigos_2fa`), comando `restablecer_2fa` | `cuentas/tests/test_dos_factores.py` | Verificado. Probado además en Edge con un código real el 09-10-2026 |
+| AUT-11 | Corte inmediato al desactivar usuario o empresa | 2 | `cuentas/backends.py` (`get_user`, `user_can_authenticate`), `cuentas/middleware.py` | `cuentas/tests/test_corte.py` | Verificado |
+| AUT-12 | Comando para crear el primer administrador | 2 | `cuentas/management/commands/crear_administrador.py` | `cuentas/tests/test_comandos.py` (`test_crear_administrador_*`) | Verificado |
 
 ## Panel de administración (ADM)
 
@@ -65,7 +65,7 @@ Estados: `Pendiente`, `En curso`, `Verificado` (prueba automática en verde) y `
 | ADM-09 | Papelera y comando `purgar_papelera` | 4 | — | — | Pendiente |
 | ADM-10 | Contenido del sitio | 6 | — | — | Pendiente |
 | ADM-11 | Listado de auditoría | 3 | — | — | Pendiente |
-| ADM-12 | Admin de Django restringido y con 2FA | 2 | — | — | Pendiente |
+| ADM-12 | Admin de Django restringido y con 2FA | 2 | `core/sitio_admin.py`, `config/apps.py`, `config/urls.py`, `cuentas/admin.py`, `empresas/admin.py`, `auditoria/admin.py` | `test_el_admin_de_django_exige_superusuario_tecnico_con_2fa`, `test_el_admin_de_django_no_permite_fijar_contrasenas_ni_tocar_la_auditoria` | Verificado |
 
 ## Gestión documental (DOC)
 
@@ -98,9 +98,9 @@ Estados: `Pendiente`, `En curso`, `Verificado` (prueba automática en verde) y `
 
 | Código | Requisito | Etapa | Archivos | Prueba | Estado |
 | --- | --- | --- | --- | --- | --- |
-| AUD-01 | Eventos registrados | 2 a 6 | — | — | Pendiente |
-| AUD-02 | Contenido de cada evento, sin secretos | 2 a 6 | — | — | Pendiente |
-| AUD-03 | Solo agregar; retención y `depurar_auditoria` | 3 | — | — | Pendiente |
+| AUD-01 | Eventos registrados | 2 a 6 | `auditoria/models.py`, `auditoria/services.py`; llamadas en `cuentas/services.py` y `cuentas/dos_factores.py` | `auditoria/tests/test_auditoria.py` y las pruebas de `cuentas` que comprueban cada evento | En curso: eventos de acceso, bloqueo, enlaces, contraseñas y 2FA verificados; el resto en las Etapas 3 a 6 |
+| AUD-02 | Contenido de cada evento, sin secretos | 2 a 6 | `auditoria/services.py` (`registrar`) | `test_registrar_guarda_actor_empresa_objeto_e_ip`, `test_el_rut_intentado_se_guarda_normalizado_solo_si_es_un_rut_valido` | En curso: se comprueba con cada evento nuevo |
+| AUD-03 | Solo agregar; retención y `depurar_auditoria` | 3 | `auditoria/models.py` (`SoloAgregar`) | `test_los_eventos_no_se_editan_ni_se_borran` | En curso: solo agregar verificado; retención y `depurar_auditoria` en la Etapa 3 |
 
 ## Seguridad (SEG)
 
@@ -108,14 +108,14 @@ Estados: `Pendiente`, `En curso`, `Verificado` (prueba automática en verde) y `
 | --- | --- | --- | --- | --- | --- |
 | SEG-01 | Configuración de producción y `check --deploy` | 7 y 8 | — | — | Pendiente |
 | SEG-02 | CSP y encabezados | 1 y 7 | `config/settings/base.py` (`SECURE_CSP`), `templates/base.html` | `config/tests/test_configuracion.py` (`test_encabezados_de_seguridad`), `core/tests/test_vistas.py` (`test_las_plantillas_no_llevan_estilos_ni_scripts_en_linea`) | En curso: CSP activa; `Permissions-Policy` y revisión completa en la Etapa 7 |
-| SEG-03 | CSRF en formularios y HTMX | 2 | — | — | Pendiente |
-| SEG-04 | Mixins de rol y prueba de todas las URL | 3 y 7 | — | — | Pendiente |
+| SEG-03 | CSRF en formularios y HTMX | 2 | `templates/base.html` (`hx-headers`), `core/views.py` (`csrf_fallido`), `templates/403_csrf.html` | `config/tests/test_urls_privadas.py` (`test_un_formulario_sin_token_csrf_responde_403`, `test_ninguna_vista_esta_exenta_de_csrf`) | Verificado |
+| SEG-04 | Mixins de rol y prueba de todas las URL | 3 y 7 | `core/mixins.py` | `config/tests/test_urls_privadas.py` | En curso: mixins y recorrido de URL verificados; QuerySets por empresa en las Etapas 3 y 4 |
 | SEG-05 | UUID en las URL y 404 para lo ajeno | 4 | — | — | Pendiente |
 | SEG-06 | Autoescape y textos editables sin HTML | 6 | — | — | Pendiente |
 | SEG-07 | Archivos subidos nunca ejecutados ni servidos como estáticos | 4 | — | — | Pendiente |
 | SEG-08 | Secretos fuera del código y credenciales mínimas | 1 y 8 | `config/env.py`, `config/settings/prod.py`, `.env.example`, `.gitignore` | `config/tests/test_configuracion.py` (`test_prod_se_niega_*`, `test_la_clave_de_ejemplo_es_la_de_env_example`) | En curso: configuración verificada; credenciales del almacenamiento en la Etapa 8 |
 | SEG-09 | Versiones fijadas y `pip-audit` en CI | 1 | `pyproject.toml`, `uv.lock`, `.github/workflows/ci.yml` (trabajo `auditoria`) | Trabajo `auditoria` de la CI | Verificado manual: resultado de la CI |
-| SEG-10 | Logs sin datos sensibles | 7 | — | — | Pendiente |
+| SEG-10 | Logs sin datos sensibles | 7 | `core/logs.py` (`ocultar_tokens`), `auditoria/services.py` | `test_los_logs_no_registran_el_token_de_los_enlaces`, `test_ni_el_token_ni_la_contrasena_quedan_en_la_auditoria` | En curso: logs de la aplicación verificados; logs de Gunicorn y del proxy en la Etapa 8 |
 | SEG-11 | Respaldos y restauración probada | 8 | — | — | Pendiente |
 | SEG-12 | Privacidad y consentimiento | 6 | — | — | Pendiente |
 | SEG-13 | Admin de Django fuera de robots y sitemap | 6 | — | — | Pendiente |
@@ -149,3 +149,22 @@ Reglas de las secciones 4, 5 y 6 de la especificación que sostienen a los requi
 | Componentes de la sección 9 y página de referencia solo en desarrollo | `templates/componentes/`, `templates/base_aplicacion.html`, `core/referencia.py`, `core/urls_dev.py`, `static/js/app.js` | `core/tests/test_vistas.py` (`test_la_referencia_*`, `test_el_campo_*`, `test_el_dialogo_*`, `test_cada_tipo_de_archivo_*`, `test_los_id_*`) | Verificado. Aspecto revisado con capturas a 360, 768 y 1280 px el 09-10-2026. Pendientes: zona de subida (Etapa 4) |
 | Tokens de diseño de la sección 9, Inter autoalojada y contraste AA | `static_src/css/app.css`, `static/fonts/` | `core/tests/test_diseno.py` | Verificado |
 | `docker compose up` desde cero con migraciones en base vacía | `Dockerfile`, `compose.yaml`, `docker/arrancar-dev.sh` | Trabajo `arranque` de la CI y clon limpio local | Verificado manual |
+
+## Pruebas de seguridad obligatorias (sección 12.2)
+
+| # | Prueba | Etapa | Dónde | Estado |
+| --- | --- | --- | --- | --- |
+| 1 | URL privadas recorriendo el URLconf | 2 en adelante | `config/tests/test_urls_privadas.py` | Verificado para las URL existentes; cubre sola las de cada etapa |
+| 2 | Un cliente de A no accede a nada de B | 4 y 5 | — | Pendiente |
+| 3 | Un cliente no modifica documentos con POST hechos a mano | 4 y 5 | — | Pendiente |
+| 4 | Documento en la papelera inaccesible para el cliente | 4 y 5 | — | Pendiente |
+| 5 | Usuario o empresa desactivados pierden el acceso en la petición siguiente | 2 | `cuentas/tests/test_corte.py` | Verificado |
+| 6 | Bloqueo tras los intentos configurados y desbloqueo por el administrador | 2 | `cuentas/tests/test_acceso_bloqueo.py` | Verificado |
+| 7 | Mensajes idénticos para un RUT existente y uno inexistente | 2 | `test_acceso.py`, `test_recuperacion.py` (`test_la_respuesta_es_identica_*`) | Verificado |
+| 8 | Enlaces de un solo uso, que expiran y fallan si se alteran | 2 | `cuentas/tests/test_enlaces.py` | Verificado |
+| 9 | Un administrador sin 2FA verificado no entra al panel | 2 | `cuentas/tests/test_dos_factores.py` | Verificado |
+| 10 | Archivos inválidos rechazados | 4 | — | Pendiente |
+| 11 | Clave de almacenamiento sin nombre ni RUT | 4 y 8 | — | Pendiente |
+| 12 | Formulario sin token CSRF responde 403; campo trampa y límite por IP | 2 y 6 | `test_un_formulario_sin_token_csrf_responde_403` | En curso: CSRF verificado; campo trampa y límite de envíos en la Etapa 6 |
+| 13 | Con el correo fallando, la solicitud se guarda | 6 | — | Pendiente |
+| 14 | Un nombre con `<script>` se muestra escapado | 6 | — | Pendiente |

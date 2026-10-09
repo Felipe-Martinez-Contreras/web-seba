@@ -21,6 +21,8 @@
     {% include "componentes/resumen_errores.html" with formulario=form %}
     <form class="flex flex-col gap-5" method="post">
       {% csrf_token %}
+      {# Para los gestores de contraseñas: a qué cuenta pertenece la contraseña. No se procesa. #}
+      <input type="text" name="username" value="{{ user.rut|rut }}" autocomplete="username" hidden>
       {% include "componentes/campo.html" with campo=form.old_password contrasena=True %}
       {% include "componentes/campo.html" with campo=form.new_password1 contrasena=True %}
       {% include "componentes/campo.html" with campo=form.new_password2 contrasena=True %}

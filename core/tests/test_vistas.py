@@ -246,3 +246,30 @@ def test_formato_json_de_los_logs():
     assert salida["mensaje"] == "Mensaje ñ x"
     assert salida["codigo"] == 404
     assert "traza" not in salida
+
+
+def test_los_logs_no_registran_el_token_de_los_enlaces():
+    """El servidor anota la ruta de cada petición; el token del enlace no debe quedar ahí."""
+    token = "_-zpdEsre_AM-K4WMebpxG2HmCtkobgRu00X8hYk5iU"
+    for ruta in ("activar", "restablecer"):
+        registro = logging.LogRecord(
+            "django.server", logging.INFO, __file__, 1, '"%s %s HTTP/1.1" %s', None, None
+        )
+        registro.args = ("POST", f"/{ruta}/{token}/", 302)
+        salida = json.loads(FormatoJson().format(registro))
+        assert token not in salida["mensaje"]
+        assert salida["mensaje"] == f'"POST /{ruta}/[oculto]/ HTTP/1.1" 302'
+
+    try:
+        raise RuntimeError(f"fallo en http://sitio.test/activar/{token}/?x=1")
+    except RuntimeError:
+        import sys
+
+        registro = logging.LogRecord(
+            "django.request", logging.ERROR, __file__, 1, "Error", None, sys.exc_info()
+        )
+    salida = json.loads(FormatoJson().format(registro))
+    assert token not in salida["traza"] and "/activar/[oculto]" in salida["traza"]
+    # Las demás rutas no se alteran.
+    otro = logging.LogRecord("x", logging.INFO, __file__, 1, "GET /portal/ y /acceso/", None, None)
+    assert json.loads(FormatoJson().format(otro))["mensaje"] == "GET /portal/ y /acceso/"

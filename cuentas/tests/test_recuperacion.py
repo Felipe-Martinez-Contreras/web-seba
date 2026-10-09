@@ -239,15 +239,29 @@ def test_en_las_pruebas_la_tarea_se_ejecuta_en_el_mismo_hilo(settings):
 
 def test_fuera_de_las_pruebas_la_tarea_corre_en_otro_hilo_y_cierra_su_conexion(settings):
     settings.TAREAS_SINCRONAS = False
+    settings.TAREAS_ESPERA_SEGUNDOS = 0.2
     hilos = []
     with mock.patch.object(tareas.connections, "close_all") as cerrar:
         hilo = tareas.en_segundo_plano(
             lambda valor: hilos.append((valor, threading.current_thread())), 7
         )
+        # No parte de inmediato: quien la lanza termina primero su respuesta.
+        assert hilos == []
         hilo.join(timeout=10)
     assert not hilo.is_alive()
     assert hilos[0][0] == 7 and hilos[0][1] is not threading.current_thread()
     cerrar.assert_called_once_with()
+
+
+def test_la_espera_antes_de_trabajar_tiene_una_parte_al_azar(settings):
+    settings.TAREAS_SINCRONAS = False
+    settings.TAREAS_ESPERA_SEGUNDOS = 30
+    hilos = [tareas.en_segundo_plano(print) for _ in range(5)]
+    esperas = {hilo.interval for hilo in hilos}
+    for hilo in hilos:
+        hilo.cancel()
+    assert all(30 <= espera <= 60 for espera in esperas)
+    assert len(esperas) > 1
 
 
 def test_un_error_en_el_hilo_se_registra_y_la_conexion_se_cierra_igual(settings, caplog):
@@ -256,6 +270,7 @@ def test_un_error_en_el_hilo_se_registra_y_la_conexion_se_cierra_igual(settings,
     def tarea_que_falla():
         raise RuntimeError("fallo de prueba")
 
+    settings.TAREAS_ESPERA_SEGUNDOS = 0
     with mock.patch.object(tareas.connections, "close_all") as cerrar:
         tareas.en_segundo_plano(tarea_que_falla).join(timeout=10)
     cerrar.assert_called_once_with()

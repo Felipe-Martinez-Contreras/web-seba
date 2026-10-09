@@ -9,7 +9,7 @@ Plan de la Etapa 0 (sección 11 de `ESPECIFICACION.md`). Se actualiza al avanzar
 | 0 | Reconocimiento y plan | Aprobada por el responsable el 09-10-2026 |
 | 1 | Base del proyecto | Terminada el 09-10-2026 |
 | — | Ajuste visual (tokens azul marino, Inter y componentes del mockup) | Terminado el 09-10-2026; pendiente de aprobación del responsable |
-| 2 | Cuentas y acceso | Pendiente |
+| 2 | Cuentas y acceso | Terminada el 09-10-2026; pendiente de revisión del responsable |
 | 3 | Empresas, usuarios y carpetas | Pendiente |
 | 4 | Documentos | Pendiente |
 | 5 | Portal del cliente | Pendiente |
@@ -76,8 +76,8 @@ web-seba/
 
 El detalle y el motivo de cada una están en `DECISIONES.md`.
 
-- **Ejecución, instaladas:** Django 6.1.2, psycopg 3.3.6, argon2-cffi 25.1.0 y WhiteNoise 6.12.0.
-- **Ejecución, por agregar:** django-otp y segno (Etapa 2), django-storages + boto3 (Etapa 4) y Gunicorn (Etapa 8).
+- **Ejecución, instaladas:** Django 6.1.2, psycopg 3.3.6, argon2-cffi 25.1.0, WhiteNoise 6.12.0, django-otp 1.7.4 y segno 1.6.6.
+- **Ejecución, por agregar:** django-storages + boto3 (Etapa 4) y Gunicorn (Etapa 8).
 - **Desarrollo y CI:** pytest, pytest-django, pytest-cov, ruff, pip-audit.
 - **Estáticos propios:** Tailwind CLI standalone, HTMX, Inter, Lucide.
 
@@ -106,7 +106,7 @@ Aprobadas por el responsable el 09-10-2026.
 
 - **Equipo de desarrollo con poca memoria** (6,8 GB; ≈ 430 MB libres con Docker Desktop abierto). Mitigación: imágenes livianas y, si hace falta, limitar la memoria de WSL2 en `.wslconfig`. El plan B (Django en local contra el PostgreSQL 16 instalado) requiere autorización previa del responsable.
 - **`django-storages` no declara soporte para Django 6.x.** Se prueba en la Etapa 4; alternativa: backend propio delgado sobre `boto3`.
-- **Contadores de bloqueo en caché de base de datos** no atómicos; aceptable para este volumen. Se documentará en `SEGURIDAD.md`.
+- **Contadores de bloqueo en caché de base de datos** no atómicos; aceptable para este volumen. Documentado en `SEGURIDAD.md`, junto con las demás limitaciones de la Etapa 2.
 - **Un RUT = una cuenta = una empresa.** Una persona que trabaje para dos empresas cliente no puede tener dos cuentas (multiempresa está fuera de alcance, sección 16).
 - **Django 6.1 no es LTS.** Hay que migrar a 6.2 LTS cuando se publique.
 - **Datos de salud de trabajadores** y Ley 21.719: la región del hosting y del almacenamiento queda pendiente de asesoría legal.
@@ -137,7 +137,10 @@ Aprobadas por el responsable el 09-10-2026.
 - Migración a Django 6.2 LTS cuando se publique.
 - Reevaluar HTMX 4.x antes de la Etapa 4 (DEC-21).
 - Etapa 6: agregar a la página 404 el enlace al inicio, cuando exista (DEC-25).
-- Etapa 2: pantalla de acceso según las pantallas 2 y 7 del mockup (el campo de contraseña ya existe).
+- Etapa 3: botón de desbloqueo y enlaces de activación en la lista de usuarios (la lógica ya existe); listado de auditoría; comando `depurar_auditoria`.
+- Etapa 6: fotografía con velo en el bloque inferior de la pantalla de acceso; marca en esa pantalla cuando exista el nombre comercial; `noindex` del admin de Django (SEG-13).
+- Etapa 7: repetir en staging la medición de tiempos de `SEGURIDAD.md`.
+- Etapa 8: valor de `PROXY_CONFIANZA_REDES` según el hosting; formato de los logs de Gunicorn y del proxy sin el token de los enlaces; proveedor SMTP.
 - Etapa 4: zona de subida con progreso.
 - Etapa 6: fotografías con licencia y `docs/FOTOS.md` (PUB-08); modelos `Servicio`, `DatosNegocio` y `Solicitud` con la forma de la especificación actualizada (DEC-50).
 - Etapa 7: revisión de accesibilidad con lector de pantalla y teclado sobre pantallas reales.
@@ -163,3 +166,29 @@ Pedido por el responsable tras actualizar la sección 9 de la especificación y 
 - **Componentes nuevos:** campo de contraseña con botón para mostrarla, portada, tarjetas de servicio, de indicador y de empresa, filas de carpeta y de documento con ícono por tipo, tabla que en móvil pasa a lista, pestañas, barra lateral y barra superior del portal y del panel, diálogo de confirmación y marca provisional.
 - **Sin cambios de modelo ni pantallas nuevas.** Todo se ve solo en `/_referencia/componentes/`, en desarrollo.
 - **Revisión visual:** capturas con Edge emulando 360, 768 y 1280 px, comparadas con el mockup. Se corrigió un desborde horizontal a 360 px y el ajuste de buscador, paginación y títulos largos en pantallas angostas.
+
+## 11. Etapa 2: qué quedó construido
+
+Requisitos AUT-01 a AUT-12, ADM-12 y SEG-03. El detalle de cada control está en `SEGURIDAD.md` y las decisiones en `DECISIONES.md` (DEC-52 a DEC-78).
+
+- **Acceso** en `/acceso/` con RUT y contraseña, mensaje genérico y redirección por rol. Cierre de sesión solo por POST.
+- **Bloqueo** por RUT e IP y por IP, con la IP tomada del proxy de confianza. Desbloqueo por una vista del panel y por comando.
+- **Enlaces de un solo uso** para activar la cuenta (72 horas) y restablecer la contraseña (1 hora). Al usarlos, la persona queda con la sesión iniciada.
+- **Recuperación** en `/recuperar/`, con pantalla fija y el correo enviado fuera de la petición.
+- **2FA de administradores**: TOTP y 10 códigos de recuperación. Solo se enrola en la sesión que acaba de usar un enlace.
+- **"Mi cuenta"** en `/cuenta/`: datos de solo lectura y cambio de contraseña.
+- **Corte inmediato** al desactivar un usuario o su empresa.
+- **Auditoría**: modelo `EventoAuditoria`, que solo admite agregar, con los eventos de esta etapa.
+- **Inicios mínimos** del portal (`/portal/`) y del panel (`/panel/`), como destinos reales del acceso.
+- **Admin de Django** en la ruta de `DJANGO_ADMIN_RUTA`, solo para el superusuario técnico con 2FA.
+- **Comandos**: `crear_administrador`, `restablecer_2fa` y `desbloquear_acceso`.
+
+Lo que todavía no existe: crear empresas y usuarios desde el panel, y entregarles su enlace de activación (Etapa 3). Hasta entonces, un cliente solo se puede crear desde la consola de Django.
+
+### Diferencias con el plan aprobado de la etapa
+
+- La pantalla de acceso no se agregó a la página de referencia de componentes: existe la pantalla real en `/acceso/` (DEC-78).
+- El hilo de envío de correo parte entre 2 y 4 segundos después de la petición, no de inmediato: la medición de tiempos mostró que, si partía de inmediato, la respuesta tardaba más cuando la cuenta existía (DEC-64).
+- Se agregó el ocultamiento del token de los enlaces en los logs, detectado al revisar la aplicación en el navegador (DEC-71).
+- Se agregó el cierre de sesión tras 5 fallos al cambiar la contraseña (DEC-68).
+

@@ -169,3 +169,21 @@ def test_env_base_de_datos(monkeypatch):
         "HOST": "servidor",
         "PORT": "5433",
     }
+
+
+def test_env_example_documenta_todas_las_variables_que_lee_la_configuracion():
+    """Sección 13: cada variable de entorno queda documentada en .env.example."""
+    import re
+
+    leidas = set()
+    for archivo in (settings.BASE_DIR / "config" / "settings").glob("*.py"):
+        codigo = archivo.read_text(encoding="utf-8")
+        leidas |= set(re.findall(r'env\.\w+\(\s*"([A-Z0-9_]+)"', codigo))
+        leidas |= set(re.findall(r'"([A-Z0-9_]+)" not in os\.environ', codigo))
+    # La define la imagen Docker, no quien despliega.
+    leidas.discard("ESTATICOS_COMPILADOS_DIR")
+    assert {"SECRET_KEY", "SITIO_URL", "PROXY_CONFIANZA_REDES", "CORREO_HOST"} <= leidas
+
+    ejemplo = (settings.BASE_DIR / ".env.example").read_text(encoding="utf-8")
+    documentadas = set(re.findall(r"^([A-Z0-9_]+)=", ejemplo, flags=re.M))
+    assert leidas <= documentadas, sorted(leidas - documentadas)

@@ -27,7 +27,7 @@ Decisiones técnicas y dependencias, con su motivo. Cada dependencia indica para
 | DEC-19 | 09-10-2026 | Python 3.13.16 (`python:3.13.16-slim-trixie`) | Django 6.1 admite 3.12, 3.13 y 3.14; la serie 3.13 tiene soporte hasta 10-2029 |
 | DEC-20 | 09-10-2026 | PostgreSQL 18.6 (`postgres:18-alpine`, fijada por digest) | Cumple "16 o superior" y la imagen ya estaba descargada en el equipo de desarrollo |
 | DEC-21 | 09-10-2026 | HTMX 2.0.10 y no 4.0.0 | La 4.0.0 salió el 28-08-2026 y no se pudo confirmar que conserve los eventos de progreso de subida que necesita ADM-08. **Pendiente: reevaluar antes de la Etapa 4** |
-| DEC-22 | 09-10-2026 | Gunicorn se agrega en la Etapa 8, con la imagen de producción | En la Etapa 1 no se usa. `django-otp` y `segno` entran en la Etapa 2; `django-storages`, en la 4 |
+| DEC-22 | 09-10-2026 | Gunicorn se agrega en la Etapa 8, con la imagen de producción | En la Etapa 1 no se usa. `django-otp` y `segno` entraron en la Etapa 2; `django-storages`, en la 4 |
 | DEC-23 | 09-10-2026 | `django.contrib.admin` no se instala hasta la Etapa 2 | ADM-12 exige ruta por variable de entorno y 2FA; antes de eso quedaría un admin sin proteger |
 | DEC-24 | 09-10-2026 | CSP nativa activa desde la Etapa 1, con política estricta | Ninguna plantilla nace con estilos o scripts en línea. La verificación formal de SEG-02 sigue en la Etapa 7 |
 | DEC-25 | 09-10-2026 | `/` responde 404 hasta la Etapa 6 y la página 404 no enlaza al inicio | Aún no hay página de inicio con contenido real (R1, R2) |
@@ -57,6 +57,33 @@ Decisiones técnicas y dependencias, con su motivo. Cada dependencia indica para
 | DEC-49 | 09-10-2026 | Se postergan la zona de subida con progreso (Etapa 4) y la pantalla de acceso (Etapa 2) | Dependen de pantallas y endpoints futuros. El campo de contraseña con botón para mostrarla ya está listo |
 | DEC-50 | 09-10-2026 | Cambios de modelo que pide la especificación actualizada, para la Etapa 6: ícono en `Servicio`; titular, bajada y redes sociales en `DatosNegocio`; estados Pendiente, En proceso, Resuelta y Descartada en `Solicitud` | Esos modelos aún no existen; se crean ya con la forma nueva |
 | DEC-51 | 09-10-2026 | "Clientes" es el nombre visible de las empresas en el panel; el modelo sigue siendo `Empresa` | ADM-01 actualizado |
+| DEC-52 | 09-10-2026 | `Usuario.uuid`, único, para las URL y la auditoría; el ID entero sigue como clave primaria | Sección 6: nunca IDs secuenciales en las URL. Pedido por el responsable. Migración en tres pasos para poblar las filas existentes |
+| DEC-53 | 09-10-2026 | Las apps `auditoria`, `portal` y `panel` se crean en la Etapa 2, en versión mínima (ajusta DEC-10) | AUT-04 y AUT-07 exigen eventos de auditoría; AUT-03 necesita un destino real por rol. Aprobada por el responsable |
+| DEC-54 | 09-10-2026 | Enlaces de activación y restablecimiento como filas de `EnlaceAcceso`, con el token guardado como SHA-256 | Un solo uso real, vencimientos distintos, revocación y estado visible. La URL no identifica al usuario. Se descartó el generador de tokens de Django. Aprobada por el responsable |
+| DEC-55 | 09-10-2026 | La configuración SMTP por variables de entorno (`CORREO_*`) se adelanta a la Etapa 2 | La recuperación la necesita. Sin `CORREO_HOST` el envío se informa como no configurado. Aprobada por el responsable |
+| DEC-56 | 09-10-2026 | Desbloqueo manual como servicio, vista POST del panel y comando; el botón llega en la Etapa 3 | Aún no existe la lista de usuarios donde ponerlo. Aprobada por el responsable |
+| DEC-57 | 09-10-2026 | El bloqueo tiene un mensaje propio: "Demasiados intentos. Espere unos minutos e intente nuevamente." | No revela nada: se aplica igual a un RUT sin cuenta. Aprobada por el responsable |
+| DEC-58 | 09-10-2026 | La pantalla de acceso lleva un bloque azul marino liso al pie; la fotografía entra en la Etapa 6 | PUB-08 y DEC-41. Aprobada por el responsable |
+| DEC-59 | 09-10-2026 | Backend de autenticación propio: una sola verificación Argon2 por intento, también cuando la cuenta no existe, está inactiva, no se ha activado o hay un bloqueo | AUT-02: el tiempo de respuesta no depende del motivo del rechazo |
+| DEC-60 | 09-10-2026 | La IP del cliente se toma del encabezado del proxy solo si la conexión viene de `PROXY_CONFIANZA_REDES`, de derecha a izquierda. Producción exige declarar la variable | AUT-04. Declararla siempre evita que quede olvidada detrás de un proxy |
+| DEC-61 | 09-10-2026 | Contadores con ventana fija desde el primer fallo y "generación" por RUT en las claves de la caché | Desbloquear un RUT anula sus bloqueos desde cualquier IP sin tener que enumerarlas |
+| DEC-62 | 09-10-2026 | El 2FA solo se enrola en la sesión que acaba de usar un enlace de activación o de restablecimiento, durante 30 minutos. `restablecer_2fa` genera ese enlace | Pedido por el responsable: conocer la contraseña de un administrador sin 2FA no debe bastar para registrar un dispositivo propio |
+| DEC-63 | 09-10-2026 | Al usar un enlace, la persona queda con la sesión iniciada | Poseer el enlace prueba más que la contraseña recién escrita, y permite ligar el enrolamiento del 2FA a esa sesión |
+| DEC-64 | 09-10-2026 | El correo de recuperación se envía en un hilo del mismo proceso, que parte entre 2 y 4 segundos después de la petición y cierra su conexión a la base. En las pruebas es síncrono | Sin colas (sección 5). Si partiera de inmediato competiría por CPU con la petición: medido, 27,7 ms contra 16,8 ms. Limitación documentada en `SEGURIDAD.md` |
+| DEC-65 | 09-10-2026 | `EnlaceAcceso.envio` nace como "pendiente" y pasa a "enviada", "fallida" o "no configurada" | Si el proceso se reinicia en medio del envío, el registro nunca dice "enviada" |
+| DEC-66 | 09-10-2026 | Los enlaces se arman con `SITIO_URL`, obligatoria y con https en producción | No se confía en el encabezado `Host` para un enlace que da acceso a una cuenta |
+| DEC-67 | 09-10-2026 | "Mi cuenta" muestra nombre, RUT y correo sin permitir editarlos | Pedido por el responsable: el correo es por donde llega la recuperación; lo cambia solo un administrador |
+| DEC-68 | 09-10-2026 | Cinco fallos seguidos con la contraseña actual en "Cambiar contraseña" cierran la sesión | Una sesión robada no debe servir para adivinar la contraseña |
+| DEC-69 | 09-10-2026 | Admin de Django con un sitio propio: sin formulario de acceso propio, con 2FA, en la ruta de `DJANGO_ADMIN_RUTA` y sin alta, borrado ni edición de contraseñas de usuarios | ADM-12. Usa el acceso de la aplicación, con su bloqueo y su auditoría. Sin la variable, no se publica |
+| DEC-70 | 09-10-2026 | `EventoAuditoria` no lleva `actualizado_en`; el RUT intentado solo se guarda si es un RUT válido | La fila nunca cambia. En el campo del RUT alguien puede escribir su contraseña por error |
+| DEC-71 | 09-10-2026 | El formateador de logs oculta el token en las rutas `/activar/…` y `/restablecer/…` | SEG-10: el servidor registra la ruta de cada petición |
+| DEC-72 | 09-10-2026 | En el acceso, un RUT con dígito verificador incorrecto recibe el mensaje genérico; en la recuperación, un error de formato | En el acceso toda falla responde igual. En la recuperación el error no depende de ninguna cuenta y ayuda a quien se equivocó al escribir |
+| DEC-73 | 09-10-2026 | `crear_administrador` no pide contraseña: imprime un enlace de activación. Con `--tecnico` crea el superusuario técnico | AUT-06 y AUT-12: nadie conoce la contraseña de otro. Imprimir el enlace en la consola de quien ejecuta el comando no es escribirlo en un log |
+| DEC-74 | 09-10-2026 | El código QR del 2FA es un SVG incrustado, generado por `segno` y marcado como seguro | Excepción a R5 justificada en `SEGURIDAD.md`: el SVG no contiene datos de formularios |
+| DEC-75 | 09-10-2026 | Rol incorrecto en una vista privada: 404. Administrador sin 2FA verificado: redirección a la verificación | No se confirma que la dirección exista (misma idea que DOC-06) |
+| DEC-76 | 09-10-2026 | Sesiones con `SESSION_SAVE_EVERY_REQUEST` y `SESSION_EXPIRE_AT_BROWSER_CLOSE` | AUT-09: el plazo cuenta desde el último uso y no hay sesión persistente (sin "Recordarme") |
+| DEC-77 | 09-10-2026 | En la verificación, el formato del código decide el dispositivo: 6 dígitos es TOTP; otro, código de recuperación | Un código de recuperación no suma fallos, ni espera, al TOTP |
+| DEC-78 | 09-10-2026 | La pantalla de acceso no se replica en la página de referencia de componentes | Existe la pantalla real en `/acceso/`; duplicarla sería mantener dos copias |
 
 ## Dependencias de ejecución
 
@@ -65,8 +92,8 @@ Decisiones técnicas y dependencias, con su motivo. Cada dependencia indica para
 | Django 6.1.2 | Framework | 5.2 LTS: exigiría `django-csp` y no es la serie más reciente |
 | psycopg 3.3.6 (`binary`) | Driver de PostgreSQL, con ruedas precompiladas | Django no incluye driver |
 | argon2-cffi 25.1.0 | Argon2id como hasher principal (AUT-05) | PBKDF2 nativo: no cumple el requisito |
-| django-otp (Etapa 2) | TOTP, códigos de recuperación y 2FA en el admin de Django (AUT-10, ADM-12) | TOTP propio: riesgo de seguridad innecesario. `django-two-factor-auth`: trae vistas, plantillas y más dependencias |
-| segno (Etapa 2) | Código QR del enrolamiento TOTP, generado en el servidor como SVG | Sin QR: enrolamiento poco usable. Servicio externo de QR: expondría el secreto |
+| django-otp 1.7.4 | TOTP, códigos de recuperación y 2FA en el admin de Django (AUT-10, ADM-12) | TOTP propio: riesgo de seguridad innecesario. `django-two-factor-auth`: trae vistas, plantillas y más dependencias |
+| segno 1.6.6 | Código QR del enrolamiento TOTP, generado en el servidor como SVG | Sin QR: enrolamiento poco usable. Servicio externo de QR: expondría el secreto |
 | django-storages + boto3 (Etapa 4) | Almacenamiento S3 privado y URL firmadas (desde la Etapa 4) | Backend S3 propio. Queda como alternativa si no funciona con Django 6.1 |
 | WhiteNoise 6.12.0 | Estáticos, en desarrollo y en producción | Servirlos con Django: no apto para producción |
 | Gunicorn (Etapa 8) | Servidor WSGI | `runserver`: no es de producción |

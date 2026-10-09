@@ -98,8 +98,10 @@ RECUPERACION_MAXIMO_POR_IP = env.entero("RECUPERACION_MAXIMO_POR_IP", 10)
 ENROLAMIENTO_2FA_MINUTOS = env.entero("ENROLAMIENTO_2FA_MINUTOS", 30)
 OTP_ADMIN_HIDE_SENSITIVE_DATA = True
 
-# El envío de correo sale de la petición (core.tareas). En las pruebas es inmediato.
+# El envío de correo sale de la petición (core.tareas) y parte tras esta espera, más una
+# parte al azar de hasta el mismo valor. En las pruebas es inmediato.
 TAREAS_SINCRONAS = False
+TAREAS_ESPERA_SEGUNDOS = 2
 
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.Argon2PasswordHasher"]
 
