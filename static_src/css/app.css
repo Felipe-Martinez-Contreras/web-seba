@@ -1,65 +1,95 @@
 /* Entrada de Tailwind. Los tokens de diseño (sección 9 de la especificación) se definen
-   una sola vez aquí: quedan como variables CSS y como utilidades de Tailwind. */
+   una sola vez aquí: quedan como variables CSS y como utilidades de Tailwind.
+   Referencia visual: docs/diseno/mockup-referencia.jpg y docs/DISENO.md. */
 @import "tailwindcss" source("../../");
 
 @font-face {
-  font-family: "IBM Plex Sans";
+  font-family: "Inter";
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("../fonts/IBMPlexSans-Regular.woff2") format("woff2");
+  src: url("../fonts/inter-latin-400-normal.woff2") format("woff2");
 }
 
 @font-face {
-  font-family: "IBM Plex Sans";
+  font-family: "Inter";
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("../fonts/IBMPlexSans-Medium.woff2") format("woff2");
+  src: url("../fonts/inter-latin-500-normal.woff2") format("woff2");
 }
 
 @font-face {
-  font-family: "IBM Plex Sans";
+  font-family: "Inter";
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("../fonts/IBMPlexSans-SemiBold.woff2") format("woff2");
+  src: url("../fonts/inter-latin-600-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../fonts/inter-latin-700-normal.woff2") format("woff2");
 }
 
 @theme {
   /* Solo existe la paleta del proyecto. */
   --color-*: initial;
   --color-blanco: #ffffff;
-  --color-primario: #0f4c5c;
-  --color-primario-hover: #0c3d4a;
-  --color-primario-suave: #eef6f7;
-  --color-acento: #d97706;
-  --color-texto: #0f172a;
-  --color-texto-secundario: #64748b;
-  --color-borde-campo: #64748b;
-  --color-divisor: #e2e8f0;
-  --color-superficie: #ffffff;
-  --color-superficie-alterna: #f8fafc;
-  --color-exito: #15803d;
-  --color-exito-suave: #f0fdf4;
-  --color-error: #b91c1c;
-  --color-error-suave: #fef2f2;
-  --color-advertencia: #b45309;
-  --color-advertencia-suave: #fffbeb;
-  --color-info: #1d4ed8;
-  --color-info-suave: #eff6ff;
 
-  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+  /* Primario: azul marino */
+  --color-primario: #1b2d4f;
+  --color-primario-hover: #142340;
+  --color-primario-suave: #eef2f8;
+  --color-sobre-primario-secundario: #c7d0dd;
+
+  /* Texto, bordes y superficies */
+  --color-texto: #0f172a;
+  --color-texto-secundario: #5b6678;
+  --color-borde-campo: #7b8597;
+  --color-divisor: #e3e8ef;
+  --color-fondo: #f5f7fa;
+  --color-superficie: #ffffff;
+
+  /* Estados: alertas, validaciones e insignias */
+  --color-error: #b91c1c;
+  --color-error-suave: #fdecec;
+  --color-advertencia: #b45309;
+  --color-advertencia-suave: #fdf3e3;
+  --color-exito: #15803d;
+  --color-exito-suave: #e8f6ee;
+  --color-info: #1d4ed8;
+  --color-info-suave: #eaf1fd;
+  --color-neutro: #475569;
+  --color-neutro-suave: #f1f5f9;
+
+  /* Íconos por tipo de archivo: solo el ícono, nunca el texto */
+  --color-archivo-pdf: #dc2626;
+  --color-archivo-word: #2563eb;
+  --color-archivo-excel: #16a34a;
+  --color-archivo-powerpoint: #ea580c;
+  --color-archivo-imagen: #7c3aed;
+
+  --font-sans: "Inter", system-ui, sans-serif;
+
+  /* Escala 13/14/16/18/20/24/30/40 */
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.5;
+  --text-4xl: 2.5rem;
+  --text-4xl--line-height: 1.15;
 
   --radius-*: initial;
-  --radius-campo: 6px;
+  --radius-boton: 6px;
   --radius-caja: 8px;
   --radius-completo: 9999px;
 
   --shadow-*: initial;
-  --shadow-flotante: 0 4px 12px rgb(15 23 42 / 0.08);
+  --shadow-sutil: 0 1px 2px rgb(15 23 42 / 0.05), 0 4px 12px rgb(15 23 42 / 0.06);
 
-  --container-contenido: 1140px;
+  --container-contenido: 1200px;
   --container-lectura: 70ch;
 }
 
@@ -67,8 +97,8 @@
   html {
     font-family: var(--font-sans);
     color: var(--color-texto);
-    background-color: var(--color-superficie);
-    line-height: 1.55;
+    background-color: var(--color-fondo);
+    line-height: 1.5;
   }
 
   :focus-visible {
@@ -83,8 +113,13 @@
     line-height: 1.25;
   }
 
-  table {
-    font-variant-numeric: tabular-nums;
+  summary {
+    cursor: pointer;
+    list-style: none;
+  }
+
+  summary::-webkit-details-marker {
+    display: none;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -101,29 +136,50 @@
 
 @layer components {
   .saltar-contenido {
-    @apply sr-only rounded-campo bg-primario px-4 py-3 font-medium text-blanco;
+    @apply sr-only rounded-boton bg-primario px-4 py-3 font-medium text-blanco;
   }
 
   .saltar-contenido:focus {
-    @apply not-sr-only fixed top-2 left-2 z-50;
+    @apply not-sr-only fixed top-2 left-2 z-50 outline-2 outline-offset-2 outline-blanco;
   }
 
   .contenedor {
     @apply mx-auto w-full max-w-contenido px-4 sm:px-6;
   }
 
+  .icono {
+    @apply inline-flex shrink-0;
+  }
+
   .icono svg {
-    @apply size-5 shrink-0;
+    @apply size-5;
+  }
+
+  .icono-chico svg {
+    @apply size-4;
+  }
+
+  .icono-grande svg {
+    @apply size-6;
+  }
+
+  /* Sobre fondo azul marino el foco se dibuja en blanco */
+  .sobre-primario :focus-visible {
+    outline-color: var(--color-blanco);
   }
 
   /* Botones */
   .boton {
-    @apply inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-campo border border-transparent px-4 py-2 text-base font-medium no-underline transition-colors;
+    @apply inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-boton border border-transparent px-4 py-2 text-sm font-semibold no-underline transition-colors;
   }
 
   .boton:disabled,
   .boton[aria-disabled="true"] {
     @apply cursor-not-allowed opacity-60;
+  }
+
+  .boton-ancho {
+    @apply w-full;
   }
 
   .boton-primario {
@@ -154,6 +210,23 @@
     @apply bg-error text-blanco;
   }
 
+  /* Sobre fondo azul marino o fotografía con velo */
+  .boton-inverso {
+    @apply bg-blanco text-primario;
+  }
+
+  .boton-inverso:hover:not(:disabled) {
+    @apply bg-primario-suave;
+  }
+
+  .boton-contorno-claro {
+    @apply border-blanco bg-transparent text-blanco;
+  }
+
+  .boton-contorno-claro:hover:not(:disabled) {
+    @apply bg-blanco text-primario;
+  }
+
   .boton-indicador {
     @apply hidden;
   }
@@ -176,15 +249,15 @@
 
   /* Campos de formulario */
   .campo {
-    @apply flex flex-col gap-1;
+    @apply flex flex-col gap-1.5;
   }
 
   .campo-etiqueta {
-    @apply font-medium;
+    @apply text-sm font-medium;
   }
 
   .campo-ayuda {
-    @apply text-sm text-texto-secundario;
+    @apply text-xs text-texto-secundario;
   }
 
   .campo-error {
@@ -194,16 +267,117 @@
   .campo input:not([type="checkbox"], [type="radio"]),
   .campo select,
   .campo textarea {
-    @apply min-h-11 w-full rounded-campo border border-borde-campo bg-superficie px-3 py-2 text-base text-texto;
+    @apply min-h-11 w-full rounded-caja border border-borde-campo bg-superficie px-3 py-2 text-base text-texto;
   }
 
-  .campo [aria-invalid="true"] {
+  .campo ::placeholder {
+    @apply text-texto-secundario;
+  }
+
+  .campo :is(input, select, textarea)[aria-invalid="true"] {
     @apply border-2 border-error;
+  }
+
+  /* Campo de contraseña con botón para mostrarla u ocultarla */
+  .campo-contrasena {
+    @apply relative;
+  }
+
+  .campo .campo-contrasena input {
+    @apply pr-12;
+  }
+
+  .campo-contrasena-boton {
+    @apply absolute inset-y-0 right-0 flex w-11 cursor-pointer items-center justify-center rounded-caja text-texto-secundario;
+  }
+
+  .campo-contrasena-boton:hover {
+    @apply text-primario;
+  }
+
+  .campo-contrasena-boton .al-mostrar,
+  .campo-contrasena-boton[aria-pressed="true"] .al-ocultar {
+    @apply hidden;
+  }
+
+  .campo-contrasena-boton[aria-pressed="true"] .al-mostrar {
+    @apply inline-flex;
+  }
+
+  /* Tarjetas: solo servicios, indicadores, empresa y paneles de contenido */
+  .tarjeta {
+    @apply rounded-caja border border-divisor bg-superficie;
+  }
+
+  a.tarjeta {
+    @apply no-underline transition-colors;
+  }
+
+  a.tarjeta:hover {
+    @apply border-borde-campo;
+  }
+
+  .cuadro-icono {
+    @apply flex size-10 shrink-0 items-center justify-center rounded-caja bg-primario-suave text-primario;
+  }
+
+  .cuadro-icono-info {
+    @apply bg-info-suave text-info;
+  }
+
+  .cuadro-icono-exito {
+    @apply bg-exito-suave text-exito;
+  }
+
+  .cuadro-icono-contorno {
+    @apply border border-divisor bg-superficie;
+  }
+
+  /* Listas con filas enlazadas: carpetas y documentos */
+  .lista-filas {
+    /* min-w-0: dentro de una grilla, los títulos largos se truncan en vez de ensancharla. */
+    @apply min-w-0 divide-y divide-divisor rounded-caja border border-divisor bg-superficie;
+  }
+
+  .fila {
+    @apply flex min-h-16 items-center gap-4 px-4 py-3 text-texto no-underline;
+  }
+
+  a.fila:hover {
+    @apply bg-fondo;
+  }
+
+  .fila-titulo {
+    @apply text-sm font-medium break-words;
+  }
+
+  .fila-meta {
+    @apply text-xs text-texto-secundario;
+  }
+
+  .archivo-pdf {
+    @apply text-archivo-pdf;
+  }
+
+  .archivo-word {
+    @apply text-archivo-word;
+  }
+
+  .archivo-excel {
+    @apply text-archivo-excel;
+  }
+
+  .archivo-powerpoint {
+    @apply text-archivo-powerpoint;
+  }
+
+  .archivo-imagen {
+    @apply text-archivo-imagen;
   }
 
   /* Alertas */
   .alerta {
-    @apply flex items-start gap-3 rounded-caja border px-4 py-3 text-texto;
+    @apply flex items-start gap-3 rounded-caja border px-4 py-3 text-sm text-texto;
   }
 
   .alerta-exito {
@@ -238,32 +412,79 @@
     @apply text-info;
   }
 
-  /* Insignias de estado */
+  /* Insignias de estado: siempre llevan texto */
   .insignia {
-    @apply inline-flex items-center rounded-completo border px-2 py-0.5 text-sm font-medium;
+    @apply inline-flex items-center rounded-boton px-2 py-0.5 text-xs font-semibold whitespace-nowrap;
   }
 
   .insignia-neutro {
-    @apply border-divisor bg-superficie-alterna text-texto;
+    @apply bg-neutro-suave text-neutro;
   }
 
   .insignia-exito {
-    @apply border-exito bg-exito-suave text-exito;
+    @apply bg-exito-suave text-exito;
   }
 
   .insignia-error {
-    @apply border-error bg-error-suave text-error;
+    @apply bg-error-suave text-error;
   }
 
   .insignia-advertencia {
-    @apply border-advertencia bg-advertencia-suave text-advertencia;
+    @apply bg-advertencia-suave text-advertencia;
   }
 
   .insignia-info {
-    @apply border-info bg-info-suave text-info;
+    @apply bg-info-suave text-info;
   }
 
-  /* Enlaces de navegación */
+  /* Tabla: en pantallas angostas cada fila pasa a ser un bloque con sus etiquetas */
+  .tabla {
+    @apply w-full border-collapse text-left text-sm tabular-nums;
+  }
+
+  .tabla thead {
+    @apply sr-only md:not-sr-only;
+  }
+
+  .tabla th {
+    @apply bg-fondo px-4 py-3 text-xs font-medium text-texto-secundario;
+  }
+
+  .tabla tr {
+    @apply block border-b border-divisor py-3 md:table-row md:py-0;
+  }
+
+  .tabla tbody tr:last-child {
+    @apply border-b-0;
+  }
+
+  .tabla td {
+    @apply flex items-baseline justify-between gap-4 px-4 py-1 md:table-cell md:py-3;
+  }
+
+  .tabla td::before {
+    content: attr(data-etiqueta);
+    @apply shrink-0 text-xs font-medium text-texto-secundario md:hidden;
+  }
+
+  /* Pestañas */
+  .pestanas {
+    @apply flex gap-6 overflow-x-auto border-b border-divisor;
+  }
+
+  .pestana {
+    @apply -mb-px flex min-h-11 items-center border-b-2 border-transparent text-sm font-medium whitespace-nowrap text-texto-secundario no-underline;
+  }
+
+  .pestana:hover {
+    @apply text-primario;
+  }
+
+  .pestana[aria-current="page"] {
+    @apply border-primario text-primario;
+  }
+
+  /* Enlaces */
   .enlace {
     @apply text-primario underline underline-offset-2;
   }
@@ -272,15 +493,47 @@
     @apply text-primario-hover;
   }
 
-  .nav-enlace {
-    @apply flex min-h-11 items-center rounded-campo px-3 font-medium text-texto no-underline;
+  /* Navegación pública, sobre azul marino */
+  .nav-publica {
+    @apply flex min-h-11 items-center rounded-boton px-3 text-sm font-medium text-blanco no-underline;
   }
 
-  .nav-enlace:hover {
-    @apply bg-primario-suave text-primario;
+  .nav-publica:hover {
+    @apply underline underline-offset-4;
   }
 
-  .nav-enlace[aria-current="page"] {
-    @apply bg-primario-suave text-primario;
+  /* Barra lateral del portal y del panel */
+  .lateral-enlace {
+    @apply flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-boton px-3 text-sm font-medium text-sobre-primario-secundario no-underline;
+  }
+
+  .lateral-enlace:hover {
+    @apply bg-primario-hover text-blanco;
+  }
+
+  .lateral-enlace[aria-current="page"] {
+    @apply bg-blanco text-primario;
+  }
+
+  /* Menús desplegables nativos (details) */
+  .menu-flotante {
+    @apply absolute right-0 z-20 mt-2 min-w-48 rounded-caja border border-divisor bg-superficie p-1 shadow-sutil;
+  }
+
+  .menu-enlace {
+    @apply flex min-h-11 w-full cursor-pointer items-center gap-2 rounded-boton px-3 text-left text-sm text-texto no-underline;
+  }
+
+  .menu-enlace:hover {
+    @apply bg-fondo;
+  }
+
+  /* Diálogo de confirmación */
+  .dialogo {
+    @apply m-auto w-[calc(100%-2rem)] max-w-md rounded-caja border border-divisor bg-superficie p-6 text-texto shadow-sutil;
+  }
+
+  .dialogo::backdrop {
+    background-color: rgb(15 23 42 / 0.5);
   }
 }
