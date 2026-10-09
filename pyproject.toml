@@ -1,0 +1,41 @@
+[project]
+name = "web-seba"
+version = "0.1.0"
+description = "Plataforma de prevención de riesgos: sitio público y portal privado de documentos"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "django==6.1.2",
+    "psycopg[binary]==3.3.6",
+    "argon2-cffi==25.1.0",
+    "whitenoise==6.12.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest==9.1.1",
+    "pytest-django==4.14.0",
+    "pytest-cov==7.1.0",
+    "ruff==0.16.10",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "DJ", "SIM", "C4"]
+
+[tool.ruff.lint.per-file-ignores]
+"*/migrations/*.py" = ["E501"]
+
+[tool.pytest.ini_options]
+addopts = "--ds=config.settings.test --cov --cov-report=term-missing"
+python_files = ["test_*.py"]
+testpaths = ["config", "core", "cuentas", "empresas"]
+
+[tool.coverage.run]
+source = ["config", "core", "cuentas", "empresas"]
+omit = ["*/migrations/*", "*/tests/*", "config/wsgi.py"]
