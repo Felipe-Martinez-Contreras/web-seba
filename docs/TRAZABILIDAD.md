@@ -9,13 +9,13 @@ Estados: `Pendiente`, `En curso`, `Verificado` (prueba automática en verde) y `
 | Código | Requisito | Etapa | Archivos | Prueba | Estado |
 | --- | --- | --- | --- | --- | --- |
 | PUB-01 | Páginas públicas y páginas 404 y 500 propias | 1 y 6 | `templates/404.html`, `templates/500.html` | `core/tests/test_vistas.py` (`test_pagina_404_propia`, `test_pagina_500_propia_no_muestra_la_traza`) | En curso: 404 y 500 verificadas; páginas públicas en la Etapa 6 |
-| PUB-02 | Inicio con contenido de DatosNegocio | 6 | — | — | Pendiente |
+| PUB-02 | Inicio según la referencia visual: portada, servicios, contacto con formulario y pie | 6 | — | — | Pendiente |
 | PUB-03 | Servicios con cotización preseleccionada | 6 | — | — | Pendiente |
-| PUB-04 | Navegación y pie | 6 | — | — | Pendiente |
+| PUB-04 | Navegación con logo y "Acceso clientes"; menú en móvil; pie con redes si existen | 6 | — | — | Pendiente |
 | PUB-05 | Secciones sin dato no se muestran | 6 | — | — | Pendiente |
 | PUB-06 | Comando `contenido_pendiente` y aviso en el panel | 6 | — | — | Pendiente |
 | PUB-07 | SEO básico, sitemap, robots y `noindex` | 6 | — | — | Pendiente |
-| PUB-08 | Sin fotos de stock | 6 | — | — | Pendiente |
+| PUB-08 | Fotografías de bancos gratuitos con licencia, registradas en `docs/FOTOS.md` | 6 | — | — | Pendiente |
 
 ## Formularios y solicitudes (SOL)
 
@@ -29,15 +29,15 @@ Estados: `Pendiente`, `En curso`, `Verificado` (prueba automática en verde) y `
 | SOL-06 | Redirección a confirmación neutra | 6 | — | — | Pendiente |
 | SOL-07 | Sin correo automático al visitante | 6 | — | — | Pendiente |
 | SOL-08 | Correo al profesional con `Reply-To` | 6 | — | — | Pendiente |
-| SOL-09 | Bandeja de solicitudes en el panel | 6 | — | — | Pendiente |
-| SOL-10 | Detalle, estados, notas y reintento | 6 | — | — | Pendiente |
+| SOL-09 | Bandeja "Solicitudes" con pestañas Consultas y Cotizaciones e insignias | 6 | — | — | Pendiente |
+| SOL-10 | Detalle, estados (Pendiente, En proceso, Resuelta, Descartada), notas y reintento | 6 | — | — | Pendiente |
 | SOL-11 | Comando `reintentar_notificaciones` | 6 | — | — | Pendiente |
 
 ## Autenticación y cuentas (AUT)
 
 | Código | Requisito | Etapa | Archivos | Prueba | Estado |
 | --- | --- | --- | --- | --- | --- |
-| AUT-01 | Acceso con RUT normalizado y validado | 2 | — | — | Pendiente |
+| AUT-01 | Acceso con RUT normalizado y validado; botón para mostrar la contraseña; sin "Recordarme" | 2 | — | — | Pendiente |
 | AUT-02 | Mensaje genérico ante credenciales inválidas | 2 | — | — | Pendiente |
 | AUT-03 | Redirección según rol | 2 | — | — | Pendiente |
 | AUT-04 | Bloqueo temporal por RUT e IP | 2 | — | — | Pendiente |
@@ -54,8 +54,8 @@ Estados: `Pendiente`, `En curso`, `Verificado` (prueba automática en verde) y `
 
 | Código | Requisito | Etapa | Archivos | Prueba | Estado |
 | --- | --- | --- | --- | --- | --- |
-| ADM-01 | Estructura del panel y menú móvil | 3 | — | — | Pendiente |
-| ADM-02 | Inicio del panel con datos reales | 3 | — | — | Pendiente |
+| ADM-01 | Estructura del panel: barra lateral azul marino (Inicio, Clientes, Solicitudes, Auditoría, Configuración) y menú móvil | 3 | — | — | Pendiente |
+| ADM-02 | Inicio del panel con indicadores, solicitudes y clientes recientes, y avisos | 3 | — | — | Pendiente |
 | ADM-03 | Gestión de empresas | 3 | — | — | Pendiente |
 | ADM-04 | Carpetas base al crear una empresa | 3 | — | — | Pendiente |
 | ADM-05 | Ficha de empresa con tres pestañas | 3 | — | — | Pendiente |
@@ -85,13 +85,14 @@ Estados: `Pendiente`, `En curso`, `Verificado` (prueba automática en verde) y `
 
 | Código | Requisito | Etapa | Archivos | Prueba | Estado |
 | --- | --- | --- | --- | --- | --- |
-| CLI-01 | Inicio del portal | 5 | — | — | Pendiente |
+| CLI-01 | Inicio del portal según la referencia visual: saludo, tarjeta de empresa, buscador, carpetas y recientes | 5 | — | — | Pendiente |
 | CLI-02 | Vista de carpeta | 5 | — | — | Pendiente |
 | CLI-03 | Búsqueda por título | 5 | — | — | Pendiente |
 | CLI-04 | Mi cuenta | 5 | — | — | Pendiente |
 | CLI-05 | Solo lectura aplicada en el servidor | 5 | — | — | Pendiente |
 | CLI-06 | Estado vacío con contacto | 5 | — | — | Pendiente |
 | CLI-07 | Cualquier documento en dos clics | 5 | — | — | Pendiente |
+| CLI-08 | Ficha del documento: migas, ícono por tipo, datos y botones Descargar y Ver en pantalla; sin visor incrustado | 5 | — | — | Pendiente |
 
 ## Auditoría (AUD)
 
@@ -145,5 +146,6 @@ Reglas de las secciones 4, 5 y 6 de la especificación que sostienen a los requi
 | Empresa con UUID y RUT único validado | `empresas/models.py`, `empresas/migrations/0001_initial.py` | `empresas/tests/test_modelos.py` | Verificado |
 | Configuración por entorno; producción no arranca con configuración faltante o de ejemplo | `config/settings/`, `config/env.py` | `config/tests/test_configuracion.py` | Verificado |
 | `es-cl`, `America/Santiago`, `USE_TZ` y fechas `dd-mm-aaaa` | `config/settings/base.py`, `config/formats/es_CL/formats.py` | `test_idioma_y_zona_horaria`, `test_fechas_con_formato_chileno_y_textos_en_espanol` | Verificado |
-| Componentes y página de referencia solo en desarrollo | `templates/componentes/`, `core/referencia.py`, `core/urls_dev.py` | `test_la_referencia_*`, `test_el_campo_con_error_queda_asociado_a_su_mensaje` | Verificado (HTML; aspecto visual sin revisar) |
+| Componentes de la sección 9 y página de referencia solo en desarrollo | `templates/componentes/`, `templates/base_aplicacion.html`, `core/referencia.py`, `core/urls_dev.py`, `static/js/app.js` | `core/tests/test_vistas.py` (`test_la_referencia_*`, `test_el_campo_*`, `test_el_dialogo_*`, `test_cada_tipo_de_archivo_*`, `test_los_id_*`) | Verificado. Aspecto revisado con capturas a 360, 768 y 1280 px el 09-10-2026. Pendientes: zona de subida (Etapa 4) |
+| Tokens de diseño de la sección 9, Inter autoalojada y contraste AA | `static_src/css/app.css`, `static/fonts/` | `core/tests/test_diseno.py` | Verificado |
 | `docker compose up` desde cero con migraciones en base vacía | `Dockerfile`, `compose.yaml`, `docker/arrancar-dev.sh` | Trabajo `arranque` de la CI y clon limpio local | Verificado manual |

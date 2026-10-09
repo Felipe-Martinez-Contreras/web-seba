@@ -41,6 +41,22 @@ Decisiones técnicas y dependencias, con su motivo. Cada dependencia indica para
 | DEC-33 | 09-10-2026 | `prod.py` exige `SECRET_KEY` (propia y de 50 caracteres o más), `ALLOWED_HOSTS` (sin `*`) y `DATABASE_URL` | Producción no arranca con configuración faltante o de ejemplo |
 | DEC-34 | 09-10-2026 | Formatos `es_CL` propios en `config/formats/` | Django no trae formatos para es-CL; se fijan fechas `dd-mm-aaaa` |
 | DEC-35 | 09-10-2026 | En desarrollo corren dos contenedores con límite de memoria (`web` 512 MB, `db` 256 MB); `tailwind --watch` es un perfil opcional | El equipo de desarrollo tiene poca RAM |
+| DEC-36 | 09-10-2026 | Ajuste visual previo a la Etapa 2: tokens azul marino de la sección 9 y estilo del mockup `docs/diseno/mockup-referencia.jpg` | Cambio pedido por el responsable. Del mockup se toma el estilo, no los textos ni los datos (`docs/DISENO.md`) |
+| DEC-37 | 09-10-2026 | Inter reemplaza a IBM Plex Sans, desde `@fontsource/inter` 5.3.0: subconjunto *latin*, pesos 400, 500, 600 y 700 | Lo pide la sección 9. El subconjunto cubre el español y cada archivo pesa unos 24 KB, frente a más de 60 KB de los archivos completos (RNF-06) |
+| DEC-38 | 09-10-2026 | Fondo suave de advertencia `#FDF3E3` | La sección 9 da el color de advertencia pero no su fondo suave; se eligió uno con contraste 4,5:1 o más, comprobado por prueba |
+| DEC-39 | 09-10-2026 | Una prueba automática verifica el contraste AA de los pares de tokens (`core/tests/test_diseno.py`) | Si un token deja de cumplir, la prueba falla en vez de pasar inadvertido. Con los tokens actuales todos cumplen; el más justo es Resuelta (`#15803D` sobre `#E8F6EE`) |
+| DEC-40 | 09-10-2026 | En la portada, el botón principal es blanco con texto azul marino (`inverso`) y el secundario lleva borde blanco (`contorno-claro`) | Sobre fondo o velo azul marino, un botón azul marino lleno no se distingue |
+| DEC-41 | 09-10-2026 | La portada usa fondo azul marino liso; acepta una imagen opcional con velo | Las fotografías se eligen en la Etapa 6 y se registran en `docs/FOTOS.md` (PUB-08) |
+| DEC-42 | 09-10-2026 | El encabezado público es una franja azul marino continua con la portada, no un bloque superpuesto con posición absoluta | Mismo resultado visual sin fotografía; se revisa en la Etapa 6 al incorporar la foto |
+| DEC-43 | 09-10-2026 | Portal y panel comparten `base_aplicacion.html`, `barra_lateral.html` y `barra_superior.html` | El mockup usa la misma estructura en ambos; el menú y el usuario llegan por el contexto de cada vista |
+| DEC-44 | 09-10-2026 | La tabla es un patrón de marcado con la clase `tabla` y `data-etiqueta` en cada celda, no una plantilla parcial | Las columnas cambian en cada pantalla; el paso a lista en móvil se resuelve solo con CSS |
+| DEC-45 | 09-10-2026 | Las pestañas son enlaces con `aria-current`, sin JavaScript | Cada pestaña es una URL propia: funciona con historial, marcadores y sin scripts |
+| DEC-46 | 09-10-2026 | Insignias con tonos genéricos: Pendiente = `error`, En proceso = `info`, Resuelta = `exito`, Descartada o inactivo = `neutro` | Los mismos cinco tonos sirven para solicitudes, usuarios y empresas |
+| DEC-47 | 09-10-2026 | Los componentes hoja (botón, ícono, insignia) se incluyen con `only` | No heredan variables del contexto de la pantalla, como `nombre` o `tipo` |
+| DEC-48 | 09-10-2026 | Marca provisional: ícono `shield-check` de Lucide y nombre comercial en texto | `DISENO.md`, diferencia 10. Sin nombre comercial no se muestra nada; el logo sigue [COMPLETAR] |
+| DEC-49 | 09-10-2026 | Se postergan la zona de subida con progreso (Etapa 4) y la pantalla de acceso (Etapa 2) | Dependen de pantallas y endpoints futuros. El campo de contraseña con botón para mostrarla ya está listo |
+| DEC-50 | 09-10-2026 | Cambios de modelo que pide la especificación actualizada, para la Etapa 6: ícono en `Servicio`; titular, bajada y redes sociales en `DatosNegocio`; estados Pendiente, En proceso, Resuelta y Descartada en `Solicitud` | Esos modelos aún no existen; se crean ya con la forma nueva |
+| DEC-51 | 09-10-2026 | "Clientes" es el nombre visible de las empresas en el panel; el modelo sigue siendo `Empresa` | ADM-01 actualizado |
 
 ## Dependencias de ejecución
 
@@ -78,30 +94,55 @@ Descargados el 09-10-2026 desde el registro npm y servidos desde la propia aplic
 | Paquete | Versión | Licencia | Origen | sha256 del paquete |
 | --- | --- | --- | --- | --- |
 | htmx.org | 2.0.10 | 0BSD | `https://registry.npmjs.org/htmx.org/-/htmx.org-2.0.10.tgz` | `577ad40c1c94c9de47edb89e0aec78a8353d36024c50017eb53e02992a55e889` |
-| @ibm/plex-sans | 1.1.0 | OFL-1.1 | `https://registry.npmjs.org/@ibm/plex-sans/-/plex-sans-1.1.0.tgz` | `c3818979c2a2c82927ea3e7c485e389a18de0b7462887dd4f7acc9a525568962` |
+| @fontsource/inter | 5.3.0 (Inter v20 de Google Fonts, modificada el 10-09-2025) | OFL-1.1 | `https://registry.npmjs.org/@fontsource/inter/-/inter-5.3.0.tgz` | `02034af8d41dcc67ac8eab88f642e129bb8a2e8922abf30229c32725f54d8fd6` |
 | lucide-static | 1.54.0 | ISC | `https://registry.npmjs.org/lucide-static/-/lucide-static-1.54.0.tgz` | `e902c38c3b0b132c90c26cd24e7021068e278a53c4c72fc3e49ef53dfe9d35fa` |
 
-| Archivo en el repositorio | Ruta dentro del paquete | sha256 del archivo |
-| --- | --- | --- |
-| `static/vendor/htmx.min.js` | `package/dist/htmx.min.js` | `71ea67185bfa8c98c39d31717c6fce5d852370fcdfd129db4543774d3145c0de` |
-| `static/vendor/LICENCIA-htmx.txt` | `package/LICENSE` | `d3d2456f76414f2456104660ebd65aff1c04cd7966b942bdabd63f3cdb316a38` |
-| `static/fonts/IBMPlexSans-Regular.woff2` | `package/fonts/complete/woff2/IBMPlexSans-Regular.woff2` | `ba711a3085ff9f27440b6b9c4550cfc47c97bf36591d5da958b975bb3add8c1a` |
-| `static/fonts/IBMPlexSans-Medium.woff2` | `package/fonts/complete/woff2/IBMPlexSans-Medium.woff2` | `5660f8a658f8bb50dbc005232f885eadffd2bc1c235c4f6fbb63469d1f9cde6d` |
-| `static/fonts/IBMPlexSans-SemiBold.woff2` | `package/fonts/complete/woff2/IBMPlexSans-SemiBold.woff2` | `f78048030eab62e860efa39a0df79e2e5581bf122eb95b9bc42c0b8a4988d205` |
-| `static/fonts/LICENCIA-IBM-Plex.txt` | `package/LICENSE.txt` | `37784b44044a4ffd9256702b7c0982c37e5c8887ba90c6dca0479aea93dc898d` |
-| `templates/iconos/chevron-left.svg` | `package/icons/chevron-left.svg` | `a57c5c9b0516a4114236cb0ece0e53ed84b144fce50e1ff8b61e209869b17ad5` |
-| `templates/iconos/chevron-right.svg` | `package/icons/chevron-right.svg` | `fece1122c8afb1bf5420fbbebab8c06823d9104041047cc27b0a2dc0c5210f6b` |
-| `templates/iconos/circle-alert.svg` | `package/icons/circle-alert.svg` | `1c249776908aed049350da3a55f89e59febde9583aee2435389bdcddcc728df0` |
-| `templates/iconos/circle-check.svg` | `package/icons/circle-check.svg` | `e4e78fa7f2f56508aa4432e911578ef5f726527ce1d879c1f8b587db0a42e0e3` |
-| `templates/iconos/inbox.svg` | `package/icons/inbox.svg` | `215b4db66da94b3fff4330f21fdc8d0935212d069885b98b0e9fda64ad159851` |
-| `templates/iconos/info.svg` | `package/icons/info.svg` | `cc1dd1dda0ecc62cd2ab3f92e75bf3d360e23c819273eb1b9ace00d3ceffcdd5` |
-| `templates/iconos/loader-circle.svg` | `package/icons/loader-circle.svg` | `334abce32e8da0ff8f385522a726ba44e5681561e35d0c9a36cbdc0a5b88e67e` |
-| `templates/iconos/menu.svg` | `package/icons/menu.svg` | `2e13846bbadb5cf0c8eac246b0d7f53133688c688f3115b9735bade90aca0519` |
-| `templates/iconos/triangle-alert.svg` | `package/icons/triangle-alert.svg` | `b94124235a81cdf4f8e2bb813e955049e0d501cd30793e495b2d62c584a7a8af` |
-| `templates/iconos/x.svg` | `package/icons/x.svg` | `4dafa4724c98da256b066efe3ea32540d929ebf20dd727ecf466c2f206d7d13d` |
-| `templates/iconos/LICENCIA-lucide.txt` | `package/LICENSE` | `b495047bd93a9b06913511076f504daba17d5bbeb3e0650f3bb53a4220329c57` |
+El paquete de Inter coincide además con el `shasum` SHA-1 que publica el registro npm (`866278dc2357659f8be1755c8b67f29d3697b440`).
 
-Los archivos se copiaron sin modificar. Única excepción: `LICENCIA-IBM-Plex.txt` venía con fin de línea CRLF y se convirtió a LF, que es como el repositorio guarda el texto (`.gitattributes`); su hash es el del archivo ya convertido.
+| Archivo en el repositorio | Paquete y ruta de origen | sha256 del archivo |
+| --- | --- | --- |
+| `static/vendor/htmx.min.js` | htmx.org: `package/dist/htmx.min.js` | `71ea67185bfa8c98c39d31717c6fce5d852370fcdfd129db4543774d3145c0de` |
+| `static/vendor/LICENCIA-htmx.txt` | htmx.org: `package/LICENSE` | `d3d2456f76414f2456104660ebd65aff1c04cd7966b942bdabd63f3cdb316a38` |
+| `static/fonts/inter-latin-400-normal.woff2` | @fontsource/inter: `package/files/inter-latin-400-normal.woff2` | `8909904ab6c872eb994093482a88a28eca2cd95912d7b6fecd72103b0dc07edc` |
+| `static/fonts/inter-latin-500-normal.woff2` | @fontsource/inter: `package/files/inter-latin-500-normal.woff2` | `f3779f1efccc4bdcdf9c0a02ab95bf6bd092ed09c48c08cedc725889edd1d19f` |
+| `static/fonts/inter-latin-600-normal.woff2` | @fontsource/inter: `package/files/inter-latin-600-normal.woff2` | `f9a06e79cd3a2a20951c0f0e28f66dd0e6d3fda73911d640a2125c8fcb78f21a` |
+| `static/fonts/inter-latin-700-normal.woff2` | @fontsource/inter: `package/files/inter-latin-700-normal.woff2` | `6f56409fd3d64bb85f7d070bce20749db2d66b6d63cec586cc22d1c761be2491` |
+| `static/fonts/LICENCIA-Inter.txt` | @fontsource/inter: `package/LICENSE` | `3b0a5fca3d17942cde889069889dedbbbd075e9b599968c82a95f4d944e9b345` |
+| `templates/iconos/building-2.svg` | lucide-static: `package/icons/building-2.svg` | `317f2bce8b0ce9807403caa59bb44a7e4dc8c69e86d847ff6af32f5d5b760d1a` |
+| `templates/iconos/chevron-down.svg` | lucide-static: `package/icons/chevron-down.svg` | `354fcbf413773d63f8171a941abc9f76fe901a30da3b362d5bbd6df1faffc68d` |
+| `templates/iconos/chevron-left.svg` | lucide-static: `package/icons/chevron-left.svg` | `a57c5c9b0516a4114236cb0ece0e53ed84b144fce50e1ff8b61e209869b17ad5` |
+| `templates/iconos/chevron-right.svg` | lucide-static: `package/icons/chevron-right.svg` | `fece1122c8afb1bf5420fbbebab8c06823d9104041047cc27b0a2dc0c5210f6b` |
+| `templates/iconos/circle-alert.svg` | lucide-static: `package/icons/circle-alert.svg` | `1c249776908aed049350da3a55f89e59febde9583aee2435389bdcddcc728df0` |
+| `templates/iconos/circle-check.svg` | lucide-static: `package/icons/circle-check.svg` | `e4e78fa7f2f56508aa4432e911578ef5f726527ce1d879c1f8b587db0a42e0e3` |
+| `templates/iconos/circle-user.svg` | lucide-static: `package/icons/circle-user.svg` | `659ba404275ff2f96b9ef642fc75aff7477fd43c00b2827d6fc7f7afc8d25687` |
+| `templates/iconos/clipboard-list.svg` | lucide-static: `package/icons/clipboard-list.svg` | `4867272597be1fed356f5dbacbd72c35bca110c3d6112c5e1bc13a3bc6524c6b` |
+| `templates/iconos/download.svg` | lucide-static: `package/icons/download.svg` | `32feff96642570a08940d3ff01486b05f644c689509fe747d1d02f9737c5dd3d` |
+| `templates/iconos/eye-off.svg` | lucide-static: `package/icons/eye-off.svg` | `99f0a019e06f32a4288c4a59f4f60619656265d11807d9939f2386d06764c657` |
+| `templates/iconos/eye.svg` | lucide-static: `package/icons/eye.svg` | `290d21625351cf13ef51fd443421e280da6896e0c790d4fb6833fdc251f4daa2` |
+| `templates/iconos/file-image.svg` | lucide-static: `package/icons/file-image.svg` | `21f5ece743b8aaedc895751b5d715490c4c25934734dd8cba4adfcc3cc8e0cc2` |
+| `templates/iconos/file-spreadsheet.svg` | lucide-static: `package/icons/file-spreadsheet.svg` | `226f1670e52cf6b58da18e38c55ecf8ac64343c69389410f1ee4e07ce18d2321` |
+| `templates/iconos/file-text.svg` | lucide-static: `package/icons/file-text.svg` | `f6d8bfa5ebfaabc6ec2ebe830526007be2823d46a06e6a9421a13c1e0d5f9165` |
+| `templates/iconos/file-type.svg` | lucide-static: `package/icons/file-type.svg` | `0081d398fa503b667e49faa38310e051ac0281a33fbef6fd9f5c35ef11f853cf` |
+| `templates/iconos/folder.svg` | lucide-static: `package/icons/folder.svg` | `c525ffd338b3cf15e00470a9ea809579a1f6b92a09cb0a4be1bde00caec647ff` |
+| `templates/iconos/house.svg` | lucide-static: `package/icons/house.svg` | `5c2625652f6ab72ad5047da7f0eb39d36725594caefbd655f5dbc1611d886527` |
+| `templates/iconos/inbox.svg` | lucide-static: `package/icons/inbox.svg` | `215b4db66da94b3fff4330f21fdc8d0935212d069885b98b0e9fda64ad159851` |
+| `templates/iconos/info.svg` | lucide-static: `package/icons/info.svg` | `cc1dd1dda0ecc62cd2ab3f92e75bf3d360e23c819273eb1b9ace00d3ceffcdd5` |
+| `templates/iconos/loader-circle.svg` | lucide-static: `package/icons/loader-circle.svg` | `334abce32e8da0ff8f385522a726ba44e5681561e35d0c9a36cbdc0a5b88e67e` |
+| `templates/iconos/lock.svg` | lucide-static: `package/icons/lock.svg` | `9cc54a58838cd07186c0d80c3f1033127551d62d31b4fc87d5d66dc93c4ebdc8` |
+| `templates/iconos/log-out.svg` | lucide-static: `package/icons/log-out.svg` | `ef7277ff89e23e926166100f17b23802c00ec68c651d54aee2ceb7de8ee42891` |
+| `templates/iconos/menu.svg` | lucide-static: `package/icons/menu.svg` | `2e13846bbadb5cf0c8eac246b0d7f53133688c688f3115b9735bade90aca0519` |
+| `templates/iconos/message-square.svg` | lucide-static: `package/icons/message-square.svg` | `194a1003d4fddc7b830fac323a5f325e7a818494cc7fcbe8772aeb7b73933fff` |
+| `templates/iconos/presentation.svg` | lucide-static: `package/icons/presentation.svg` | `7b09cf736339963e0e9374733a9239a89de49061faa5b6d955c2415fecdebc0d` |
+| `templates/iconos/search.svg` | lucide-static: `package/icons/search.svg` | `9f9aa68d889ad150b25f72be17c3058c924d0ee6d8ca2e081866f7ddef99a054` |
+| `templates/iconos/settings.svg` | lucide-static: `package/icons/settings.svg` | `cf4b3002bff5846e113f9a169a3b8892f42aa7798808367a1d3eeae710726a6f` |
+| `templates/iconos/shield-check.svg` | lucide-static: `package/icons/shield-check.svg` | `f70a1b1b967cd6b587592a2df1254aa7eebc8c2477aa405de7c988ca5f92d299` |
+| `templates/iconos/triangle-alert.svg` | lucide-static: `package/icons/triangle-alert.svg` | `b94124235a81cdf4f8e2bb813e955049e0d501cd30793e495b2d62c584a7a8af` |
+| `templates/iconos/users.svg` | lucide-static: `package/icons/users.svg` | `7ecdabd5f6d168aa28f45a22569743c4bd7e036f0672cb7882810f8373859477` |
+| `templates/iconos/LICENCIA-lucide.txt` | lucide-static: `package/LICENSE` | `b495047bd93a9b06913511076f504daba17d5bbeb3e0650f3bb53a4220329c57` |
+
+Los archivos se copiaron sin modificar; todos tienen fin de línea LF, que es como el repositorio guarda el texto (`.gitattributes`).
+
+Retirado el 09-10-2026: IBM Plex Sans (`@ibm/plex-sans` 1.1.0), reemplazada por Inter (DEC-37).
 
 ## Dependencias descartadas
 

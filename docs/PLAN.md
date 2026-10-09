@@ -7,7 +7,8 @@ Plan de la Etapa 0 (sección 11 de `ESPECIFICACION.md`). Se actualiza al avanzar
 | Etapa | Contenido | Estado |
 | --- | --- | --- |
 | 0 | Reconocimiento y plan | Aprobada por el responsable el 09-10-2026 |
-| 1 | Base del proyecto | Terminada el 09-10-2026; pendiente de aprobación del responsable |
+| 1 | Base del proyecto | Terminada el 09-10-2026 |
+| — | Ajuste visual (tokens azul marino, Inter y componentes del mockup) | Terminado el 09-10-2026; pendiente de aprobación del responsable |
 | 2 | Cuentas y acceso | Pendiente |
 | 3 | Empresas, usuarios y carpetas | Pendiente |
 | 4 | Documentos | Pendiente |
@@ -57,9 +58,9 @@ web-seba/
 ├─ empresas/    # Empresa, Carpeta
 ├─ documentos/  # Documento, VersionDocumento, almacenamiento, descargas
 ├─ portal/  panel/  sitio/  solicitudes/  auditoria/
-├─ templates/   # base.html, base_{publica,portal,panel}.html, componentes/, iconos/, 404.html, 500.html
+├─ templates/   # base.html, base_publica.html, base_aplicacion.html (portal y panel), componentes/, iconos/, 404.html, 500.html
 ├─ static_src/css/app.css     # entrada de Tailwind con los tokens de la sección 9
-├─ static/{vendor,fonts,js}/   # HTMX, IBM Plex Sans woff2 y JavaScript propio (sin CDN)
+├─ static/{vendor,fonts,js}/   # HTMX, Inter woff2 y JavaScript propio (sin CDN)
 ├─ docs/
 └─ .github/workflows/ci.yml
 ```
@@ -78,13 +79,13 @@ El detalle y el motivo de cada una están en `DECISIONES.md`.
 - **Ejecución, instaladas:** Django 6.1.2, psycopg 3.3.6, argon2-cffi 25.1.0 y WhiteNoise 6.12.0.
 - **Ejecución, por agregar:** django-otp y segno (Etapa 2), django-storages + boto3 (Etapa 4) y Gunicorn (Etapa 8).
 - **Desarrollo y CI:** pytest, pytest-django, pytest-cov, ruff, pip-audit.
-- **Estáticos propios:** Tailwind CLI standalone, HTMX, IBM Plex Sans, Lucide.
+- **Estáticos propios:** Tailwind CLI standalone, HTMX, Inter, Lucide.
 
 ## 4. Supuestos
 
 1. Valen los supuestos por defecto de la sección 0 (1–3 administradores, volumen de diseño, modo "pausa").
 2. Todo dato [COMPLETAR] se trata como desconocido: la interfaz oculta la sección y `contenido_pendiente` lo lista.
-3. Marca: se usan los tokens de la sección 9 hasta recibir logo y colores.
+3. Marca: tokens azul marino de la sección 9 y estilo del mockup (`docs/DISENO.md`). El logo sigue pendiente: mientras tanto, ícono neutro y nombre en texto.
 4. Los administradores también entran con su RUT personal por el mismo formulario.
 5. El RUT se guarda normalizado (sin puntos ni guion, K mayúscula) y se muestra como `12.345.678-5`.
 6. Email obligatorio para administradores y opcional para clientes (AUT-07 contempla cuentas sin email; se activan copiando el enlace).
@@ -136,7 +137,10 @@ Aprobadas por el responsable el 09-10-2026.
 - Migración a Django 6.2 LTS cuando se publique.
 - Reevaluar HTMX 4.x antes de la Etapa 4 (DEC-21).
 - Etapa 6: agregar a la página 404 el enlace al inicio, cuando exista (DEC-25).
-- Revisión visual de los componentes en 360, 768 y 1280 px: en la Etapa 1 se comprobó su HTML con pruebas, no su aspecto.
+- Etapa 2: pantalla de acceso según las pantallas 2 y 7 del mockup (el campo de contraseña ya existe).
+- Etapa 4: zona de subida con progreso.
+- Etapa 6: fotografías con licencia y `docs/FOTOS.md` (PUB-08); modelos `Servicio`, `DatosNegocio` y `Solicitud` con la forma de la especificación actualizada (DEC-50).
+- Etapa 7: revisión de accesibilidad con lector de pantalla y teclado sobre pantallas reales.
 
 ## 9. Etapa 1: qué quedó construido
 
@@ -148,3 +152,14 @@ Aprobadas por el responsable el 09-10-2026.
 - `/salud/`, logs en JSON, CSP nativa, `ruff`, `pytest` con cobertura y CI en GitHub Actions (lint, pruebas, `pip-audit` y arranque con Docker Compose).
 
 No hay todavía ninguna pantalla del negocio: acceso, panel, portal y sitio público llegan en las etapas 2 a 6.
+
+## 10. Ajuste visual previo a la Etapa 2
+
+Pedido por el responsable tras actualizar la sección 9 de la especificación y agregar `docs/DISENO.md` y el mockup.
+
+- **Tokens:** azul marino `#1B2D4F`, fondo `#F5F7FA`, bordes finos, escala 13/14/16/18/20/24/30/40, radios de 8 px (6 px en botones), ancho público de 1.200 px y barra lateral de 240 px.
+- **Tipografía:** Inter autoalojada (400, 500, 600 y 700); se retiró IBM Plex Sans.
+- **Componentes adaptados:** botón (con variantes para fondo azul marino), campo, alerta, insignia, migas, paginación, estado vacío, encabezado y pie públicos.
+- **Componentes nuevos:** campo de contraseña con botón para mostrarla, portada, tarjetas de servicio, de indicador y de empresa, filas de carpeta y de documento con ícono por tipo, tabla que en móvil pasa a lista, pestañas, barra lateral y barra superior del portal y del panel, diálogo de confirmación y marca provisional.
+- **Sin cambios de modelo ni pantallas nuevas.** Todo se ve solo en `/_referencia/componentes/`, en desarrollo.
+- **Revisión visual:** capturas con Edge emulando 360, 768 y 1280 px, comparadas con el mockup. Se corrigió un desborde horizontal a 360 px y el ajuste de buscador, paginación y títulos largos en pantallas angostas.
