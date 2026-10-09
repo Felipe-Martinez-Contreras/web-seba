@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     "core",
     "empresas",
     "cuentas",
+    "auditoria",
 ]
 
 MIDDLEWARE = [

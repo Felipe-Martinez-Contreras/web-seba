@@ -215,3 +215,11 @@ def test_la_base_tambien_impide_borrar_una_empresa_con_usuarios(cliente_a, empre
 def test_cada_empresa_ve_solo_sus_usuarios(cliente_a, cliente_b, empresa_a, empresa_b):
     assert list(empresa_a.usuarios.all()) == [cliente_a]
     assert list(empresa_b.usuarios.all()) == [cliente_b]
+
+
+def test_cada_usuario_tiene_un_uuid_unico_para_las_url(cliente_a, cliente_b):
+    assert cliente_a.uuid != cliente_b.uuid
+    assert Usuario._meta.get_field("uuid").unique is True
+    assert Usuario._meta.get_field("uuid").editable is False
+    # La clave primaria sigue siendo el ID entero, de uso interno.
+    assert Usuario._meta.pk.name == "id"

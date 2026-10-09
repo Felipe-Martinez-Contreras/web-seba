@@ -8,6 +8,8 @@ dependencies = [
     "psycopg[binary]==3.3.6",
     "argon2-cffi==25.1.0",
     "whitenoise==6.12.0",
+    "django-otp==1.7.4",
+    "segno==1.6.6",
 ]
 
 [dependency-groups]
@@ -34,8 +36,8 @@ select = ["E", "F", "W", "I", "B", "UP", "DJ", "SIM", "C4"]
 [tool.pytest.ini_options]
 addopts = "--ds=config.settings.test --cov --cov-report=term-missing"
 python_files = ["test_*.py"]
-testpaths = ["config", "core", "cuentas", "empresas"]
+testpaths = ["config", "core", "cuentas", "empresas", "auditoria"]
 
 [tool.coverage.run]
-source = ["config", "core", "cuentas", "empresas"]
+source = ["config", "core", "cuentas", "empresas", "auditoria"]
 omit = ["*/migrations/*", "*/tests/*", "config/wsgi.py"]

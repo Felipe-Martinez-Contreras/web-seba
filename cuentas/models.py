@@ -1,3 +1,5 @@
+import uuid
+
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.models import PermissionsMixin
 from django.core.exceptions import ValidationError
@@ -22,6 +24,10 @@ class Usuario(AbstractBaseUser, PermissionsMixin, ModeloConFechas):
         ADMINISTRADOR = "administrador", "Administrador"
         CLIENTE = "cliente", "Cliente"
 
+    # Identificador para las URL y la auditoría: el ID entero nunca sale de la aplicación.
+    uuid = models.UUIDField(
+        "identificador público", default=uuid.uuid4, unique=True, editable=False
+    )
     rut = CampoRut("RUT de acceso", unique=True)
     nombre = models.CharField("nombre", max_length=150)
     email = models.EmailField("email", blank=True)
