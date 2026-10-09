@@ -1,0 +1,11 @@
+{% extends "base_portal.html" %}
+{% block titulo %}Inicio{% endblock %}
+{% block contenido %}
+<h1 class="text-2xl">Hola, {{ empresa.nombre_fantasia|default:empresa.razon_social }}</h1>
+<div class="mt-6">
+  {% include "componentes/tarjeta_empresa.html" with razon_social=empresa.razon_social rut_empresa=empresa.rut only %}
+</div>
+<div class="mt-6">
+  {% include "componentes/estado_vacio.html" with titulo="Aún no hay documentos disponibles" texto="Cuando se publiquen documentos para su empresa, aparecerán aquí." only %}
+</div>
+{% endblock %}

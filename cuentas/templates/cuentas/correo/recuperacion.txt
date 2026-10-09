@@ -1,0 +1,11 @@
+{% autoescape off %}Hola, {{ nombre }}:
+
+Recibimos una solicitud para restablecer la contraseña de su cuenta.
+Para definir una contraseña nueva, abra este enlace:
+
+{{ url }}
+
+El enlace vence en {{ minutos }} minutos y se puede usar una sola vez.
+
+Si usted no hizo esta solicitud, no necesita hacer nada: su contraseña no cambia.
+{% endautoescape %}

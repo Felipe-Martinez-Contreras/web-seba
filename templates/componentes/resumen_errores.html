@@ -1,0 +1,13 @@
+{% comment %}
+Resumen de errores de un formulario, arriba y anunciado a los lectores de pantalla.
+Parámetro: formulario. Los errores de cada campo se muestran además junto al campo.
+{% endcomment %}
+{% if formulario.errors %}
+<div class="mb-6 flex flex-col gap-3" aria-live="assertive">
+  {% for error in formulario.non_field_errors %}
+  {% include "componentes/alerta.html" with tipo="error" mensaje=error only %}
+  {% empty %}
+  {% include "componentes/alerta.html" with tipo="error" mensaje="Revise los campos marcados e intente nuevamente." only %}
+  {% endfor %}
+</div>
+{% endif %}

@@ -1,0 +1,7 @@
+{% comment %}
+Botón discreto para cerrar la sesión desde las pantallas de acceso. Siempre por POST (AUT-09).
+{% endcomment %}
+<form class="mt-6 text-center" method="post" action="{% url 'cuentas:salir' %}">
+  {% csrf_token %}
+  {% include "componentes/boton.html" with texto="Cerrar sesión" variante="fantasma" icono="log-out" only %}
+</form>

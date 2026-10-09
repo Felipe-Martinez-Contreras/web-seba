@@ -528,6 +528,11 @@
     @apply bg-fondo;
   }
 
+  /* Código QR del enrolamiento 2FA (SVG generado en el servidor) */
+  .qr {
+    @apply h-auto max-w-full;
+  }
+
   /* Diálogo de confirmación */
   .dialogo {
     @apply m-auto w-[calc(100%-2rem)] max-w-md rounded-caja border border-divisor bg-superficie p-6 text-texto shadow-sutil;

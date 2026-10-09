@@ -2,6 +2,7 @@ import logging
 
 from django.db import DatabaseError, connection
 from django.http import JsonResponse
+from django.shortcuts import render
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET
 
@@ -19,3 +20,8 @@ def salud(request):
         logger.exception("La comprobación de salud no pudo consultar la base de datos")
         return JsonResponse({"estado": "error"}, status=503)
     return JsonResponse({"estado": "ok"})
+
+
+def csrf_fallido(request, reason=""):
+    """Respuesta 403 propia cuando falta o no coincide el token CSRF (SEG-03)."""
+    return render(request, "403_csrf.html", status=403)

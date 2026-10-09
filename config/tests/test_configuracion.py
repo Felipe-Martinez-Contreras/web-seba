@@ -16,10 +16,11 @@ ENTORNO_VALIDO = {
     "ALLOWED_HOSTS": "ejemplo.cl",
     "DATABASE_URL": "postgres://usuario:clave@db.ejemplo.cl:5432/base",
     "PROXY_CONFIANZA_REDES": "10.0.0.0/8",
+    "SITIO_URL": "https://ejemplo.cl",
 }
 
 
-def _importar_prod(entorno):
+def _importar_prod(entorno, codigo="import config.settings.prod"):
     """Importa config.settings.prod en un proceso nuevo, solo con el entorno indicado."""
     base = {
         nombre: os.environ[nombre]
@@ -27,7 +28,7 @@ def _importar_prod(entorno):
         if nombre in os.environ
     }
     return subprocess.run(
-        [sys.executable, "-c", "import config.settings.prod"],
+        [sys.executable, "-c", codigo],
         env={**base, **entorno},
         cwd=settings.BASE_DIR,
         capture_output=True,
@@ -63,6 +64,14 @@ def test_prod_exige_declarar_los_proxies_de_confianza_aunque_sea_vacio():
     assert resultado.returncode != 0
     assert "PROXY_CONFIANZA_REDES" in resultado.stderr
     assert _importar_prod({**ENTORNO_VALIDO, "PROXY_CONFIANZA_REDES": ""}).returncode == 0
+
+
+def test_prod_exige_la_url_del_sitio_con_https():
+    sin_variable = {k: v for k, v in ENTORNO_VALIDO.items() if k != "SITIO_URL"}
+    for entorno in (sin_variable, {**ENTORNO_VALIDO, "SITIO_URL": "http://ejemplo.cl"}):
+        resultado = _importar_prod(entorno)
+        assert resultado.returncode != 0
+        assert "SITIO_URL" in resultado.stderr
 
 
 def test_prod_rechaza_una_red_de_proxy_invalida():

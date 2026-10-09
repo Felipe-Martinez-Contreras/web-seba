@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block titulo %}No pudimos procesar el formulario{% endblock %}
+{% block meta %}<meta name="robots" content="noindex">{% endblock %}
+{% block cuerpo %}
+<main id="contenido" class="contenedor py-16" tabindex="-1">
+  <div class="max-w-lectura">
+    <p class="text-sm font-medium text-texto-secundario">Error 403</p>
+    <h1 class="mt-2 text-3xl">No pudimos procesar el formulario</h1>
+    <p class="mt-4">Por seguridad, el formulario dejó de ser válido. Vuelva a la página anterior, recárguela e intente nuevamente.</p>
+  </div>
+</main>
+{% endblock %}

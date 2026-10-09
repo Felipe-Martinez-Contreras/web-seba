@@ -1,0 +1,33 @@
+{% extends plantilla_base %}
+{% load formato %}
+{% block titulo %}Mi cuenta{% endblock %}
+{% block contenido %}
+<h1 class="text-2xl">Mi cuenta</h1>
+
+<section class="tarjeta mt-6 max-w-xl p-5" aria-labelledby="datos-titulo">
+  <h2 class="text-lg" id="datos-titulo">Sus datos</h2>
+  <dl class="mt-4 flex flex-col gap-3 text-sm">
+    <div><dt class="text-texto-secundario">Nombre</dt><dd class="font-medium break-words">{{ user.nombre }}</dd></div>
+    <div><dt class="text-texto-secundario">RUT</dt><dd class="font-medium tabular-nums">{{ user.rut|rut }}</dd></div>
+    <div><dt class="text-texto-secundario">Correo</dt><dd class="font-medium break-all">{% if user.email %}{{ user.email }}{% else %}Sin correo registrado{% endif %}</dd></div>
+  </dl>
+  <p class="mt-4 text-xs text-texto-secundario">Estos datos solo los puede modificar un administrador.</p>
+</section>
+
+<section class="tarjeta mt-6 max-w-xl p-5" aria-labelledby="clave-titulo">
+  <h2 class="text-lg" id="clave-titulo">Cambiar contraseña</h2>
+  <p class="mt-1 text-sm text-texto-secundario">Al cambiarla se cierran sus demás sesiones abiertas.</p>
+  <div class="mt-4">
+    {% include "componentes/resumen_errores.html" with formulario=form %}
+    <form class="flex flex-col gap-5" method="post">
+      {% csrf_token %}
+      {% include "componentes/campo.html" with campo=form.old_password contrasena=True %}
+      {% include "componentes/campo.html" with campo=form.new_password1 contrasena=True %}
+      {% include "componentes/campo.html" with campo=form.new_password2 contrasena=True %}
+      <div>{% include "componentes/boton.html" with texto="Cambiar contraseña" only %}</div>
+    </form>
+  </div>
+</section>
+
+<p class="mt-6 text-xs text-texto-secundario">Por seguridad, la sesión se cierra tras {{ minutos_de_sesion }} minutos sin uso.</p>
+{% endblock %}

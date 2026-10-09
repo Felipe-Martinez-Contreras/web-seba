@@ -1,0 +1,13 @@
+{% extends "base_acceso.html" %}
+{% block titulo %}Enlace no válido{% endblock %}
+{% block encabezado %}Enlace no válido{% endblock %}
+{% block contenido %}
+{% url 'cuentas:recuperar' as url_recuperar %}
+{% url 'cuentas:acceso' as url_acceso %}
+{% include "componentes/alerta.html" with tipo="advertencia" mensaje="Este enlace no es válido, ya se usó o venció." only %}
+<p class="mt-4 text-sm text-texto-secundario">Puede pedir uno nuevo con su RUT, o solicitarlo a quien administra su cuenta.</p>
+<div class="mt-6 flex flex-col gap-3">
+  {% include "componentes/boton.html" with texto="Recuperar contraseña" href=url_recuperar ancho=True only %}
+  {% include "componentes/boton.html" with texto="Volver al acceso" href=url_acceso variante="secundario" ancho=True only %}
+</div>
+{% endblock %}

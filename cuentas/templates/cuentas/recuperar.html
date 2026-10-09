@@ -1,0 +1,13 @@
+{% extends "base_acceso.html" %}
+{% block titulo %}Recuperar contraseña{% endblock %}
+{% block encabezado %}Recuperar contraseña{% endblock %}
+{% block bajada %}Ingrese su RUT para recibir instrucciones.{% endblock %}
+{% block contenido %}
+{% include "componentes/resumen_errores.html" %}
+<form class="flex flex-col gap-5" method="post">
+  {% csrf_token %}
+  {% include "componentes/campo.html" with campo=formulario.rut %}
+  {% include "componentes/boton.html" with texto="Continuar" ancho=True only %}
+</form>
+<p class="mt-6 text-center text-sm"><a class="enlace" href="{% url 'cuentas:acceso' %}">Volver al acceso</a></p>
+{% endblock %}

@@ -1,0 +1,8 @@
+{% extends "base_acceso.html" %}
+{% block titulo %}Falta configurar la verificación en dos pasos{% endblock %}
+{% block encabezado %}Falta configurar la verificación en dos pasos{% endblock %}
+{% block contenido %}
+{% include "componentes/alerta.html" with tipo="advertencia" mensaje="Por seguridad, la verificación en dos pasos solo se puede configurar justo después de usar un enlace de activación o de restablecimiento." only %}
+<p class="mt-4 text-sm text-texto-secundario">Solicite un enlace nuevo a quien mantiene el sistema. Con él definirá su contraseña y podrá configurar la verificación.</p>
+{% include "componentes/cerrar_sesion.html" %}
+{% endblock %}

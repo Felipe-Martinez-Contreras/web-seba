@@ -1,0 +1,19 @@
+{% extends "base_acceso.html" %}
+{% block titulo %}Acceso clientes{% endblock %}
+{% block encabezado %}Acceso clientes{% endblock %}
+{% block bajada %}Ingrese con su RUT y contraseña para acceder a sus documentos.{% endblock %}
+{% block contenido %}
+{% include "componentes/resumen_errores.html" %}
+<form class="flex flex-col gap-5" method="post">
+  {% csrf_token %}
+  {% if destino %}<input type="hidden" name="next" value="{{ destino }}">{% endif %}
+  {% include "componentes/campo.html" with campo=formulario.rut %}
+  {% include "componentes/campo.html" with campo=formulario.contrasena contrasena=True %}
+  <p class="text-right text-sm"><a class="enlace" href="{% url 'cuentas:recuperar' %}">¿Olvidó su contraseña?</a></p>
+  {% include "componentes/boton.html" with texto="Ingresar" ancho=True only %}
+</form>
+<div class="mt-8 flex items-center gap-3 rounded-caja bg-fondo px-4 py-3 text-sm text-texto-secundario">
+  {% include "componentes/icono.html" with nombre="lock" only %}
+  <p>Acceso restringido solo para clientes autorizados.</p>
+</div>
+{% endblock %}

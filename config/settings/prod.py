@@ -29,6 +29,10 @@ if "PROXY_CONFIANZA_REDES" not in os.environ:
         "o déjela vacía si la aplicación recibe las conexiones directamente."
     )
 
+# Los enlaces de activación y recuperación se arman con esta URL.
+if "SITIO_URL" not in os.environ or not SITIO_URL.startswith("https://"):  # noqa: F405
+    raise ImproperlyConfigured("Falta la variable de entorno SITIO_URL o no empieza con https://.")
+
 CSRF_TRUSTED_ORIGINS = env.lista("CSRF_TRUSTED_ORIGINS")
 
 SECURE_SSL_REDIRECT = True

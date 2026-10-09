@@ -1,0 +1,14 @@
+{% extends "base_acceso.html" %}
+{% block titulo %}Verificación en dos pasos{% endblock %}
+{% block encabezado %}Verificación en dos pasos{% endblock %}
+{% block bajada %}Ingrese el código de su aplicación de autenticación.{% endblock %}
+{% block contenido %}
+{% include "componentes/resumen_errores.html" %}
+<form class="flex flex-col gap-5" method="post">
+  {% csrf_token %}
+  {% if destino %}<input type="hidden" name="next" value="{{ destino }}">{% endif %}
+  {% include "componentes/campo.html" with campo=formulario.codigo %}
+  {% include "componentes/boton.html" with texto="Verificar" ancho=True only %}
+</form>
+{% include "componentes/cerrar_sesion.html" %}
+{% endblock %}

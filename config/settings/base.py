@@ -15,16 +15,22 @@ DEBUG = False
 ALLOWED_HOSTS = env.lista("ALLOWED_HOSTS")
 
 INSTALLED_APPS = [
+    "config.apps.AdminTecnicoConfig",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "whitenoise.runserver_nostatic",
     "django.contrib.staticfiles",
+    "django_otp",
+    "django_otp.plugins.otp_totp",
+    "django_otp.plugins.otp_static",
     "core",
     "empresas",
     "cuentas",
     "auditoria",
+    "portal",
+    "panel",
 ]
 
 MIDDLEWARE = [
@@ -36,6 +42,8 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "cuentas.middleware.CorteDeSesionMiddleware",
+    "django_otp.middleware.OTPMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -70,6 +78,28 @@ CACHES = {
 }
 
 AUTH_USER_MODEL = "cuentas.Usuario"
+AUTHENTICATION_BACKENDS = ["cuentas.backends.BackendRut"]
+LOGIN_URL = "cuentas:acceso"
+
+# URL pública del sitio, sin barra final. Con ella se arman los enlaces de activación y de
+# recuperación: nunca con el encabezado Host de la petición.
+SITIO_URL = env.texto("SITIO_URL", "http://localhost:8000")
+
+# Ruta del admin de Django (ADM-12), sin barras. Vacía: no se publica.
+DJANGO_ADMIN_RUTA = env.texto("DJANGO_ADMIN_RUTA", "").strip("/")
+
+# Enlaces de un solo uso (AUT-06, AUT-07).
+ENLACE_ACTIVACION_HORAS = env.entero("ENLACE_ACTIVACION_HORAS", 72)
+ENLACE_RESTABLECIMIENTO_MINUTOS = env.entero("ENLACE_RESTABLECIMIENTO_MINUTOS", 60)
+RECUPERACION_MAXIMO_POR_RUT = env.entero("RECUPERACION_MAXIMO_POR_RUT", 3)
+RECUPERACION_MAXIMO_POR_IP = env.entero("RECUPERACION_MAXIMO_POR_IP", 10)
+
+# 2FA de administradores (AUT-10). Tras usar un enlace, la sesión tiene este plazo para enrolar.
+ENROLAMIENTO_2FA_MINUTOS = env.entero("ENROLAMIENTO_2FA_MINUTOS", 30)
+OTP_ADMIN_HIDE_SENSITIVE_DATA = True
+
+# El envío de correo sale de la petición (core.tareas). En las pruebas es inmediato.
+TAREAS_SINCRONAS = False
 
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.Argon2PasswordHasher"]
 
@@ -100,9 +130,23 @@ _estaticos_compilados = env.texto("ESTATICOS_COMPILADOS_DIR", "")
 if _estaticos_compilados:
     STATICFILES_DIRS.append(Path(_estaticos_compilados))
 
-# Sin correo saliente hasta que se configure un proveedor (Etapa 6): enviar falla de forma
-# explícita en lugar de intentar un servidor SMTP inexistente.
+# Correo saliente por SMTP. Sin CORREO_HOST no hay ningún mailer: el envío se informa como
+# "no configurado" en lugar de intentar un servidor inexistente (R4).
 MAILERS = {}
+_correo_host = env.texto("CORREO_HOST", "")
+if _correo_host:
+    MAILERS["default"] = {
+        "BACKEND": "django.core.mail.backends.smtp.EmailBackend",
+        "OPTIONS": {
+            "host": _correo_host,
+            "port": env.entero("CORREO_PUERTO", 587),
+            "username": env.texto("CORREO_USUARIO", ""),
+            "password": env.texto("CORREO_CLAVE", ""),
+            "use_tls": env.booleano("CORREO_TLS", True),
+            "timeout": 10,
+        },
+    }
+DEFAULT_FROM_EMAIL = env.texto("CORREO_REMITENTE", "")
 
 # Los niveles de los mensajes de Django usan los nombres de los tipos de alerta.
 MESSAGE_TAGS = {
@@ -113,8 +157,13 @@ MESSAGE_TAGS = {
     message_constants.ERROR: "error",
 }
 
+# Sesiones (AUT-09): vencen tras un tiempo sin uso y no sobreviven al cierre del navegador.
+SESSION_COOKIE_AGE = env.entero("SESION_MINUTOS_INACTIVIDAD", 60) * 60
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_FAILURE_VIEW = "core.views.csrf_fallido"
 CSRF_COOKIE_SAMESITE = "Lax"
 
 # IP real del cliente (AUT-04). Redes CIDR de los proxies de confianza, separadas por comas.

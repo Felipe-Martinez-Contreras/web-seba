@@ -1,0 +1,13 @@
+{% extends "base_acceso.html" %}
+{% block titulo %}{{ textos.titulo }}{% endblock %}
+{% block encabezado %}{{ textos.titulo }}{% endblock %}
+{% block bajada %}{{ textos.bajada }}{% endblock %}
+{% block contenido %}
+{% include "componentes/resumen_errores.html" %}
+<form class="flex flex-col gap-5" method="post">
+  {% csrf_token %}
+  {% include "componentes/campo.html" with campo=formulario.new_password1 contrasena=True %}
+  {% include "componentes/campo.html" with campo=formulario.new_password2 contrasena=True %}
+  {% include "componentes/boton.html" with texto=textos.boton ancho=True only %}
+</form>
+{% endblock %}

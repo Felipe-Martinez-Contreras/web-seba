@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% comment %}
+Pantallas de acceso (pantallas 2 y 7 del mockup): columna centrada sobre blanco y bloque
+azul marino al pie. La fotografía con velo de ese bloque llega en la Etapa 6 (PUB-08).
+Bloques: titulo, encabezado, bajada y contenido.
+{% endcomment %}
+{% block meta %}<meta name="robots" content="noindex">{% endblock %}
+{% block cuerpo %}
+<div class="flex min-h-screen flex-col bg-superficie">
+  <main id="contenido" class="flex flex-1 flex-col items-center px-4 pt-12 pb-10 sm:pt-20 sm:pb-16" tabindex="-1">
+    <div class="w-full max-w-sm">
+      <div class="flex justify-center">{% include "componentes/marca.html" with marca_tono="oscuro" marca_url="" %}</div>
+      <h1 class="mt-6 text-center text-2xl">{% block encabezado %}{% endblock %}</h1>
+      <p class="mt-2 text-center text-sm text-texto-secundario">{% block bajada %}{% endblock %}</p>
+      <div class="mt-8">
+        {% include "componentes/mensajes.html" %}
+        {% block contenido %}{% endblock %}
+      </div>
+    </div>
+  </main>
+  <div class="h-32 bg-primario sm:h-48" aria-hidden="true"></div>
+</div>
+{% endblock %}

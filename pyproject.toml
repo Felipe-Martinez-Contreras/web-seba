@@ -36,8 +36,8 @@ select = ["E", "F", "W", "I", "B", "UP", "DJ", "SIM", "C4"]
 [tool.pytest.ini_options]
 addopts = "--ds=config.settings.test --cov --cov-report=term-missing"
 python_files = ["test_*.py"]
-testpaths = ["config", "core", "cuentas", "empresas", "auditoria"]
+testpaths = ["config", "core", "cuentas", "empresas", "auditoria", "portal", "panel"]
 
 [tool.coverage.run]
-source = ["config", "core", "cuentas", "empresas", "auditoria"]
+source = ["config", "core", "cuentas", "empresas", "auditoria", "portal", "panel"]
 omit = ["*/migrations/*", "*/tests/*", "config/wsgi.py"]
