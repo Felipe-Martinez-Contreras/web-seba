@@ -7,7 +7,7 @@ Plan de la Etapa 0 (sección 11 de `ESPECIFICACION.md`). Se actualiza al avanzar
 | Etapa | Contenido | Estado |
 | --- | --- | --- |
 | 0 | Reconocimiento y plan | Aprobada por el responsable el 09-10-2026 |
-| 1 | Base del proyecto | Pendiente |
+| 1 | Base del proyecto | Terminada el 09-10-2026; pendiente de aprobación del responsable |
 | 2 | Cuentas y acceso | Pendiente |
 | 3 | Empresas, usuarios y carpetas | Pendiente |
 | 4 | Documentos | Pendiente |
@@ -38,7 +38,7 @@ Versiones verificadas en fuentes oficiales el 09-10-2026:
 - Django: series con soporte 5.2 LTS (5.2.18, hasta abril 2028), 6.0 (6.0.9, solo seguridad hasta abril 2027) y 6.1 (6.1.2, la más reciente). La serie 6 trae CSP nativo (`ContentSecurityPolicyMiddleware`, `SECURE_CSP`).
 - `django-otp` 1.7.4 (requiere Django ≥ 4.2). `django-storages` 1.14.6 (abril 2025; sus clasificadores llegan a Django 5.1).
 
-Sin verificar todavía (se confirma al fijar versiones en la Etapa 1): versiones de Python que admite Django 6.1 y versiones actuales de Tailwind CLI, HTMX, psycopg, WhiteNoise y Gunicorn.
+Las versiones que quedaron sin verificar en la Etapa 0 se confirmaron al iniciar la Etapa 1 y están en `DECISIONES.md`: Python 3.13.16, psycopg 3.3.6, WhiteNoise 6.12.0, Tailwind CLI 4.3.3, HTMX 2.0.10 y uv 0.12.24. Gunicorn (26.2.0 verificada) se agrega en la Etapa 8.
 
 ## 2. Estructura del proyecto
 
@@ -46,7 +46,7 @@ Sin verificar todavía (se confirma al fijar versiones en la Etapa 1): versiones
 web-seba/
 ├─ CLAUDE.md  README.md  .env.example  .gitignore  .gitattributes  .dockerignore
 ├─ pyproject.toml  uv.lock
-├─ Dockerfile  compose.yaml  docker/entrypoint.sh
+├─ Dockerfile  compose.yaml  docker/arrancar-dev.sh
 ├─ manage.py
 ├─ config/
 │  ├─ settings/{base,dev,test,prod}.py
@@ -57,25 +57,26 @@ web-seba/
 ├─ empresas/    # Empresa, Carpeta
 ├─ documentos/  # Documento, VersionDocumento, almacenamiento, descargas
 ├─ portal/  panel/  sitio/  solicitudes/  auditoria/
-├─ templates/   # base.html, base_{publica,portal,panel}.html, componentes/, 404.html, 500.html
+├─ templates/   # base.html, base_{publica,portal,panel}.html, componentes/, iconos/, 404.html, 500.html
 ├─ static_src/css/app.css     # entrada de Tailwind con los tokens de la sección 9
-├─ static/{vendor,fonts,icons}/   # HTMX, IBM Plex Sans woff2, Lucide SVG (propios, sin CDN)
+├─ static/{vendor,fonts,js}/   # HTMX, IBM Plex Sans woff2 y JavaScript propio (sin CDN)
 ├─ docs/
 └─ .github/workflows/ci.yml
 ```
 
 - Cada app: `models.py`, `querysets.py`, `services.py`, `forms.py`, `views.py`, `urls.py`, `templates/<app>/`, `tests/` y `management/commands/`, según lo que necesite.
 - Las apps se crean en la etapa que las implementa (R1: nada vacío ni simulado). La Etapa 1 crea `config`, `core`, `cuentas` y `empresas` (ver D2).
-- Archivos subidos en desarrollo: volumen Docker montado en `/var/app/media`, fuera de `static/` y sin URL que lo sirva.
-- El CSS compilado (`static/css/app.css`) queda fuera de git; se genera en el build.
-- Compose: `web` (Django) y `db` (PostgreSQL 16 o superior), más un servicio `tailwind --watch` solo en desarrollo.
+- Archivos subidos en desarrollo (desde la Etapa 4): volumen Docker montado en `/var/app/media`, fuera de `static/` y sin URL que lo sirva.
+- El CSS compilado queda fuera del código, en `/opt/estaticos` dentro del contenedor; se genera en el build y al arrancar.
+- Compose: `web` (Django) y `db` (PostgreSQL 18), con límites de memoria. `tailwind --watch` es un perfil opcional (`--profile css`).
 - Pruebas y comandos se ejecutan dentro del contenedor: `docker compose run --rm web pytest`.
 
 ## 3. Dependencias
 
 El detalle y el motivo de cada una están en `DECISIONES.md`.
 
-- **Ejecución:** Django 6.1, psycopg 3, argon2-cffi, django-otp, segno, django-storages + boto3 (Etapa 4), WhiteNoise, Gunicorn.
+- **Ejecución, instaladas:** Django 6.1.2, psycopg 3.3.6, argon2-cffi 25.1.0 y WhiteNoise 6.12.0.
+- **Ejecución, por agregar:** django-otp y segno (Etapa 2), django-storages + boto3 (Etapa 4) y Gunicorn (Etapa 8).
 - **Desarrollo y CI:** pytest, pytest-django, pytest-cov, ruff, pip-audit.
 - **Estáticos propios:** Tailwind CLI standalone, HTMX, IBM Plex Sans, Lucide.
 
@@ -89,7 +90,7 @@ El detalle y el motivo de cada una están en `DECISIONES.md`.
 6. Email obligatorio para administradores y opcional para clientes (AUT-07 contempla cuentas sin email; se activan copiando el enlace).
 7. CI en GitHub Actions.
 8. Las etapas 1 a 7 no dependen del proveedor de hosting, correo ni almacenamiento.
-9. Python 3.13 en la imagen Docker (a confirmar contra Django 6.1 en la Etapa 1; si no, 3.12).
+9. Python 3.13 en la imagen Docker (confirmado: Django 6.1 admite 3.12, 3.13 y 3.14).
 
 ## 5. Desviaciones de la especificación
 
@@ -133,3 +134,17 @@ Aprobadas por el responsable el 09-10-2026.
 - Texto de la política de privacidad y revisión legal de la Ley 19.628 y la Ley 21.719 (responsable del negocio).
 - Hosting, correo y almacenamiento: propuesta comparada en la Etapa 8, incluida la VM única.
 - Migración a Django 6.2 LTS cuando se publique.
+- Reevaluar HTMX 4.x antes de la Etapa 4 (DEC-21).
+- Etapa 6: agregar a la página 404 el enlace al inicio, cuando exista (DEC-25).
+- Revisión visual de los componentes en 360, 768 y 1280 px: en la Etapa 1 se comprobó su HTML con pruebas, no su aspecto.
+
+## 9. Etapa 1: qué quedó construido
+
+- Proyecto Django con configuración por entorno (`base`, `dev`, `test`, `prod`) leída de variables de entorno; `prod` se niega a arrancar con configuración faltante o de ejemplo.
+- Modelos `Usuario` (RUT como identificador) y `Empresa`, con sus migraciones iniciales, y utilidades de RUT en `core/rut.py` (D2).
+- Docker Compose con `web` y `db`; Tailwind compilado en el build y al arrancar.
+- Plantillas base (pública, portal y panel), páginas 404 y 500, y componentes: botón, campo, alerta, mensajes, insignia, migas de pan, estado vacío, paginación, encabezado y pie públicos, y barra lateral del panel. Tabla, diálogo de confirmación y zona de subida se agregan en la etapa que los usa.
+- Página de referencia de componentes en `/_referencia/componentes/`, solo con `DEBUG`.
+- `/salud/`, logs en JSON, CSP nativa, `ruff`, `pytest` con cobertura y CI en GitHub Actions (lint, pruebas, `pip-audit` y arranque con Docker Compose).
+
+No hay todavía ninguna pantalla del negocio: acceso, panel, portal y sitio público llegan en las etapas 2 a 6.

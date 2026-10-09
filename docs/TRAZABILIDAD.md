@@ -8,7 +8,7 @@ Estados: `Pendiente`, `En curso`, `Verificado` (prueba automática en verde) y `
 
 | Código | Requisito | Etapa | Archivos | Prueba | Estado |
 | --- | --- | --- | --- | --- | --- |
-| PUB-01 | Páginas públicas y páginas 404 y 500 propias | 1 y 6 | — | — | Pendiente |
+| PUB-01 | Páginas públicas y páginas 404 y 500 propias | 1 y 6 | `templates/404.html`, `templates/500.html` | `core/tests/test_vistas.py` (`test_pagina_404_propia`, `test_pagina_500_propia_no_muestra_la_traza`) | En curso: 404 y 500 verificadas; páginas públicas en la Etapa 6 |
 | PUB-02 | Inicio con contenido de DatosNegocio | 6 | — | — | Pendiente |
 | PUB-03 | Servicios con cotización preseleccionada | 6 | — | — | Pendiente |
 | PUB-04 | Navegación y pie | 6 | — | — | Pendiente |
@@ -106,14 +106,14 @@ Estados: `Pendiente`, `En curso`, `Verificado` (prueba automática en verde) y `
 | Código | Requisito | Etapa | Archivos | Prueba | Estado |
 | --- | --- | --- | --- | --- | --- |
 | SEG-01 | Configuración de producción y `check --deploy` | 7 y 8 | — | — | Pendiente |
-| SEG-02 | CSP y encabezados | 7 | — | — | Pendiente |
+| SEG-02 | CSP y encabezados | 1 y 7 | `config/settings/base.py` (`SECURE_CSP`), `templates/base.html` | `config/tests/test_configuracion.py` (`test_encabezados_de_seguridad`), `core/tests/test_vistas.py` (`test_las_plantillas_no_llevan_estilos_ni_scripts_en_linea`) | En curso: CSP activa; `Permissions-Policy` y revisión completa en la Etapa 7 |
 | SEG-03 | CSRF en formularios y HTMX | 2 | — | — | Pendiente |
 | SEG-04 | Mixins de rol y prueba de todas las URL | 3 y 7 | — | — | Pendiente |
 | SEG-05 | UUID en las URL y 404 para lo ajeno | 4 | — | — | Pendiente |
 | SEG-06 | Autoescape y textos editables sin HTML | 6 | — | — | Pendiente |
 | SEG-07 | Archivos subidos nunca ejecutados ni servidos como estáticos | 4 | — | — | Pendiente |
-| SEG-08 | Secretos fuera del código y credenciales mínimas | 1 y 8 | — | — | Pendiente |
-| SEG-09 | Versiones fijadas y `pip-audit` en CI | 1 | — | — | Pendiente |
+| SEG-08 | Secretos fuera del código y credenciales mínimas | 1 y 8 | `config/env.py`, `config/settings/prod.py`, `.env.example`, `.gitignore` | `config/tests/test_configuracion.py` (`test_prod_se_niega_*`, `test_la_clave_de_ejemplo_es_la_de_env_example`) | En curso: configuración verificada; credenciales del almacenamiento en la Etapa 8 |
+| SEG-09 | Versiones fijadas y `pip-audit` en CI | 1 | `pyproject.toml`, `uv.lock`, `.github/workflows/ci.yml` (trabajo `auditoria`) | Trabajo `auditoria` de la CI | Verificado manual: resultado de la CI |
 | SEG-10 | Logs sin datos sensibles | 7 | — | — | Pendiente |
 | SEG-11 | Respaldos y restauración probada | 8 | — | — | Pendiente |
 | SEG-12 | Privacidad y consentimiento | 6 | — | — | Pendiente |
@@ -126,6 +126,24 @@ Estados: `Pendiente`, `En curso`, `Verificado` (prueba automática en verde) y `
 | RNF-01 | Volumen de diseño | 7 | — | — | Pendiente |
 | RNF-02 | Tiempos de respuesta y subidas de 25 MB | 7 y 8 | — | — | Pendiente |
 | RNF-03 | Navegadores soportados | 7 | — | — | Pendiente |
-| RNF-04 | `ruff`, tipado y sin código muerto | 1 | — | — | Pendiente |
-| RNF-05 | Logs estructurados y `/salud/` | 1 y 7 | — | — | Pendiente |
+| RNF-04 | `ruff`, tipado y sin código muerto | 1 | `pyproject.toml` (`tool.ruff`), `.github/workflows/ci.yml` (trabajo `lint`) | `ruff check .` y `ruff format --check .` en la CI | En curso: se comprueba en cada etapa |
+| RNF-05 | Logs estructurados y `/salud/` | 1 y 7 | `core/views.py`, `core/logs.py`, `config/settings/base.py` (`LOGGING`) | `core/tests/test_vistas.py` (`test_salud_*`, `test_formato_json_de_los_logs`) | En curso: `/salud/` y logs verificados; servicio de errores opcional en la Etapa 7 |
 | RNF-06 | Lighthouse móvil de 90 o más | 7 y 8 | — | — | Pendiente |
+
+## Base de la Etapa 1 (sin código de requisito)
+
+Reglas de las secciones 4, 5 y 6 de la especificación que sostienen a los requisitos de las etapas siguientes.
+
+| Regla | Archivos | Prueba | Estado |
+| --- | --- | --- | --- |
+| RUT: normalización, dígito verificador y formato `12.345.678-5` | `core/rut.py`, `core/validators.py`, `core/fields.py`, `core/templatetags/formato.py` | `core/tests/test_rut.py` | Verificado |
+| Usuario personalizado con RUT único como identificador | `cuentas/models.py`, `cuentas/migrations/0001_initial.py` | `cuentas/tests/test_modelos.py` | Verificado |
+| Cliente con empresa y administrador sin empresa, en la base de datos | `cuentas/models.py` (`usuario_rol_coherente_con_empresa`) | `test_la_base_rechaza_un_cliente_sin_empresa`, `test_la_base_rechaza_un_administrador_con_empresa` | Verificado |
+| La cuenta se crea sin contraseña utilizable | `cuentas/managers.py` | `test_create_user_sin_contrasena_deja_una_contrasena_no_utilizable` | Verificado |
+| `is_staff` e `is_superuser` solo para el superusuario técnico | `cuentas/managers.py`, `cuentas/models.py` | `test_create_user_no_admite_privilegios_tecnicos`, `test_la_base_rechaza_un_cliente_con_privilegios_tecnicos` | Verificado |
+| Borrar una empresa nunca borra usuarios (`PROTECT`) | `cuentas/models.py` | `test_borrar_una_empresa_con_usuarios_no_borra_nada`, `test_la_base_tambien_impide_borrar_una_empresa_con_usuarios` | Verificado |
+| Empresa con UUID y RUT único validado | `empresas/models.py`, `empresas/migrations/0001_initial.py` | `empresas/tests/test_modelos.py` | Verificado |
+| Configuración por entorno; producción no arranca con configuración faltante o de ejemplo | `config/settings/`, `config/env.py` | `config/tests/test_configuracion.py` | Verificado |
+| `es-cl`, `America/Santiago`, `USE_TZ` y fechas `dd-mm-aaaa` | `config/settings/base.py`, `config/formats/es_CL/formats.py` | `test_idioma_y_zona_horaria`, `test_fechas_con_formato_chileno_y_textos_en_espanol` | Verificado |
+| Componentes y página de referencia solo en desarrollo | `templates/componentes/`, `core/referencia.py`, `core/urls_dev.py` | `test_la_referencia_*`, `test_el_campo_con_error_queda_asociado_a_su_mensaje` | Verificado (HTML; aspecto visual sin revisar) |
+| `docker compose up` desde cero con migraciones en base vacía | `Dockerfile`, `compose.yaml`, `docker/arrancar-dev.sh` | Trabajo `arranque` de la CI y clon limpio local | Verificado manual |
