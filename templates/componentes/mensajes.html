@@ -1,0 +1,11 @@
+{% comment %}
+Mensajes de Django (confirmaciones y errores tras una acción), como alertas.
+Las etiquetas de nivel se traducen a los tipos de alerta en la configuración (MESSAGE_TAGS).
+{% endcomment %}
+{% if messages %}
+<div class="mb-6 flex flex-col gap-3" aria-live="polite">
+  {% for mensaje in messages %}
+  {% include "componentes/alerta.html" with tipo=mensaje.level_tag mensaje=mensaje.message %}
+  {% endfor %}
+</div>
+{% endif %}

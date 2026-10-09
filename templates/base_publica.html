@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block cuerpo %}
+<div class="flex min-h-screen flex-col">
+  {% include "componentes/encabezado_publico.html" %}
+  <main id="contenido" class="contenedor flex-1 py-8" tabindex="-1">
+    {% include "componentes/mensajes.html" %}
+    {% block contenido %}{% endblock %}
+  </main>
+  {% include "componentes/pie_publico.html" %}
+</div>
+{% endblock %}

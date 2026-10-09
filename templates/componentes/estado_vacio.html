@@ -1,0 +1,12 @@
+{% comment %}
+Estado vacío o sin resultados. Parámetros: titulo; texto (qué pasa y qué se puede hacer);
+accion_texto y accion_url (opcionales).
+{% endcomment %}
+<div class="rounded-caja border border-divisor bg-superficie px-6 py-10 text-center">
+  <span class="icono inline-flex text-texto-secundario" aria-hidden="true">{% include "iconos/inbox.svg" %}</span>
+  <p class="mt-2 text-lg font-semibold">{{ titulo }}</p>
+  <p class="mx-auto mt-1 max-w-lectura text-texto-secundario">{{ texto }}</p>
+  {% if accion_texto and accion_url %}
+  <p class="mt-4">{% include "componentes/boton.html" with texto=accion_texto href=accion_url variante="secundario" %}</p>
+  {% endif %}
+</div>

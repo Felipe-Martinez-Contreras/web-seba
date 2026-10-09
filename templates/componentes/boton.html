@@ -1,0 +1,14 @@
+{% comment %}
+Botón o enlace con aspecto de botón.
+Parámetros: texto (obligatorio); variante: primario (por defecto), secundario, fantasma o peligro;
+href (lo convierte en enlace); tipo: submit (por defecto) o button; nombre y valor;
+deshabilitado; cargando.
+{% endcomment %}
+{% if href %}
+<a class="boton boton-{{ variante|default:'primario' }}" href="{{ href }}">{{ texto }}</a>
+{% else %}
+<button class="boton boton-{{ variante|default:'primario' }}" type="{{ tipo|default:'submit' }}"{% if nombre %} name="{{ nombre }}"{% endif %}{% if valor %} value="{{ valor }}"{% endif %}{% if deshabilitado or cargando %} disabled{% endif %}{% if cargando %} aria-busy="true"{% endif %}>
+  <span class="boton-indicador icono" aria-hidden="true">{% include "iconos/loader-circle.svg" %}</span>
+  <span>{{ texto }}</span>
+</button>
+{% endif %}

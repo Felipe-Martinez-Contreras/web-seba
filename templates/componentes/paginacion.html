@@ -1,0 +1,25 @@
+{% comment %}
+Paginación. Parámetros: pagina (objeto Page de Django). Conserva los filtros de la URL.
+No se muestra si hay una sola página.
+{% endcomment %}
+{% if pagina.has_other_pages %}
+<nav class="flex items-center justify-between gap-4" aria-label="Paginación">
+  {% if pagina.has_previous %}
+  <a class="boton boton-secundario" href="{% querystring page=pagina.previous_page_number %}" rel="prev">
+    <span class="icono" aria-hidden="true">{% include "iconos/chevron-left.svg" %}</span>
+    <span>Anterior</span>
+  </a>
+  {% else %}
+  <span></span>
+  {% endif %}
+  <p class="text-sm text-texto-secundario">Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</p>
+  {% if pagina.has_next %}
+  <a class="boton boton-secundario" href="{% querystring page=pagina.next_page_number %}" rel="next">
+    <span>Siguiente</span>
+    <span class="icono" aria-hidden="true">{% include "iconos/chevron-right.svg" %}</span>
+  </a>
+  {% else %}
+  <span></span>
+  {% endif %}
+</nav>
+{% endif %}

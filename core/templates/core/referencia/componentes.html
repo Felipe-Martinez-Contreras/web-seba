@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% load formato %}
+{% block titulo %}Referencia de componentes{% endblock %}
+{% block meta %}<meta name="robots" content="noindex">{% endblock %}
+{% block cuerpo %}
+<main id="contenido" class="contenedor flex flex-col gap-12 py-8" tabindex="-1">
+  <header class="max-w-lectura">
+    <h1 class="text-3xl">Referencia de componentes</h1>
+    <p class="mt-2 text-texto-secundario">Página disponible solo en desarrollo. Todos los textos son de muestra.</p>
+    <p class="mt-2">
+      <a class="enlace" href="{% url 'referencia:error_404' %}">Página 404</a> ·
+      <a class="enlace" href="{% url 'referencia:error_500' %}">Página 500</a>
+    </p>
+  </header>
+
+  <section aria-labelledby="ref-colores">
+    <h2 id="ref-colores" class="text-2xl">Colores</h2>
+    <ul class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <li class="rounded-caja bg-primario p-3 text-blanco">Primario</li>
+      <li class="rounded-caja bg-primario-hover p-3 text-blanco">Primario hover</li>
+      <li class="rounded-caja border border-divisor bg-primario-suave p-3">Primario suave</li>
+      <li class="rounded-caja bg-acento p-3 text-texto">Acento</li>
+      <li class="rounded-caja bg-exito p-3 text-blanco">Éxito</li>
+      <li class="rounded-caja bg-error p-3 text-blanco">Error</li>
+      <li class="rounded-caja bg-advertencia p-3 text-blanco">Advertencia</li>
+      <li class="rounded-caja bg-info p-3 text-blanco">Info</li>
+      <li class="rounded-caja border border-divisor bg-superficie p-3">Superficie</li>
+      <li class="rounded-caja border border-divisor bg-superficie-alterna p-3">Superficie alterna</li>
+      <li class="rounded-caja border border-borde-campo p-3">Borde de campo</li>
+      <li class="rounded-caja border border-divisor p-3 text-texto-secundario">Texto secundario</li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="ref-tipografia">
+    <h2 id="ref-tipografia" class="text-2xl">Tipografía</h2>
+    <div class="mt-4 flex flex-col gap-2">
+      <p class="text-4xl font-semibold">Título 36</p>
+      <p class="text-3xl font-semibold">Título 30</p>
+      <p class="text-2xl font-semibold">Título 24</p>
+      <p class="text-xl font-medium">Subtítulo 20</p>
+      <p class="text-lg">Texto 18</p>
+      <p class="max-w-lectura">Texto base de 16 px con interlineado amplio y líneas de no más de 70 caracteres, para leer con comodidad.</p>
+      <p class="text-sm text-texto-secundario">Texto secundario 14</p>
+      <p>RUT con formato: {{ "123456785"|rut }}</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="ref-botones">
+    <h2 id="ref-botones" class="text-2xl">Botones</h2>
+    <div class="mt-4 flex flex-wrap items-center gap-3">
+      {% include "componentes/boton.html" with texto="Primario" tipo="button" %}
+      {% include "componentes/boton.html" with texto="Secundario" tipo="button" variante="secundario" %}
+      {% include "componentes/boton.html" with texto="Fantasma" tipo="button" variante="fantasma" %}
+      {% include "componentes/boton.html" with texto="Peligro" tipo="button" variante="peligro" %}
+      {% include "componentes/boton.html" with texto="Deshabilitado" tipo="button" deshabilitado=True %}
+      {% include "componentes/boton.html" with texto="Cargando" tipo="button" cargando=True %}
+      {% include "componentes/boton.html" with texto="Enlace" href="#ref-botones" variante="secundario" %}
+    </div>
+  </section>
+
+  <section aria-labelledby="ref-campos">
+    <h2 id="ref-campos" class="text-2xl">Campos de formulario</h2>
+    <div class="mt-4 grid gap-8 md:grid-cols-2">
+      <div class="flex flex-col gap-4">
+        <h3 class="text-lg">Sin errores</h3>
+        {% for campo in formulario %}{% include "componentes/campo.html" %}{% endfor %}
+      </div>
+      <div class="flex flex-col gap-4">
+        <h3 class="text-lg">Con errores</h3>
+        {% include "componentes/alerta.html" with tipo="error" titulo="Revise los campos marcados" mensaje="Hay datos que faltan o no son válidos." %}
+        {% for campo in formulario_con_errores %}{% include "componentes/campo.html" %}{% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="ref-alertas">
+    <h2 id="ref-alertas" class="text-2xl">Alertas y mensajes</h2>
+    <div class="mt-4 flex max-w-lectura flex-col gap-3">
+      {% include "componentes/alerta.html" with tipo="info" mensaje="Información de muestra." %}
+      {% include "componentes/alerta.html" with tipo="exito" mensaje="Confirmación de muestra." %}
+      {% include "componentes/alerta.html" with tipo="advertencia" mensaje="Advertencia de muestra." %}
+      {% include "componentes/alerta.html" with tipo="error" titulo="Título opcional" mensaje="Error de muestra." %}
+      {% include "componentes/mensajes.html" %}
+    </div>
+  </section>
+
+  <section aria-labelledby="ref-insignias">
+    <h2 id="ref-insignias" class="text-2xl">Insignias de estado</h2>
+    <div class="mt-4 flex flex-wrap gap-2">
+      {% include "componentes/insignia.html" with texto="Neutro" %}
+      {% include "componentes/insignia.html" with texto="Éxito" tono="exito" %}
+      {% include "componentes/insignia.html" with texto="Advertencia" tono="advertencia" %}
+      {% include "componentes/insignia.html" with texto="Error" tono="error" %}
+      {% include "componentes/insignia.html" with texto="Info" tono="info" %}
+    </div>
+  </section>
+
+  <section aria-labelledby="ref-migas">
+    <h2 id="ref-migas" class="text-2xl">Migas de pan</h2>
+    <div class="mt-4">{% include "componentes/migas.html" %}</div>
+  </section>
+
+  <section aria-labelledby="ref-vacio">
+    <h2 id="ref-vacio" class="text-2xl">Estado vacío</h2>
+    <div class="mt-4 flex flex-col gap-4">
+      {% include "componentes/estado_vacio.html" with titulo="Título del estado vacío" texto="Texto que explica qué pasa y qué se puede hacer." %}
+      {% include "componentes/estado_vacio.html" with titulo="Con acción" texto="Variante con un botón." accion_texto="Acción" accion_url="#ref-vacio" %}
+    </div>
+  </section>
+
+  <section aria-labelledby="ref-paginacion">
+    <h2 id="ref-paginacion" class="text-2xl">Paginación</h2>
+    <div class="mt-4">{% include "componentes/paginacion.html" %}</div>
+  </section>
+
+  <section aria-labelledby="ref-publico">
+    <h2 id="ref-publico" class="text-2xl">Encabezado y pie públicos</h2>
+    <div class="mt-4 rounded-caja border border-divisor">
+      {% include "componentes/encabezado_publico.html" with nombre_sitio="Nombre de muestra" url_inicio="#ref-publico" accion_texto="Acción principal" accion_url="#ref-publico" %}
+      {% include "componentes/pie_publico.html" %}
+    </div>
+  </section>
+
+  <section aria-labelledby="ref-panel">
+    <h2 id="ref-panel" class="text-2xl">Barra lateral del panel</h2>
+    <div class="mt-4 rounded-caja border border-divisor">{% include "componentes/barra_lateral_panel.html" %}</div>
+  </section>
+</main>
+{% endblock %}

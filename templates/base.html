@@ -1,0 +1,18 @@
+{% load static %}<!doctype html>
+<html lang="es-CL">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}{% endblock %}</title>
+  {% block meta %}{% endblock %}
+  <meta name="htmx-config" content='{"includeIndicatorStyles": false, "allowEval": false, "allowScriptTags": false}'>
+  <link rel="preload" href="{% static 'fonts/IBMPlexSans-Regular.woff2' %}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <script src="{% static 'vendor/htmx.min.js' %}" defer></script>
+  <script src="{% static 'js/app.js' %}" defer></script>
+</head>
+<body class="min-h-screen bg-superficie text-texto"{% if csrf_token %} hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'{% endif %}>
+  <a class="saltar-contenido" href="#contenido">Saltar al contenido</a>
+  {% block cuerpo %}{% endblock %}
+</body>
+</html>

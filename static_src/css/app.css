@@ -1,0 +1,286 @@
+/* Entrada de Tailwind. Los tokens de diseño (sección 9 de la especificación) se definen
+   una sola vez aquí: quedan como variables CSS y como utilidades de Tailwind. */
+@import "tailwindcss" source("../../");
+
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/IBMPlexSans-Regular.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../fonts/IBMPlexSans-Medium.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("../fonts/IBMPlexSans-SemiBold.woff2") format("woff2");
+}
+
+@theme {
+  /* Solo existe la paleta del proyecto. */
+  --color-*: initial;
+  --color-blanco: #ffffff;
+  --color-primario: #0f4c5c;
+  --color-primario-hover: #0c3d4a;
+  --color-primario-suave: #eef6f7;
+  --color-acento: #d97706;
+  --color-texto: #0f172a;
+  --color-texto-secundario: #64748b;
+  --color-borde-campo: #64748b;
+  --color-divisor: #e2e8f0;
+  --color-superficie: #ffffff;
+  --color-superficie-alterna: #f8fafc;
+  --color-exito: #15803d;
+  --color-exito-suave: #f0fdf4;
+  --color-error: #b91c1c;
+  --color-error-suave: #fef2f2;
+  --color-advertencia: #b45309;
+  --color-advertencia-suave: #fffbeb;
+  --color-info: #1d4ed8;
+  --color-info-suave: #eff6ff;
+
+  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+
+  --radius-*: initial;
+  --radius-campo: 6px;
+  --radius-caja: 8px;
+  --radius-completo: 9999px;
+
+  --shadow-*: initial;
+  --shadow-flotante: 0 4px 12px rgb(15 23 42 / 0.08);
+
+  --container-contenido: 1140px;
+  --container-lectura: 70ch;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    color: var(--color-texto);
+    background-color: var(--color-superficie);
+    line-height: 1.55;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-primario);
+    outline-offset: 2px;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  table {
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  .saltar-contenido {
+    @apply sr-only rounded-campo bg-primario px-4 py-3 font-medium text-blanco;
+  }
+
+  .saltar-contenido:focus {
+    @apply not-sr-only fixed top-2 left-2 z-50;
+  }
+
+  .contenedor {
+    @apply mx-auto w-full max-w-contenido px-4 sm:px-6;
+  }
+
+  .icono svg {
+    @apply size-5 shrink-0;
+  }
+
+  /* Botones */
+  .boton {
+    @apply inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-campo border border-transparent px-4 py-2 text-base font-medium no-underline transition-colors;
+  }
+
+  .boton:disabled,
+  .boton[aria-disabled="true"] {
+    @apply cursor-not-allowed opacity-60;
+  }
+
+  .boton-primario {
+    @apply bg-primario text-blanco;
+  }
+
+  .boton-primario:hover:not(:disabled) {
+    @apply bg-primario-hover;
+  }
+
+  .boton-secundario {
+    @apply border-primario bg-superficie text-primario;
+  }
+
+  .boton-secundario:hover:not(:disabled) {
+    @apply bg-primario-suave;
+  }
+
+  .boton-fantasma {
+    @apply bg-transparent text-primario;
+  }
+
+  .boton-fantasma:hover:not(:disabled) {
+    @apply bg-primario-suave;
+  }
+
+  .boton-peligro {
+    @apply bg-error text-blanco;
+  }
+
+  .boton-indicador {
+    @apply hidden;
+  }
+
+  .boton[aria-busy="true"] .boton-indicador,
+  .htmx-request.boton .boton-indicador,
+  .htmx-request .boton .boton-indicador {
+    @apply inline-flex animate-spin;
+  }
+
+  /* Indicador de peticiones HTMX (HTMX no inyecta sus estilos: lo impide la CSP) */
+  .htmx-indicator {
+    @apply hidden;
+  }
+
+  .htmx-request .htmx-indicator,
+  .htmx-request.htmx-indicator {
+    @apply inline-flex;
+  }
+
+  /* Campos de formulario */
+  .campo {
+    @apply flex flex-col gap-1;
+  }
+
+  .campo-etiqueta {
+    @apply font-medium;
+  }
+
+  .campo-ayuda {
+    @apply text-sm text-texto-secundario;
+  }
+
+  .campo-error {
+    @apply flex items-start gap-1 text-sm font-medium text-error;
+  }
+
+  .campo input:not([type="checkbox"], [type="radio"]),
+  .campo select,
+  .campo textarea {
+    @apply min-h-11 w-full rounded-campo border border-borde-campo bg-superficie px-3 py-2 text-base text-texto;
+  }
+
+  .campo [aria-invalid="true"] {
+    @apply border-2 border-error;
+  }
+
+  /* Alertas */
+  .alerta {
+    @apply flex items-start gap-3 rounded-caja border px-4 py-3 text-texto;
+  }
+
+  .alerta-exito {
+    @apply border-exito bg-exito-suave;
+  }
+
+  .alerta-exito .icono {
+    @apply text-exito;
+  }
+
+  .alerta-error {
+    @apply border-error bg-error-suave;
+  }
+
+  .alerta-error .icono {
+    @apply text-error;
+  }
+
+  .alerta-advertencia {
+    @apply border-advertencia bg-advertencia-suave;
+  }
+
+  .alerta-advertencia .icono {
+    @apply text-advertencia;
+  }
+
+  .alerta-info {
+    @apply border-info bg-info-suave;
+  }
+
+  .alerta-info .icono {
+    @apply text-info;
+  }
+
+  /* Insignias de estado */
+  .insignia {
+    @apply inline-flex items-center rounded-completo border px-2 py-0.5 text-sm font-medium;
+  }
+
+  .insignia-neutro {
+    @apply border-divisor bg-superficie-alterna text-texto;
+  }
+
+  .insignia-exito {
+    @apply border-exito bg-exito-suave text-exito;
+  }
+
+  .insignia-error {
+    @apply border-error bg-error-suave text-error;
+  }
+
+  .insignia-advertencia {
+    @apply border-advertencia bg-advertencia-suave text-advertencia;
+  }
+
+  .insignia-info {
+    @apply border-info bg-info-suave text-info;
+  }
+
+  /* Enlaces de navegación */
+  .enlace {
+    @apply text-primario underline underline-offset-2;
+  }
+
+  .enlace:hover {
+    @apply text-primario-hover;
+  }
+
+  .nav-enlace {
+    @apply flex min-h-11 items-center rounded-campo px-3 font-medium text-texto no-underline;
+  }
+
+  .nav-enlace:hover {
+    @apply bg-primario-suave text-primario;
+  }
+
+  .nav-enlace[aria-current="page"] {
+    @apply bg-primario-suave text-primario;
+  }
+}

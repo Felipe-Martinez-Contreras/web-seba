@@ -1,0 +1,16 @@
+{% comment %}
+Alerta. Parámetros: tipo: info (por defecto), exito, advertencia o error; titulo (opcional); mensaje.
+Los errores se anuncian de inmediato (role="alert"); el resto, sin interrumpir (role="status").
+{% endcomment %}
+<div class="alerta alerta-{{ tipo|default:'info' }}" role="{% if tipo == 'error' %}alert{% else %}status{% endif %}">
+  <span class="icono mt-0.5" aria-hidden="true">
+    {% if tipo == "exito" %}{% include "iconos/circle-check.svg" %}
+    {% elif tipo == "error" %}{% include "iconos/circle-alert.svg" %}
+    {% elif tipo == "advertencia" %}{% include "iconos/triangle-alert.svg" %}
+    {% else %}{% include "iconos/info.svg" %}{% endif %}
+  </span>
+  <div>
+    {% if titulo %}<p class="font-semibold">{{ titulo }}</p>{% endif %}
+    <p>{{ mensaje }}</p>
+  </div>
+</div>

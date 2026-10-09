@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block titulo %}Error del servidor{% endblock %}
+{% block meta %}<meta name="robots" content="noindex">{% endblock %}
+{% block cuerpo %}
+<main id="contenido" class="contenedor py-16" tabindex="-1">
+  <div class="max-w-lectura">
+    <p class="text-sm font-medium text-texto-secundario">Error 500</p>
+    <h1 class="mt-2 text-3xl">Ocurrió un problema en el servidor</h1>
+    <p class="mt-4">No pudimos completar la operación. Intente nuevamente en unos minutos.</p>
+  </div>
+</main>
+{% endblock %}

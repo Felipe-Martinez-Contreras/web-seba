@@ -1,0 +1,18 @@
+{% comment %}
+Migas de pan. Parámetros: migas: lista de pares (texto, url). La última es la página actual
+y se muestra sin enlace.
+{% endcomment %}
+<nav aria-label="Migas de pan">
+  <ol class="flex flex-wrap items-center gap-1 text-sm text-texto-secundario">
+    {% for texto, url in migas %}
+    <li class="flex items-center gap-1">
+      {% if forloop.last %}
+      <span class="font-medium text-texto" aria-current="page">{{ texto }}</span>
+      {% else %}
+      <a class="enlace" href="{{ url }}">{{ texto }}</a>
+      <span class="icono" aria-hidden="true">{% include "iconos/chevron-right.svg" %}</span>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+</nav>

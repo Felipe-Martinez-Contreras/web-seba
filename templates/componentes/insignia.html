@@ -1,0 +1,5 @@
+{% comment %}
+Insignia de estado. Parámetros: texto; tono: neutro (por defecto), exito, advertencia, error o info.
+El estado se entiende por el texto, no solo por el color.
+{% endcomment %}
+<span class="insignia insignia-{{ tono|default:'neutro' }}">{{ texto }}</span>

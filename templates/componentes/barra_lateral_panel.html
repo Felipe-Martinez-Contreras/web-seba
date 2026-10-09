@@ -1,0 +1,29 @@
+{% comment %}
+Barra lateral del panel. Parámetros: menu_panel: lista de diccionarios con texto, url y activo.
+En pantallas angostas es un menú desplegable nativo; desde 1024 px queda fija a la izquierda.
+Sin elementos no se muestra.
+{% endcomment %}
+{% if menu_panel %}
+<aside class="border-b border-divisor bg-superficie lg:min-h-screen lg:w-64 lg:shrink-0 lg:border-r lg:border-b-0">
+  <details class="lg:hidden">
+    <summary class="nav-enlace m-2 cursor-pointer gap-2">
+      <span class="icono" aria-hidden="true">{% include "iconos/menu.svg" %}</span>
+      <span>Menú</span>
+    </summary>
+    <nav class="px-2 pb-2" aria-label="Panel">
+      <ul class="flex flex-col gap-1">
+        {% for elemento in menu_panel %}
+        <li><a class="nav-enlace" href="{{ elemento.url }}"{% if elemento.activo %} aria-current="page"{% endif %}>{{ elemento.texto }}</a></li>
+        {% endfor %}
+      </ul>
+    </nav>
+  </details>
+  <nav class="hidden p-3 lg:block" aria-label="Panel">
+    <ul class="flex flex-col gap-1">
+      {% for elemento in menu_panel %}
+      <li><a class="nav-enlace" href="{{ elemento.url }}"{% if elemento.activo %} aria-current="page"{% endif %}>{{ elemento.texto }}</a></li>
+      {% endfor %}
+    </ul>
+  </nav>
+</aside>
+{% endif %}

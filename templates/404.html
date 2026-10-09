@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block titulo %}Página no encontrada{% endblock %}
+{% block meta %}<meta name="robots" content="noindex">{% endblock %}
+{% block cuerpo %}
+<main id="contenido" class="contenedor py-16" tabindex="-1">
+  <div class="max-w-lectura">
+    <p class="text-sm font-medium text-texto-secundario">Error 404</p>
+    <h1 class="mt-2 text-3xl">No encontramos esta página</h1>
+    <p class="mt-4">La dirección puede estar mal escrita o la página ya no existe.</p>
+  </div>
+</main>
+{% endblock %}

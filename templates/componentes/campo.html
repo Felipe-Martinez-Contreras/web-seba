@@ -1,0 +1,24 @@
+{% comment %}
+Campo de formulario con etiqueta, ayuda y error.
+Parámetros: campo (BoundField de Django, obligatorio).
+Django asocia la ayuda y el error al control con aria-describedby y marca aria-invalid.
+{% endcomment %}
+<div class="campo">
+  <label class="campo-etiqueta" for="{{ campo.id_for_label }}">
+    {{ campo.label }}{% if not campo.field.required %} <span class="font-normal text-texto-secundario">(opcional)</span>{% endif %}
+  </label>
+  {{ campo }}
+  {% if campo.help_text %}
+  <p class="campo-ayuda" id="{{ campo.auto_id }}_helptext">{{ campo.help_text }}</p>
+  {% endif %}
+  {% if campo.errors %}
+  <div id="{{ campo.auto_id }}_error">
+    {% for error in campo.errors %}
+    <p class="campo-error">
+      <span class="icono" aria-hidden="true">{% include "iconos/circle-alert.svg" %}</span>
+      <span>{{ error }}</span>
+    </p>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
