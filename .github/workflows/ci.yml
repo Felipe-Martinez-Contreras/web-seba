@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UV_VERSION: "0.12.24"
+
+jobs:
+  lint:
+    name: Lint y formato
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: pipx install "uv==${UV_VERSION}"
+      - run: uv sync --locked
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+
+  pruebas:
+    name: Pruebas
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: webseba
+          POSTGRES_USER: webseba
+          POSTGRES_PASSWORD: solo-ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U webseba -d webseba"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      SECRET_KEY: clave-solo-para-la-ci-sin-valor-fuera-de-este-flujo-de-trabajo
+      ALLOWED_HOSTS: localhost
+      DATABASE_URL: postgres://webseba:solo-ci@localhost:5432/webseba
+    steps:
+      - uses: actions/checkout@v4
+      - run: pipx install "uv==${UV_VERSION}"
+      - run: uv sync --locked
+      - name: Comprobaciones de Django
+        run: uv run python manage.py check
+      - name: Modelos sin migraciones pendientes
+        run: uv run python manage.py makemigrations --check --dry-run
+      - name: Pruebas con cobertura
+        run: uv run pytest
+
+  auditoria:
+    name: Vulnerabilidades de dependencias
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: pipx install "uv==${UV_VERSION}"
+      - name: Exportar el archivo de bloqueo
+        run: uv export --locked --format requirements-txt --output-file requisitos.txt
+      - name: pip-audit
+        run: uvx pip-audit==2.10.1 --requirement requisitos.txt --require-hashes --disable-pip
+
+  arranque:
+    name: docker compose up desde cero
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: cp .env.example .env
+      - name: Construir y levantar
+        run: docker compose up --detach --build --wait --wait-timeout 300
+      - name: La aplicación responde y llega a la base de datos
+        run: curl --fail --silent --show-error http://localhost:8000/salud/
+      - name: Las migraciones quedaron aplicadas en la base vacía
+        run: docker compose exec -T web python manage.py migrate --check
+      - name: Tailwind compiló el CSS con los tokens
+        run: curl --fail --silent --show-error http://localhost:8000/static/css/app.css | grep --quiet --ignore-case "#0f4c5c"
+      - name: Registros si algo falla
+        if: failure()
+        run: docker compose logs --no-color
+      - name: Bajar
+        if: always()
+        run: docker compose down --volumes
