@@ -1,0 +1,12 @@
+{% comment %}
+Tarjeta de indicador del panel: etiqueta, número grande e ícono en un cuadro de color suave.
+Parámetros: etiqueta; valor; icono (nombre de Lucide); tono: primario (por defecto), info o exito;
+url (opcional: toda la tarjeta es un enlace).
+{% endcomment %}
+{% if url %}<a class="tarjeta flex items-center justify-between gap-4 p-5 text-texto" href="{{ url }}">{% else %}<div class="tarjeta flex items-center justify-between gap-4 p-5">{% endif %}
+  <div>
+    <p class="text-xs text-texto-secundario">{{ etiqueta }}</p>
+    <p class="mt-1 text-3xl font-semibold tabular-nums">{{ valor }}</p>
+  </div>
+  <span class="cuadro-icono{% if tono %} cuadro-icono-{{ tono }}{% endif %}" aria-hidden="true">{% include "iconos/"|add:icono|add:".svg" %}</span>
+{% if url %}</a>{% else %}</div>{% endif %}

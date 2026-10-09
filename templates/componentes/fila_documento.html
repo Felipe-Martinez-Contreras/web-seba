@@ -1,0 +1,16 @@
+{% comment %}
+Fila de documento con ícono por tipo, para usar dentro de <ul class="lista-filas">.
+Parámetros: titulo; url; tipo (pdf, word, excel, powerpoint o imagen); tamano (bytes);
+fecha; nuevo (muestra la etiqueta "Nuevo").
+{% endcomment %}
+<li>
+  <a class="fila" href="{{ url }}">
+    {% include "componentes/icono_archivo.html" with tipo=tipo only %}
+    <span class="min-w-0 flex-1">
+      <span class="fila-titulo block">{{ titulo }}</span>
+      <span class="fila-meta block">{{ tamano|filesizeformat }}{% if fecha %} · {{ fecha|date }}{% endif %}</span>
+    </span>
+    {% if nuevo %}{% include "componentes/insignia.html" with texto="Nuevo" tono="info" only %}{% endif %}
+    <span class="icono icono-chico text-texto-secundario" aria-hidden="true">{% include "iconos/chevron-right.svg" %}</span>
+  </a>
+</li>

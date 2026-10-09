@@ -1,0 +1,5 @@
+{% comment %}
+Ícono de Lucide, decorativo (oculto a los lectores de pantalla).
+Parámetros: nombre (archivo de templates/iconos sin extensión); clase (opcional: icono-chico, icono-grande o un color).
+{% endcomment %}
+<span class="icono{% if clase %} {{ clase }}{% endif %}" aria-hidden="true">{% include "iconos/"|add:nombre|add:".svg" %}</span>

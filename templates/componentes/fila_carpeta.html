@@ -1,0 +1,14 @@
+{% comment %}
+Fila de carpeta, para usar dentro de <ul class="lista-filas">.
+Parámetros: titulo; url; cantidad (número de documentos); actualizado (fecha, opcional).
+{% endcomment %}
+<li>
+  <a class="fila" href="{{ url }}">
+    <span class="icono icono-grande text-primario" aria-hidden="true">{% include "iconos/folder.svg" %}</span>
+    <span class="min-w-0 flex-1">
+      <span class="fila-titulo block">{{ titulo }}</span>
+      <span class="fila-meta block">{{ cantidad }} documento{{ cantidad|pluralize }}{% if actualizado %} · Actualizado el {{ actualizado|date }}{% endif %}</span>
+    </span>
+    <span class="icono icono-chico text-texto-secundario" aria-hidden="true">{% include "iconos/chevron-right.svg" %}</span>
+  </a>
+</li>

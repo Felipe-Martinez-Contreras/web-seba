@@ -1,0 +1,20 @@
+{% comment %}Enlaces de la barra lateral. Uso interno de barra_lateral.html.{% endcomment %}
+<ul class="flex flex-col gap-1">
+  {% for elemento in menu_lateral %}
+  <li>
+    <a class="lateral-enlace" href="{{ elemento.url }}"{% if elemento.activo %} aria-current="page"{% endif %}>
+      {% if elemento.icono %}{% include "componentes/icono.html" with nombre=elemento.icono only %}{% endif %}
+      <span>{{ elemento.texto }}</span>
+    </a>
+  </li>
+  {% endfor %}
+</ul>
+{% if url_cerrar_sesion %}
+<form class="mt-4 lg:mt-auto lg:pt-4" method="post" action="{{ url_cerrar_sesion }}">
+  {% csrf_token %}
+  <button class="lateral-enlace" type="submit">
+    {% include "componentes/icono.html" with nombre="log-out" only %}
+    <span>Cerrar sesión</span>
+  </button>
+</form>
+{% endif %}

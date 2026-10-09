@@ -1,0 +1,14 @@
+{% comment %}
+Ícono por tipo de archivo, con el tipo también como texto para lectores de pantalla.
+Parámetros: tipo: pdf, word, excel, powerpoint o imagen.
+{% endcomment %}
+<span class="icono icono-grande archivo-{{ tipo }}" aria-hidden="true">
+  {% if tipo == "pdf" %}{% include "iconos/file-text.svg" %}
+  {% elif tipo == "word" %}{% include "iconos/file-type.svg" %}
+  {% elif tipo == "excel" %}{% include "iconos/file-spreadsheet.svg" %}
+  {% elif tipo == "powerpoint" %}{% include "iconos/presentation.svg" %}
+  {% elif tipo == "imagen" %}{% include "iconos/file-image.svg" %}{% endif %}
+</span>
+<span class="sr-only">
+  {% if tipo == "pdf" %}PDF{% elif tipo == "word" %}Word{% elif tipo == "excel" %}Excel{% elif tipo == "powerpoint" %}PowerPoint{% elif tipo == "imagen" %}Imagen{% endif %}:
+</span>

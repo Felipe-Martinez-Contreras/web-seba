@@ -1,0 +1,23 @@
+{% comment %}
+Diálogo de confirmación con <dialog> nativo. Lo abre un botón con abre_dialogo=<id>.
+"Cancelar" lo cierra sin JavaScript; "Confirmar" envía un formulario POST real.
+Parámetros: id; titulo; mensaje; accion (URL del POST); confirmar_texto;
+peligro (botón de confirmación rojo); campo_nombre y campo_valor (dato oculto opcional).
+{% endcomment %}
+<dialog class="dialogo" id="{{ id }}" aria-labelledby="{{ id }}-titulo" aria-describedby="{{ id }}-mensaje">
+  <h2 class="text-lg font-semibold" id="{{ id }}-titulo">{{ titulo }}</h2>
+  <p class="mt-2 text-sm text-texto-secundario" id="{{ id }}-mensaje">{{ mensaje }}</p>
+  <div class="mt-6 flex flex-wrap justify-end gap-3">
+    <form method="dialog">
+      <button class="boton boton-secundario" type="submit">Cancelar</button>
+    </form>
+    <form method="post" action="{{ accion }}">
+      {% csrf_token %}
+      {% if campo_nombre %}<input type="hidden" name="{{ campo_nombre }}" value="{{ campo_valor }}">{% endif %}
+      <button class="boton {% if peligro %}boton-peligro{% else %}boton-primario{% endif %}" type="submit">
+        <span class="boton-indicador icono icono-chico" aria-hidden="true">{% include "iconos/loader-circle.svg" %}</span>
+        <span>{{ confirmar_texto }}</span>
+      </button>
+    </form>
+  </div>
+</dialog>

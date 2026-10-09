@@ -1,0 +1,30 @@
+{% comment %}
+Barra lateral del portal y del panel: azul marino, con el elemento activo en blanco.
+Parámetros: menu_lateral: lista de diccionarios con texto, url, icono (nombre de Lucide) y activo;
+marca_nombre y marca_url; url_cerrar_sesion (si se entrega, muestra "Cerrar sesión" al pie,
+como formulario POST).
+En pantallas angostas es un menú desplegable nativo; desde 1024 px queda fija a la izquierda,
+con 240 px de ancho. Sin elementos no se muestra.
+{% endcomment %}
+{% if menu_lateral %}
+<aside class="sobre-primario bg-primario text-blanco lg:flex lg:w-60 lg:shrink-0 lg:flex-col">
+  <div class="hidden min-h-16 items-center px-4 lg:flex">{% include "componentes/marca.html" %}</div>
+
+  <details class="lg:hidden">
+    <summary class="flex min-h-14 items-center justify-between gap-3 px-4">
+      {% include "componentes/marca.html" with marca_url="" %}
+      <span class="flex items-center gap-2 text-sm font-medium">
+        {% include "componentes/icono.html" with nombre="menu" only %}
+        <span>Menú</span>
+      </span>
+    </summary>
+    <nav class="px-3 pb-3" aria-label="Secciones">
+      {% include "componentes/_barra_lateral_enlaces.html" %}
+    </nav>
+  </details>
+
+  <nav class="hidden flex-1 flex-col px-3 py-2 lg:flex" aria-label="Secciones">
+    {% include "componentes/_barra_lateral_enlaces.html" %}
+  </nav>
+</aside>
+{% endif %}

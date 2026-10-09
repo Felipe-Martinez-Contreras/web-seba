@@ -3,20 +3,20 @@ Paginación. Parámetros: pagina (objeto Page de Django). Conserva los filtros d
 No se muestra si hay una sola página.
 {% endcomment %}
 {% if pagina.has_other_pages %}
-<nav class="flex items-center justify-between gap-4" aria-label="Paginación">
+<nav class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2" aria-label="Paginación">
   {% if pagina.has_previous %}
   <a class="boton boton-secundario" href="{% querystring page=pagina.previous_page_number %}" rel="prev">
-    <span class="icono" aria-hidden="true">{% include "iconos/chevron-left.svg" %}</span>
+    {% include "componentes/icono.html" with nombre="chevron-left" clase="icono-chico" only %}
     <span>Anterior</span>
   </a>
   {% else %}
   <span></span>
   {% endif %}
-  <p class="text-sm text-texto-secundario">Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</p>
+  <p class="order-last w-full text-center text-xs text-texto-secundario sm:order-none sm:w-auto">Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</p>
   {% if pagina.has_next %}
   <a class="boton boton-secundario" href="{% querystring page=pagina.next_page_number %}" rel="next">
     <span>Siguiente</span>
-    <span class="icono" aria-hidden="true">{% include "iconos/chevron-right.svg" %}</span>
+    {% include "componentes/icono.html" with nombre="chevron-right" clase="icono-chico" only %}
   </a>
   {% else %}
   <span></span>

@@ -1,0 +1,9 @@
+{% comment %}
+Tarjeta de servicio: ícono de línea, nombre y resumen.
+Parámetros: titulo; resumen; icono (nombre de Lucide); url (opcional: toda la tarjeta es un enlace).
+{% endcomment %}
+{% if url %}<a class="tarjeta flex flex-col gap-3 p-5 text-texto" href="{{ url }}">{% else %}<div class="tarjeta flex flex-col gap-3 p-5">{% endif %}
+  <span class="cuadro-icono cuadro-icono-contorno" aria-hidden="true">{% include "iconos/"|add:icono|add:".svg" %}</span>
+  <h3 class="text-base font-semibold">{{ titulo }}</h3>
+  {% if resumen %}<p class="text-sm text-texto-secundario">{{ resumen }}</p>{% endif %}
+{% if url %}</a>{% else %}</div>{% endif %}

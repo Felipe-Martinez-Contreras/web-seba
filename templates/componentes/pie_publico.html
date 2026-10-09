@@ -1,21 +1,36 @@
 {% comment %}
-Pie del sitio público. Parámetros (todos opcionales; lo que falta no se muestra):
-contacto_lineas: lista de textos de contacto; enlaces_pie: lista de pares (texto, url).
+Pie del sitio público, azul marino.
+Parámetros (todos opcionales; lo que falta no se muestra): marca_nombre; contacto_lineas: lista de
+textos de contacto; enlaces_pie: lista de pares (texto, url); redes_sociales: lista de pares
+(nombre, url), solo las registradas.
 {% endcomment %}
-{% if contacto_lineas or enlaces_pie %}
-<footer class="border-t border-divisor bg-superficie-alterna">
-  <div class="contenedor flex flex-wrap items-start justify-between gap-6 py-8 text-sm">
-    {% if contacto_lineas %}
-    <address class="not-italic text-texto-secundario">
-      {% for linea in contacto_lineas %}<p>{{ linea }}</p>{% endfor %}
-    </address>
-    {% endif %}
+{% if marca_nombre or contacto_lineas or enlaces_pie or redes_sociales %}
+<footer class="sobre-primario bg-primario text-blanco">
+  <div class="contenedor flex flex-wrap items-start justify-between gap-8 py-10 text-sm">
+    <div class="flex flex-col gap-3">
+      {% include "componentes/marca.html" with marca_url="" %}
+      {% if contacto_lineas %}
+      <address class="text-sobre-primario-secundario not-italic">
+        {% for linea in contacto_lineas %}<p>{{ linea }}</p>{% endfor %}
+      </address>
+      {% endif %}
+    </div>
     {% if enlaces_pie %}
-    <nav class="flex flex-wrap gap-4" aria-label="Pie de página">
+    <nav class="flex flex-wrap gap-x-6 gap-y-2" aria-label="Pie de página">
       {% for texto, url in enlaces_pie %}
-      <a class="enlace" href="{{ url }}">{{ texto }}</a>
+      <a class="nav-publica px-0" href="{{ url }}">{{ texto }}</a>
       {% endfor %}
     </nav>
+    {% endif %}
+    {% if redes_sociales %}
+    <div>
+      <p class="font-semibold">Síganos</p>
+      <ul class="mt-2 flex flex-wrap gap-x-4">
+        {% for nombre_red, url in redes_sociales %}
+        <li><a class="nav-publica px-0" href="{{ url }}" rel="noopener noreferrer">{{ nombre_red }}</a></li>
+        {% endfor %}
+      </ul>
+    </div>
     {% endif %}
   </div>
 </footer>

@@ -1,0 +1,37 @@
+{% comment %}
+Barra superior del portal y del panel: buscador y menú del usuario.
+Parámetros (lo que falta no se muestra): buscador_accion (URL del formulario GET),
+buscador_etiqueta (texto de la etiqueta y del ejemplo) y buscador_valor;
+usuario_nombre; menu_usuario: lista de pares (texto, url).
+{% endcomment %}
+{% if buscador_accion or usuario_nombre %}
+<div class="border-b border-divisor bg-superficie">
+  <div class="flex min-h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+    {% if buscador_accion %}
+    <form class="relative w-full max-w-md" method="get" action="{{ buscador_accion }}" role="search">
+      <label class="sr-only" for="buscador-superior">{{ buscador_etiqueta }}</label>
+      <span class="icono icono-chico pointer-events-none absolute inset-y-0 left-3 items-center text-texto-secundario" aria-hidden="true">{% include "iconos/search.svg" %}</span>
+      <input class="min-h-11 w-full rounded-caja border border-borde-campo bg-superficie pr-3 pl-9 text-sm text-texto placeholder:text-texto-secundario" id="buscador-superior" type="search" name="q" value="{{ buscador_valor|default:'' }}" placeholder="{{ buscador_etiqueta }}">
+    </form>
+    {% else %}
+    <span></span>
+    {% endif %}
+    {% if usuario_nombre %}
+    <details class="relative shrink-0">
+      <summary class="flex min-h-11 items-center gap-2 rounded-boton px-2 text-sm font-medium">
+        {% include "componentes/icono.html" with nombre="circle-user" only %}
+        <span class="sr-only sm:not-sr-only sm:max-w-40 sm:truncate">{{ usuario_nombre }}</span>
+        {% include "componentes/icono.html" with nombre="chevron-down" clase="icono-chico" only %}
+      </summary>
+      {% if menu_usuario %}
+      <nav class="menu-flotante" aria-label="Cuenta">
+        {% for texto, url in menu_usuario %}
+        <a class="menu-enlace" href="{{ url }}">{{ texto }}</a>
+        {% endfor %}
+      </nav>
+      {% endif %}
+    </details>
+    {% endif %}
+  </div>
+</div>
+{% endif %}

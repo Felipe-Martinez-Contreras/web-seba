@@ -1,15 +1,2 @@
-{% extends "base.html" %}
-{% block meta %}<meta name="robots" content="noindex">{% endblock %}
-{% block cuerpo %}
-<div class="flex min-h-screen flex-col bg-superficie-alterna">
-  <header class="border-b border-divisor bg-superficie">
-    <div class="contenedor flex min-h-16 items-center justify-between gap-4">
-      {% block encabezado_portal %}{% endblock %}
-    </div>
-  </header>
-  <main id="contenido" class="contenedor flex-1 py-8" tabindex="-1">
-    {% include "componentes/mensajes.html" %}
-    {% block contenido %}{% endblock %}
-  </main>
-</div>
-{% endblock %}
+{% extends "base_aplicacion.html" %}
+{% comment %}Portal del cliente. El menú y el usuario llegan por el contexto de sus vistas.{% endcomment %}

@@ -1,0 +1,10 @@
+{% comment %}
+Pestañas como enlaces: cada una es una URL propia, sin JavaScript.
+Parámetros: pestanas: lista de diccionarios con texto, url y activa; pestanas_etiqueta (nombre
+accesible del grupo).
+{% endcomment %}
+<nav class="pestanas" aria-label="{{ pestanas_etiqueta }}">
+  {% for pestana in pestanas %}
+  <a class="pestana" href="{{ pestana.url }}"{% if pestana.activa %} aria-current="page"{% endif %}>{{ pestana.texto }}</a>
+  {% endfor %}
+</nav>

@@ -1,22 +1,35 @@
 {% comment %}
-Encabezado del sitio público. Parámetros (todos opcionales; lo que falta no se muestra):
-nombre_sitio y url_inicio; enlaces_publicos: lista de pares (texto, url);
-accion_texto y accion_url: botón principal.
+Encabezado del sitio público, azul marino, continuo con la portada.
+Parámetros (todos opcionales; lo que falta no se muestra): marca_nombre y marca_url;
+enlaces_publicos: lista de pares (texto, url); acceso_texto y acceso_url: botón de acceso de clientes.
+En pantallas angostas la navegación queda dentro de un menú desplegable nativo.
 {% endcomment %}
-<header class="border-b border-divisor bg-superficie">
-  <div class="contenedor flex min-h-16 flex-wrap items-center justify-between gap-x-6 gap-y-2 py-2">
-    {% if nombre_sitio %}
-    <a class="text-lg font-semibold text-texto no-underline" href="{{ url_inicio }}">{{ nombre_sitio }}</a>
-    {% endif %}
-    {% if enlaces_publicos or accion_url %}
-    <nav class="flex flex-wrap items-center gap-2" aria-label="Principal">
+<header class="sobre-primario bg-primario text-blanco">
+  <div class="contenedor flex min-h-16 items-center justify-between gap-6 py-2">
+    {% include "componentes/marca.html" %}
+    {% if enlaces_publicos or acceso_url %}
+    <nav class="hidden items-center gap-2 md:flex" aria-label="Principal">
       {% for texto, url in enlaces_publicos %}
-      <a class="nav-enlace" href="{{ url }}">{{ texto }}</a>
+      <a class="nav-publica" href="{{ url }}">{{ texto }}</a>
       {% endfor %}
-      {% if accion_texto and accion_url %}
-      {% include "componentes/boton.html" with texto=accion_texto href=accion_url %}
+      {% if acceso_texto and acceso_url %}
+      <span class="ml-2">{% include "componentes/boton.html" with texto=acceso_texto href=acceso_url variante="contorno-claro" icono="lock" only %}</span>
       {% endif %}
     </nav>
+    <details class="relative md:hidden">
+      <summary class="nav-publica gap-2">
+        {% include "componentes/icono.html" with nombre="menu" only %}
+        <span>Menú</span>
+      </summary>
+      <nav class="menu-flotante" aria-label="Principal">
+        {% for texto, url in enlaces_publicos %}
+        <a class="menu-enlace" href="{{ url }}">{{ texto }}</a>
+        {% endfor %}
+        {% if acceso_texto and acceso_url %}
+        <a class="menu-enlace font-semibold" href="{{ acceso_url }}">{{ acceso_texto }}</a>
+        {% endif %}
+      </nav>
+    </details>
     {% endif %}
   </div>
 </header>

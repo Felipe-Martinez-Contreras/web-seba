@@ -1,14 +1,19 @@
 {% comment %}
 Botón o enlace con aspecto de botón.
-Parámetros: texto (obligatorio); variante: primario (por defecto), secundario, fantasma o peligro;
-href (lo convierte en enlace); tipo: submit (por defecto) o button; nombre y valor;
-deshabilitado; cargando.
+Parámetros: texto (obligatorio); variante: primario (por defecto), secundario, fantasma, peligro,
+inverso o contorno-claro (los dos últimos, sobre azul marino); href (lo convierte en enlace);
+tipo: submit (por defecto) o button; nombre y valor; icono (nombre de Lucide, opcional);
+ancho (ocupa todo el ancho); deshabilitado; cargando; abre_dialogo (id del diálogo que abre).
 {% endcomment %}
 {% if href %}
-<a class="boton boton-{{ variante|default:'primario' }}" href="{{ href }}">{{ texto }}</a>
+<a class="boton boton-{{ variante|default:'primario' }}{% if ancho %} boton-ancho{% endif %}" href="{{ href }}">
+  {% if icono %}{% include "componentes/icono.html" with nombre=icono clase="icono-chico" only %}{% endif %}
+  <span>{{ texto }}</span>
+</a>
 {% else %}
-<button class="boton boton-{{ variante|default:'primario' }}" type="{{ tipo|default:'submit' }}"{% if nombre %} name="{{ nombre }}"{% endif %}{% if valor %} value="{{ valor }}"{% endif %}{% if deshabilitado or cargando %} disabled{% endif %}{% if cargando %} aria-busy="true"{% endif %}>
-  <span class="boton-indicador icono" aria-hidden="true">{% include "iconos/loader-circle.svg" %}</span>
+<button class="boton boton-{{ variante|default:'primario' }}{% if ancho %} boton-ancho{% endif %}" type="{{ tipo|default:'submit' }}"{% if nombre %} name="{{ nombre }}"{% endif %}{% if valor %} value="{{ valor }}"{% endif %}{% if abre_dialogo %} data-abre-dialogo="{{ abre_dialogo }}"{% endif %}{% if deshabilitado or cargando %} disabled{% endif %}{% if cargando %} aria-busy="true"{% endif %}>
+  <span class="boton-indicador icono icono-chico" aria-hidden="true">{% include "iconos/loader-circle.svg" %}</span>
+  {% if icono %}{% include "componentes/icono.html" with nombre=icono clase="icono-chico" only %}{% endif %}
   <span>{{ texto }}</span>
 </button>
 {% endif %}

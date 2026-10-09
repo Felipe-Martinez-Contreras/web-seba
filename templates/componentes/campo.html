@@ -1,13 +1,24 @@
 {% comment %}
 Campo de formulario con etiqueta, ayuda y error.
-Parámetros: campo (BoundField de Django, obligatorio).
+Parámetros: campo (BoundField de Django, obligatorio); contrasena (agrega el botón para
+mostrar u ocultar la contraseña; el campo debe usar PasswordInput).
 Django asocia la ayuda y el error al control con aria-describedby y marca aria-invalid.
 {% endcomment %}
 <div class="campo">
   <label class="campo-etiqueta" for="{{ campo.id_for_label }}">
     {{ campo.label }}{% if not campo.field.required %} <span class="font-normal text-texto-secundario">(opcional)</span>{% endif %}
   </label>
+  {% if contrasena %}
+  <div class="campo-contrasena">
+    {{ campo }}
+    <button class="campo-contrasena-boton" type="button" data-alterna-contrasena="{{ campo.id_for_label }}" aria-controls="{{ campo.id_for_label }}" aria-pressed="false" aria-label="Mostrar contraseña">
+      <span class="icono al-ocultar" aria-hidden="true">{% include "iconos/eye.svg" %}</span>
+      <span class="icono al-mostrar" aria-hidden="true">{% include "iconos/eye-off.svg" %}</span>
+    </button>
+  </div>
+  {% else %}
   {{ campo }}
+  {% endif %}
   {% if campo.help_text %}
   <p class="campo-ayuda" id="{{ campo.auto_id }}_helptext">{{ campo.help_text }}</p>
   {% endif %}
@@ -15,7 +26,7 @@ Django asocia la ayuda y el error al control con aria-describedby y marca aria-i
   <div id="{{ campo.auto_id }}_error">
     {% for error in campo.errors %}
     <p class="campo-error">
-      <span class="icono" aria-hidden="true">{% include "iconos/circle-alert.svg" %}</span>
+      <span class="icono icono-chico mt-0.5" aria-hidden="true">{% include "iconos/circle-alert.svg" %}</span>
       <span>{{ error }}</span>
     </p>
     {% endfor %}

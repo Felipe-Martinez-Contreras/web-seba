@@ -1,0 +1,15 @@
+{% load formato %}
+{% comment %}
+Tarjeta de la empresa: razón social y RUT con formato.
+Parámetros: razon_social; rut_empresa; accion_texto y accion_url (opcionales).
+{% endcomment %}
+<div class="tarjeta flex flex-wrap items-center gap-4 p-5">
+  <span class="cuadro-icono icono-grande" aria-hidden="true">{% include "iconos/building-2.svg" %}</span>
+  <div class="min-w-0 flex-1">
+    <p class="text-base font-semibold break-words">{{ razon_social }}</p>
+    <p class="text-xs text-texto-secundario">RUT: {{ rut_empresa|rut }}</p>
+  </div>
+  {% if accion_texto and accion_url %}
+  {% include "componentes/boton.html" with texto=accion_texto href=accion_url variante="secundario" only %}
+  {% endif %}
+</div>

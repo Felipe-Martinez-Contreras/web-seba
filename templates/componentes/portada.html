@@ -1,0 +1,27 @@
+{% comment %}
+Portada del sitio público: titular grande en blanco sobre azul marino y hasta dos botones.
+Parámetros: titular (sin titular no se muestra); bajada; accion_texto y accion_url (botón lleno);
+accion2_texto y accion2_url (botón con borde blanco); imagen_url e imagen_alt (opcionales).
+Sin imagen el fondo es azul marino liso. Con imagen se agrega un velo azul marino que asegura
+el contraste del texto.
+{% endcomment %}
+{% if titular %}
+<section class="sobre-primario relative isolate bg-primario text-blanco">
+  {% if imagen_url %}
+  <img class="absolute inset-0 -z-20 size-full object-cover" src="{{ imagen_url }}" alt="{{ imagen_alt|default:'' }}">
+  <div class="absolute inset-0 -z-10 bg-primario/75"></div>
+  {% endif %}
+  <div class="contenedor py-16 md:py-24">
+    <div class="max-w-xl">
+      <h1 class="text-3xl font-bold md:text-4xl">{{ titular }}</h1>
+      {% if bajada %}<p class="mt-4 text-base text-sobre-primario-secundario">{{ bajada|linebreaksbr }}</p>{% endif %}
+      {% if accion_url or accion2_url %}
+      <div class="mt-8 flex flex-wrap gap-3">
+        {% if accion_texto and accion_url %}{% include "componentes/boton.html" with texto=accion_texto href=accion_url variante="inverso" only %}{% endif %}
+        {% if accion2_texto and accion2_url %}{% include "componentes/boton.html" with texto=accion2_texto href=accion2_url variante="contorno-claro" only %}{% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endif %}

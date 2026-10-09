@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% comment %}
+Estructura común del portal y del panel: barra lateral azul marino, barra superior y contenido.
+No se usa directamente: las pantallas extienden base_portal.html o base_panel.html.
+{% endcomment %}
+{% block meta %}<meta name="robots" content="noindex">{% endblock %}
+{% block cuerpo %}
+<div class="min-h-screen lg:flex">
+  {% include "componentes/barra_lateral.html" %}
+  <div class="flex min-w-0 flex-1 flex-col">
+    {% include "componentes/barra_superior.html" %}
+    <main id="contenido" class="flex-1 px-4 py-8 sm:px-6 lg:px-8" tabindex="-1">
+      <div class="mx-auto w-full max-w-contenido">
+        {% include "componentes/mensajes.html" %}
+        {% block contenido %}{% endblock %}
+      </div>
+    </main>
+  </div>
+</div>
+{% endblock %}

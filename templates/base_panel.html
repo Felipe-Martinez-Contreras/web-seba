@@ -1,13 +1,2 @@
-{% extends "base.html" %}
-{% block meta %}<meta name="robots" content="noindex">{% endblock %}
-{% block cuerpo %}
-<div class="min-h-screen bg-superficie-alterna lg:flex">
-  {% include "componentes/barra_lateral_panel.html" %}
-  <main id="contenido" class="min-w-0 flex-1 px-4 py-8 sm:px-6 lg:px-8" tabindex="-1">
-    <div class="mx-auto w-full max-w-contenido">
-      {% include "componentes/mensajes.html" %}
-      {% block contenido %}{% endblock %}
-    </div>
-  </main>
-</div>
-{% endblock %}
+{% extends "base_aplicacion.html" %}
+{% comment %}Panel de administración. El menú y el usuario llegan por el contexto de sus vistas.{% endcomment %}
