@@ -14,7 +14,7 @@ Plan de la Etapa 0 (sección 11 de `ESPECIFICACION.md`). Se actualiza al avanzar
 | 4 | Documentos | Aprobada por el responsable el 11-10-2026, tras probarla en el navegador |
 | 5 | Portal del cliente | Terminada el 11-10-2026; pendiente de aprobación del responsable |
 | 6 | Sitio público y solicitudes | Terminada el 11-10-2026, con las fotografías aprobadas; pendiente de aprobación del responsable |
-| 7 | Endurecimiento y calidad | Pendiente |
+| 7 | Endurecimiento y calidad | Terminada el 11-10-2026; pendiente de aprobación del responsable |
 | 8 | Despliegue y operación | Pendiente |
 
 ## 1. Entorno revisado (09-10-2026)
@@ -144,18 +144,20 @@ Aprobadas por el responsable el 09-10-2026.
 - Etapa 8: límite de tamaño de subida en el servidor web y el proxy (SEG-07) y tiempos de espera para 25 MB (RNF-02).
 - Etapa 8: la base de producción debe permitir crear la extensión `unaccent`, o traerla creada (DEC-116).
 - Revisión del responsable: recorrer el portal en un teléfono real (pasos en el README).
-- Etapa 7: la barra de pestañas muestra una barra de desplazamiento fina en pantallas angostas (portal y panel); es solo de aspecto.
-- Etapa 7: "Ver en pantalla" con `Content-Security-Policy: sandbox` en Firefox y Safari (en Edge ya se comprobó).
 - Revisión del responsable: recorrer E2 y E6 en el navegador con un administrador real y su 2FA, y probar el botón "Copiar enlace".
-- Etapa 7: repetir en staging la medición de tiempos de `SEGURIDAD.md`.
 - Etapa 8: valor de `PROXY_CONFIANZA_REDES` según el hosting; formato de los logs de Gunicorn y del proxy sin el token de los enlaces; proveedor SMTP.
-- Etapa 7: revisión de accesibilidad con lector de pantalla y teclado sobre pantallas reales.
 - Fotos reales del profesional: cuando existan, reemplazan a las de banco (`docs/FOTOS.md`).
 - Responsable: cargar los datos del negocio y los servicios en Panel › Configuración › Contenido del sitio; hasta entonces el sitio público muestra solo navegación y pie.
 - Etapa 8: definir `NOTIFICACIONES_DESTINATARIOS` y el proveedor SMTP; programar `reintentar_notificaciones` cada 15 minutos; ejecutar `contenido_pendiente --estricto` antes de publicar.
 - Etapa 8: `cargar_demo` en staging con `DEMO_PERMITIDO=true`; producción no define esa variable.
-- Etapa 7: `favicon.ico` (hoy responde 404) y Lighthouse del sitio público.
-- Logo real: hasta tenerlo se usa la marca provisional (DEC-48).
+- Logo real: hasta tenerlo se usan la marca y el favicon provisionales (DEC-48, DEC-154).
+- Responsable: pasada con el Narrador de Windows y mirada al visor de PDF en una ventana de Firefox (listas en el README).
+- Responsable: Safari y Safari en iOS, con un dispositivo Apple (RNF-03).
+- Responsable: decidir si HTMX se quita del todo; hoy ninguna plantilla lo usa (DEC-157).
+- Responsable: agregar `DEMO_PERMITIDO=true` a su `.env` de desarrollo para seguir usando `cargar_demo` (DEC-149).
+- Etapa 8: repetir en staging Lighthouse y las mediciones de tiempos (RNF-06, RNF-02, `SEGURIDAD.md` §3).
+- Etapa 8: `PROXY_HTTPS_ENCABEZADO`, Gunicorn escuchando en TCP, `DJANGO_SETTINGS_MODULE` fijo en la imagen y la aplicación sin exposición directa (`SEGURIDAD.md` §4); activar HSTS para subdominios y precarga cuando corresponda.
+- Etapa 8: servicio de errores opcional (RNF-05).
 
 ## 9. Etapa 1: qué quedó construido
 
@@ -306,3 +308,25 @@ Estado real del sitio hoy: los datos de la sección 0 siguen en [COMPLETAR], as�
 - **Pruebas anteriores actualizadas.** Tres pruebas afirmaban el estado anterior y se ajustaron al nuevo: las pantallas de acceso ahora llevan una imagen (solo la propia), y el inicio y el menú del panel ahora incluyen las solicitudes.
 - **Commits.** Se hicieron al final, después de que el responsable aprobó las fotos: el plan comprometía mostrárselas antes de confirmarlas.
 - La revisión en el navegador fue con Edge sin interfaz sobre una base temporal (DEC-94), con una sesión de administrador creada por script. La llegada real de un correo por un proveedor SMTP no se probó: no hay proveedor.
+
+## 16. Etapa 7: qué quedó construido
+
+Endurecimiento y calidad: no agrega funciones. Decisiones DEC-143 a DEC-162. El estado de cada requisito está en `TRAZABILIDAD.md`, con sus pendientes al final.
+
+- **Revisión de seguridad independiente:** 12 hallazgos, ninguno crítico (`SEGURIDAD.md` §7). Corregidos nueve: el bloqueo que se anulaba llenando la caché, `Permissions-Policy`, HTTPS detrás del proxy, la recuperación que revocaba activaciones, `cargar_demo`, el admin de Django, los códigos de recuperación, la prueba 1 y un error 500 en `next`. Tres quedan sin cambio, documentados.
+- **Producción:** `check --deploy` con la configuración de producción como prueba automática (dos advertencias de HSTS, justificadas); `pip-audit` sin vulnerabilidades.
+- **Accesibilidad:** axe-core sin observaciones en 41 pantallas, flujos completos con teclado a 360 y 1280 px y árbol de accesibilidad revisado. Seis correcciones (DEC-156).
+- **Firefox:** subida y reemplazo con progreso, menús móviles, diálogo, copiar enlace y visor de PDF con `sandbox`, en Firefox 157.
+- **Sitio público:** Lighthouse móvil de 98 a 100 en rendimiento, 100 en accesibilidad y en buenas prácticas, medido en local con la configuración de producción; favicon; pestañas sin barra de desplazamiento.
+- **Rendimiento:** con 200 empresas, 1.000 usuarios y 20.000 documentos, el peor p95 fue de 130 ms. Sin índices nuevos.
+
+### Diferencias con el plan aprobado de la etapa
+
+- `CSRF_TRUSTED_ORIGINS` no se exige: toma `SITIO_URL` por omisión (DEC-146).
+- `check --deploy` quedó como prueba automática en vez de un paso propio de la CI (DEC-147).
+- El favicon se generó sin Pillow (DEC-154).
+- Lighthouse no se adelantó mientras se esperaba la aprobación de los hallazgos: necesitaba la configuración de producción, que era parte de H-03.
+- No previsto en el plan: HTMX deja de cargarse en las páginas públicas, la fuente de respaldo, la precarga de la portada y las descripciones genéricas (DEC-157 a DEC-159), que salieron de la medición de Lighthouse.
+- Tres pruebas anteriores cambiaron porque cambió, por decisión aprobada, lo que afirmaban: los eventos sobre el límite de recuperación (de uno por petición a uno), los códigos de recuperación (ya no desaparecen al recargar) y las descripciones de tres páginas. Otras tres se ajustaron por el marcado nuevo (orden de la fotografía en la portada, precarga y nombre de la fuente).
+- La revisión con lector de pantalla fue sobre el árbol de accesibilidad, no escuchándolo. Firefox se manejó sin interfaz. Safari no se probó. No hay staging: todas las mediciones son locales.
+

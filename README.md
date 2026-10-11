@@ -124,7 +124,7 @@ Recién instalado, `http://localhost:8000/` muestra solo la navegación y el pie
 docker compose run --rm web python manage.py cargar_demo
 ```
 
-Carga datos marcados DEMO: contenido del sitio, cuatro servicios, una política de privacidad encabezada "TEXTO DE PRUEBA" y dos empresas con un usuario y dos PDF cada una. No pisa datos que ya existan. Se niega a correr fuera de desarrollo, salvo con `DEMO_PERMITIDO=true` (staging).
+Carga datos marcados DEMO: contenido del sitio, cuatro servicios, una política de privacidad encabezada "TEXTO DE PRUEBA" y dos empresas con un usuario y dos PDF cada una. No pisa datos que ya existan. Solo corre con `DEMO_PERMITIDO=true` en `.env` (viene así en `.env.example`; si su `.env` es anterior, agréguela y reinicie con `docker compose up -d`). Producción nunca define esa variable.
 
 1. Abra `http://localhost:8000/`: portada, servicios, formulario de cotización y pie.
 2. En **Servicios**, pulse "Solicitar cotización" en uno: el formulario llega con ese servicio elegido.
@@ -136,6 +136,32 @@ Carga datos marcados DEMO: contenido del sitio, cuatro servicios, una política 
 
 El contenido real se carga en el panel, en **Configuración › Contenido del sitio**. Las fotografías y su licencia están en [`docs/FOTOS.md`](docs/FOTOS.md).
 
+### Revisión manual pendiente: lector de pantalla y Firefox
+
+Dos comprobaciones de la Etapa 7 necesitan a una persona. Anote el resultado en `docs/TRAZABILIDAD.md` (E8 y RNF-03).
+
+**Con el Narrador de Windows** (unos 15 minutos, en Edge, con datos de `cargar_demo`). Se enciende y se apaga con `Ctrl + Win + Intro`:
+
+1. Abra `http://localhost:8000/`. Con `Tab`, lo primero que debe leer es "Saltar al contenido". Pulse `Intro`.
+2. Recorra los títulos con `H`: el titular, "Nuestros servicios" y el título del bloque de contacto. Las dos fotografías deben leerse con su descripción.
+3. En **Servicios**, vaya con `Tab` a "Solicitar cotización" y pulse `Intro`. Cada campo debe leerse con su etiqueta, y "opcional" donde corresponde.
+4. Envíe el formulario vacío. Debe leer "Revise los campos marcados e intente nuevamente" sin que usted busque el mensaje, y cada campo con error debe leer su motivo al recibir el foco.
+5. Complete y envíe (espere 3 segundos). Debe leer "Recibimos su solicitud".
+6. En `/acceso/`: el botón del ojo debe leerse "Mostrar contraseña" y, tras pulsarlo, "Ocultar contraseña". Ingrese como cliente.
+7. En el portal: la navegación debe anunciarse con su nombre; cada carpeta, con su cantidad de documentos; en una carpeta, "Ver" y "Descargar" deben decir de qué documento son.
+8. En el panel, suba un archivo en una carpeta: al terminar debe leer el resultado ("Aceptado. Publicado para …"). Abra un diálogo de confirmación: debe leer su título y su mensaje, y `Escape` debe cerrarlo.
+
+Si algo no se lee, o se lee sin sentido, anote la pantalla y el elemento.
+
+**En Firefox** (el visor de PDF se comprobó sin interfaz; falta mirarlo en una ventana):
+
+1. Como cliente, abra la ficha de un PDF y pulse "Ver en pantalla": debe abrirse en una pestaña nueva, dentro del visor de Firefox, con el documento legible.
+2. Lo mismo con un JPG y con un PNG: deben verse en la pestaña.
+3. Con un DOCX, "Ver" no existe y "Descargar" debe guardar el archivo con su nombre, tildes incluidas.
+4. En el panel, a pantalla angosta (`Ctrl + Mayús + M`), abra el menú y suba dos archivos: debe verse la barra de progreso de cada uno.
+
+Safari y Safari en iOS no se pudieron probar en el equipo de desarrollo: repita los pasos 1 a 3 en un dispositivo Apple antes de publicar.
+
 ## Pruebas y calidad
 
 ```powershell
@@ -145,6 +171,14 @@ docker compose run --rm web ruff format --check .
 ```
 
 En un equipo con poca memoria, detenga antes el servidor para no tener dos contenedores `web` a la vez: `docker compose stop web`.
+
+Entre las pruebas va `check --deploy` con la configuración de producción (`config/tests/test_configuracion.py`). Para verlo a mano:
+
+```powershell
+docker compose run --rm -e DJANGO_SETTINGS_MODULE=config.settings.prod -e SECRET_KEY=<clave de 50 caracteres o más> -e ALLOWED_HOSTS=ejemplo.cl -e SITIO_URL=https://ejemplo.cl -e PROXY_CONFIANZA_REDES=10.0.0.0/8 -e PROXY_HTTPS_ENCABEZADO=X-Forwarded-Proto -e DOCUMENTOS_ALMACENAMIENTO=local -e CORREO_HOST=smtp.ejemplo.cl web python manage.py check --deploy
+```
+
+Debe mostrar solo dos advertencias, las de HSTS para subdominios y precarga (`docs/SEGURIDAD.md`, sección 5).
 
 Las pruebas usan PostgreSQL real (el servicio `db`) e informan la cobertura. Los archivos de prueba se generan en memoria y se guardan en una carpeta temporal; el almacenamiento S3 se prueba contra `moto`, un emulador que corre dentro del mismo proceso, sin red. La CI de GitHub Actions ejecuta lo mismo, audita las dependencias con `pip-audit` y comprueba que `docker compose up` levante la aplicación desde cero.
 
