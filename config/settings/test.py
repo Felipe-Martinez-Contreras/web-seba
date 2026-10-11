@@ -17,6 +17,8 @@ SOLICITUDES_MAXIMO_POR_HORA_IP = 5
 SOLICITUDES_TIEMPO_MINIMO_SEGUNDOS = 3
 SOLICITUDES_CAPTCHA = ""
 DEMO_PERMITIDO = False
+ERRORES_DESTINATARIOS = []
+ERRORES_AVISOS_POR_HORA = 5
 # El envío de correo se ejecuta en el mismo hilo, dentro de la transacción de la prueba.
 TAREAS_SINCRONAS = True
 # Cada prueba usa su propia carpeta temporal (conftest.py); el S3 de las pruebas es moto.

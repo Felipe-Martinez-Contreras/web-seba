@@ -159,6 +159,11 @@ SOLICITUDES_CAPTCHA = env.texto("SOLICITUDES_CAPTCHA", "")
 # `cargar_demo` solo corre con esta variable; producción nunca la define.
 DEMO_PERMITIDO = env.booleano("DEMO_PERMITIDO", False)
 
+# Avisos al administrador técnico (RNF-05): errores 500 y tareas programadas que fallan.
+# Sin destinatarios no se avisa. El tope es por proceso del servidor.
+ERRORES_DESTINATARIOS = env.lista("ERRORES_DESTINATARIOS")
+ERRORES_AVISOS_POR_HORA = env.entero("ERRORES_AVISOS_POR_HORA", 5)
+
 # Retención de la auditoría (AUD-03): el comando `depurar_auditoria` borra lo anterior.
 AUDITORIA_RETENCION_MESES = env.entero("AUDITORIA_RETENCION_MESES", 24)
 
@@ -270,12 +275,15 @@ LOGGING = {
             "class": "logging.StreamHandler",
             "stream": "ext://sys.stdout",
             "formatter": "json",
-        }
+        },
+        "aviso_de_error": {"()": "core.avisos.AvisoDeErrorPorCorreo"},
     },
     "root": {"handlers": ["consola"], "level": env.texto("NIVEL_DE_LOG", "INFO")},
     # Sin los manejadores propios de Django: todo sale una sola vez, en JSON, por la raíz.
     "loggers": {
         "django": {"handlers": [], "propagate": True},
+        # Los errores 500 además se avisan por correo, si hay ERRORES_DESTINATARIOS.
+        "django.request": {"handlers": ["aviso_de_error"], "propagate": True},
         "django.server": {"handlers": [], "propagate": True},
     },
 }
