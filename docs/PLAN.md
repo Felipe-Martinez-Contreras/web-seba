@@ -102,7 +102,7 @@ Aprobadas por el responsable el 09-10-2026.
 - **D3. PostgreSQL de Compose sin publicar el puerto 5432**, por el servicio local. Si se necesita acceso desde el host, se publica en 5433.
 - **D4. Barra de progreso de subida con `<progress>` nativo** y HTMX con `includeIndicatorStyles` desactivado, para cumplir la CSP sin estilos en línea (SEG-02).
 - **D5. Sin HTMX** (aprobada por el responsable el 11-10-2026, DEC-163). La sección 5 lo pide para interacciones parciales; ninguna pantalla llegó a usarlo y se retiró. La subida con progreso usa `XMLHttpRequest`.
-- **D6. Producción en una VM única, no en un PaaS** (decidida por el responsable el 11-10-2026, DEC-164 y DEC-165). La sección 0 supone un PaaS con PostgreSQL administrado; la sección 11 pide no atarse a un proveedor. Con presupuesto cero, la aplicación, PostgreSQL y el túnel corren en una e2-micro de Google Cloud. Lo que cambia: los respaldos, los parches del sistema y la restauración son nuestros (`DESPLIEGUE.md`), no hay recuperación a un punto en el tiempo y staging y producción comparten máquina. Lo que no cambia: la aplicación sigue configurándose solo por variables de entorno y su imagen corre en cualquier hosting de contenedores.
+- **D6. Producción en una VM única, no en un PaaS** (decidida por el responsable el 11-10-2026, DEC-164, DEC-165 y DEC-184). La sección 0 supone un PaaS con PostgreSQL administrado; la sección 11 pide no atarse a un proveedor. Con presupuesto cero, la aplicación, PostgreSQL y el túnel corren en una e2-micro de Google Cloud. Lo que cambia: los respaldos, los parches del sistema y la restauración son nuestros (`DESPLIEGUE.md`), no hay recuperación a un punto en el tiempo y staging y producción comparten máquina. Lo que no cambia: la aplicación sigue configurándose solo por variables de entorno y su imagen corre en cualquier hosting de contenedores.
 
 ## 6. Riesgos conocidos
 
@@ -141,9 +141,8 @@ Aprobadas por el responsable el 09-10-2026.
 
 Del responsable, para la Fase B de la Etapa 8:
 
-- **Nombre del subdominio** de `fmartinez.xyz` y **correo** que recibe las solicitudes y los avisos de error. El 11-10-2026 llegaron sin completar.
 - Pasos en las consolas de Google Cloud, Cloudflare, Resend y GitHub (`DESPLIEGUE.md` §3) y primera instalación en la VM (§4).
-- Confirmar en las páginas oficiales que la IP externa de la VM gratuita no se cobra y el cupo gratuito de Cloud Storage.
+- Confirmar en la página oficial el cupo gratuito de Cloud Storage. La IP externa ya está resuelta: se cobra, unos 3,65 USD al mes, y el responsable lo aceptó (DEC-184).
 
 De la Fase B, una vez que exista staging (`DESPLIEGUE.md` §12):
 
@@ -343,7 +342,7 @@ Endurecimiento y calidad: no agrega funciones. Decisiones DEC-143 a DEC-162. El 
 
 ## 17. Etapa 8: qué quedó construido (Fase A)
 
-Despliegue y operación. Decisiones DEC-164 a DEC-183. Guía completa en `DESPLIEGUE.md`.
+Despliegue y operación. Decisiones DEC-164 a DEC-185. Guía completa en `DESPLIEGUE.md`. Sitio provisional: `seba.fmartinez.xyz`. Costo esperado: unos 3,65 USD al mes por la IP externa de la VM (DEC-184); lo demás, en planes gratuitos.
 
 **La etapa no está terminada.** Su criterio de cierre es que la aplicación corra en staging con HTTPS, `check --deploy` limpio y la restauración probada; eso depende de los pasos del responsable en las consolas y está pendiente. Lo construido hasta aquí:
 

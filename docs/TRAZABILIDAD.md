@@ -193,7 +193,7 @@ Reglas de las secciones 4, 5 y 6 de la especificación que sostienen a los requi
 | Dockerfile de producción | `Dockerfile` (target `prod`), `config/gunicorn.py`, `docker/salud.py` | Trabajo `imagen` de la CI; `config/tests/test_gunicorn.py` | Verificado en local el 11-10-2026: la imagen arranca con Gunicorn, responde `/salud/`, redirige a HTTPS, sirve los estáticos con hash y corre como usuario 1000. La CI repite lo mismo en cada `push`: en verde el 11-10-2026 (ejecución 38170239943), con la imagen del commit `163afcc` publicada en GitHub Container Registry. Pendiente (responsable): confirmar que el paquete quedó público (`DESPLIEGUE.md` §3.9) |
 | Configuración sin atarse a un proveedor | `despliegue/compose.prod.yaml`, `despliegue/*.env.example` | Trabajo `imagen` de la CI | Verificado: la imagen se configura solo por variables de entorno. La VM única es la desviación D6 |
 | Base de datos y bucket | `despliegue/compose.prod.yaml` (`db`), `docs/DESPLIEGUE.md` §3.4 | `comprobar_almacenamiento --firma` | Base: verificada en local (migraciones y `unaccent` en una base vacía). Bucket: pendiente (Fase B) |
-| Dominio y HTTPS | `despliegue/compose.prod.yaml` (`cloudflared`), `docs/DESPLIEGUE.md` §3.6, §3.7 y §10 | `DESPLIEGUE.md` §12 | Pendiente (Fase B). El subdominio no está definido |
+| Dominio y HTTPS | `despliegue/compose.prod.yaml` (`cloudflared`), `docs/DESPLIEGUE.md` §3.6, §3.7 y §10 | `DESPLIEGUE.md` §12 | Pendiente (Fase B). El sitio será `seba.fmartinez.xyz` (DEC-185) |
 | IP real detrás del túnel (AUT-04) | `despliegue/web.env.example`, `despliegue/compose.prod.yaml` (dirección fija) | `core/tests/test_ip.py`; accesos fallidos contra la imagen de producción | Verificado en local el 11-10-2026: desde `172.30.57.2`, la auditoría guarda la IP declarada (IPv4 e IPv6); desde otro contenedor, no. Pendiente (Fase B): a través de Cloudflare |
 | Correo con SPF, DKIM y DMARC | `despliegue/web.env.example`, `docs/DESPLIEGUE.md` §3.8 | Cabeceras de un correo recibido | Pendiente (Fase B) |
 | Avisos de error al administrador | `core/avisos.py`, `core/management/commands/avisar_fallo.py`, `config/settings/base.py` (`LOGGING`) | `core/tests/test_avisos.py` (12 pruebas) | Verificado con el backend de pruebas. Pendiente (Fase B): un aviso real |
@@ -213,7 +213,6 @@ Nada de esta lista está verificado. Cada punto dice de quién depende y dónde 
 
 | Pendiente | Requisito | Depende de | Se cierra en |
 | --- | --- | --- | --- |
-| Subdominio y correos de destino | SEG-01, SOL-08, RNF-05 | Responsable: llegaron sin completar el 11-10-2026 | Antes de la Fase B |
 | Pasos en las consolas y primera instalación | Etapa 8 | Responsable (`DESPLIEGUE.md` §3 y §4) | Fase B |
 | HTTPS real, encabezados y HSTS definitivo | SEG-01 | Staging | Fase B; HSTS a un año, tras unos días estable |
 | Bucket real: sin firma, firma alterada, URL vencida; credencial mínima | SEG-08, DOC-03, DOC-04, prueba 11 | Staging | Fase B |
@@ -223,7 +222,7 @@ Nada de esta lista está verificado. Cada punto dice de quién depende y dónde 
 | Correo real con SPF, DKIM y DMARC; avisos de error | SOL-08, RNF-05 | Staging | Fase B |
 | Temporizadores en la VM | SOL-11, ADM-09, AUD-03 | Staging | Fase B |
 | Lighthouse en staging | RNF-06 | Staging | Fase B |
-| Costo real: IP externa y cupo de Cloud Storage | DEC-164 | Responsable, en las páginas oficiales y en la facturación | Primeros días de staging |
+| Costo real: cupo de Cloud Storage y facturación del primer mes (esperado: unos 3,65 USD por la IP externa) | DEC-164, DEC-184 | Responsable, en la página oficial y en la facturación | Primer mes de staging |
 | Texto de la política de privacidad, con el almacenamiento en EE. UU. | SEG-12 | Responsable del negocio | Antes de pasar a producción |
 | Asesoría legal (Ley 19.628 y Ley 21.719) | SEG-12 | Responsable del negocio | Sin etapa: recomendación (DEC-172) |
 | Safari y Safari en iOS | RNF-03 | Responsable, con un dispositivo Apple | Antes de publicar |

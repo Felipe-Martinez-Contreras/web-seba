@@ -215,7 +215,7 @@ Evaluación del revisor por requisito: SEG-03, 04, 05, 06, 09, 10 y 13, cumplen;
 
 ## 8. Plataforma de producción (Etapa 8)
 
-Decisiones DEC-164 a DEC-183. **Al 11-10-2026 esta sección describe lo diseñado y lo probado en local y en la CI; la plataforma real aún no existe** y sus verificaciones están pendientes en `DESPLIEGUE.md` §12.
+Decisiones DEC-164 a DEC-185. **Al 11-10-2026 esta sección describe lo diseñado y lo probado en local y en la CI; la plataforma real aún no existe** y sus verificaciones están pendientes en `DESPLIEGUE.md` §12.
 
 ### Controles
 
@@ -243,7 +243,7 @@ Decisiones DEC-164 a DEC-183. **Al 11-10-2026 esta sección describe lo diseñad
 - **PostgreSQL sin cifrado propio ni TLS interno.** La base solo es alcanzable desde la red de Docker de la misma máquina; el disco lo cifra Google en reposo.
 - **Los respaldos contienen todos los datos personales** de la base (no los documentos). Quien tenga acceso de lectura al bucket de respaldos los tiene todos.
 - **La cuenta de Google del responsable es la llave de todo:** VM, buckets, respaldos y, con la de Cloudflare, el tráfico. Deben tener verificación en dos pasos.
-- **El costo cero no está garantizado.** Los planes gratuitos cambian, y el volumen de diseño (20.000 documentos) supera los 5 GB gratuitos de almacenamiento. La alerta de presupuesto avisa; no detiene el gasto.
+- **El costo no es cero ni está garantizado.** La IP externa de la VM cuesta unos 3,65 USD al mes (DEC-184). Además los planes gratuitos cambian, y el volumen de diseño (20.000 documentos) supera los 5 GB gratuitos de almacenamiento. La alerta de presupuesto avisa; no detiene el gasto.
 - **Límites del correo gratuito:** 100 mensajes al día. Un día con muchas solicitudes o errores deja mensajes en "fallida", que `reintentar_notificaciones` retoma hasta su máximo de intentos.
 - **Después de promover no hay staging.** Las versiones nuevas llegan a producción probadas solo en local y en la CI.
 - **Los guiones de la VM no se han ejecutado en una VM.** Al 11-10-2026 se comprobaron su sintaxis y, a mano y en local, los comandos de respaldo y restauración que usan. `preparar.sh`, `desplegar.sh` y los temporizadores se prueban por primera vez en el despliegue de staging.

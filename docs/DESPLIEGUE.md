@@ -6,7 +6,8 @@ Cómo se publica y se mantiene la aplicación. Las decisiones están en `DECISIO
 
 Convenciones de esta guía:
 
-- `<subdominio>` es el nombre provisional del sitio, por ejemplo `algo.fmartinez.xyz`. **Aún no está definido.**
+- El nombre provisional del sitio es `seba.fmartinez.xyz` (definido por el responsable el 11-10-2026).
+- `CORREO-DEL-RESPONSABLE` es un marcador: el correo real no se escribe en este repositorio, que es público. Va solo en `/etc/web-seba/web.env`, en la VM, y en las consolas.
 - Los comandos marcados **VM** se escriben en la sesión SSH de la máquina (Linux). Los marcados **PowerShell**, en el equipo de desarrollo.
 - `dc` es `/opt/web-seba/despliegue/vm/dc`: Docker Compose con la configuración de producción. Siempre con `sudo`.
 - Los nombres de los menús de las consolas cambian con el tiempo; si uno no coincide, busque el concepto.
@@ -24,7 +25,7 @@ VM ──pg_dump diario──> bucket de respaldos                 web ──SMT
 
 | Pieza | Dónde | Plan |
 | --- | --- | --- |
-| Aplicación y base de datos | VM e2-micro de Google Cloud, `us-east1`, Docker Compose | Nivel gratuito |
+| Aplicación y base de datos | VM e2-micro de Google Cloud, `us-east1`, Docker Compose | Nivel gratuito, salvo la IP externa: unos 3,65 USD al mes |
 | Entrada y HTTPS | Cloudflare Tunnel (`cloudflared`) | Gratuito |
 | Documentos | Google Cloud Storage, API compatible con S3 | Nivel gratuito (5 GB) |
 | Respaldos | Otro bucket de Google Cloud Storage | El mismo cupo |
@@ -41,6 +42,8 @@ Memoria de la VM (1 GB de RAM y 2 GB de swap):
 | `cloudflared` | sin actualización automática | 96 MB |
 
 Medido en local el 11-10-2026, en reposo: `web` 127 MB y `db` 37 MB. Cada verificación de contraseña (Argon2) usa unos 100 MB mientras dura; para eso está el swap. Los números reales se miden en la VM (sección 12).
+
+**Costo esperado: unos 3,65 USD al mes, no cero.** La IP externa en uso de la VM se cobra a 0,005 USD por hora; el nivel gratuito cubre solo una hora al mes (verificado por el responsable en la página de precios de VPC el 11-10-2026, y aceptado: DEC-184). Lo demás se mantiene en planes gratuitos mientras no se superen sus límites.
 
 **Staging y producción son la misma VM.** Primero corre como staging, con datos DEMO. Cuando se cumple la lista de la sección 11, se vacía y pasa a producción. No hay staging después.
 
@@ -65,7 +68,7 @@ Hágalos en este orden. Anote los valores que se piden: van a los archivos de la
 ### 3.1 Google Cloud: proyecto y alerta de presupuesto
 
 1. En [console.cloud.google.com](https://console.cloud.google.com), cree un proyecto (por ejemplo `web-seba`) y asócielo a una cuenta de facturación. El nivel gratuito exige tener una, aunque no se cobre.
-2. **Facturación › Presupuestos y alertas › Crear presupuesto.** Alcance: ese proyecto. Importe: **1 USD** al mes. Umbrales: 50 %, 90 % y 100 %. Marque el aviso por correo a los administradores de facturación. *Un presupuesto avisa; no detiene el gasto.*
+2. **Facturación › Presupuestos y alertas › Crear presupuesto.** Alcance: ese proyecto. Importe: **5 USD** al mes (el costo esperado es de unos 3,65 USD, por la IP externa). Umbrales: 50 %, 90 % y 100 %. Marque el aviso por correo a los administradores de facturación. *Un presupuesto avisa; no detiene el gasto.*
 3. **APIs y servicios › Biblioteca**: habilite *Compute Engine API* y *Cloud Identity-Aware Proxy API*.
 
 ### 3.2 Google Cloud: la máquina
@@ -84,7 +87,7 @@ Hágalos en este orden. Anote los valores que se piden: van a los archivos de la
 
 Deje la IP externa efímera que viene por defecto: la VM la necesita para **salir** a internet (Cloudflare, Resend, GitHub). No abre ninguna entrada.
 
-> **Costo a confirmar.** Revise en la [página del nivel gratuito](https://cloud.google.com/free/docs/free-cloud-features#compute) si la IP externa de la VM gratuita se cobra. Si aparece un cargo, son unos 3 USD al mes y la alerta del paso 3.1 lo avisará en los primeros días.
+> **Esto tiene costo.** La IP externa en uso se cobra a 0,005 USD por hora, unos 3,65 USD al mes. Quitarla exigiría Cloud NAT para que la VM pueda salir a internet, que cuesta más. El responsable aceptó ese costo (DEC-184).
 
 ### 3.3 Google Cloud: cerrar la entrada y dejar solo IAP
 
@@ -131,23 +134,23 @@ Cree otro bucket (`us-east1`, Standard, acceso uniforme, prevención de acceso p
 
 1. **Zero Trust › Redes › Túneles › Crear un túnel**, tipo *Cloudflared*, nombre `web-seba`.
 2. La pantalla muestra un comando de instalación que termina en una cadena larga: ese es el **token**. Cópielo; no ejecute el comando.
-3. **Nombre de host público**: subdominio `<el nombre elegido>`, dominio `fmartinez.xyz`, tipo **HTTP**, URL **`web:8000`**. Cloudflare crea solo el registro DNS.
+3. **Nombre de host público**: subdominio `seba`, dominio `fmartinez.xyz`, tipo **HTTP**, URL **`web:8000`**. Cloudflare crea solo el registro DNS.
 
 ### 3.7 Cloudflare: ajustes para ese nombre
 
 Los ajustes van en reglas acotadas al nombre del sitio, para no tocar el resto de `fmartinez.xyz`.
 
-1. **Reglas › Reglas de configuración › Crear**: *Nombre de host* es igual a `<subdominio>`. Desactive **Ofuscación de direcciones de correo**, **Rocket Loader** y **Web Analytics (RUM)**. Los tres reescriben el HTML o inyectan scripts, y la política de seguridad de contenido de la aplicación los bloquea.
-2. **Reglas › Reglas de caché › Crear**: *Nombre de host* es igual a `<subdominio>` **y** *Ruta URI* empieza con `/static/`. Acción: *Apto para caché*, TTL perimetral *Respetar el origen*. La aplicación ya envía un año de caché en esos archivos, que llevan un hash en el nombre. **No** cree reglas de caché para otras rutas: el HTML y las páginas privadas no se cachean.
+1. **Reglas › Reglas de configuración › Crear**: *Nombre de host* es igual a `seba.fmartinez.xyz`. Desactive **Ofuscación de direcciones de correo**, **Rocket Loader** y **Web Analytics (RUM)**. Los tres reescriben el HTML o inyectan scripts, y la política de seguridad de contenido de la aplicación los bloquea.
+2. **Reglas › Reglas de caché › Crear**: *Nombre de host* es igual a `seba.fmartinez.xyz` **y** *Ruta URI* empieza con `/static/`. Acción: *Apto para caché*, TTL perimetral *Respetar el origen*. La aplicación ya envía un año de caché en esos archivos, que llevan un hash en el nombre. **No** cree reglas de caché para otras rutas: el HTML y las páginas privadas no se cachean.
 3. **SSL/TLS › Certificados perimetrales**: versión mínima de TLS 1.2. La redirección de HTTP a HTTPS la hace la propia aplicación.
 
 ### 3.8 Resend y los registros de correo
 
-1. Cree la cuenta en [resend.com](https://resend.com). **Dominios › Agregar dominio**: `<subdominio>` completo (el correo saldrá de `no-responder@<subdominio>`). Región: la de EE. UU.
+1. Cree la cuenta en [resend.com](https://resend.com). **Dominios › Agregar dominio**: `seba.fmartinez.xyz` completo (el correo saldrá de `no-responder@seba.fmartinez.xyz`). Región: la de EE. UU.
 2. Resend muestra los registros que debe crear. En **Cloudflare › DNS** de `fmartinez.xyz`, créelos tal como aparecen, todos en modo *Solo DNS*:
    - un TXT de **DKIM** (`resend._domainkey.…`),
    - un MX y un TXT de **SPF** para el retorno (`send.…`).
-3. Agregue además **DMARC**: registro TXT con nombre `_dmarc.<subdominio>` y contenido `v=DMARC1; p=none; rua=mailto:SU-CORREO`. Parte en `none` para observar; tras dos semanas sin fallos en los reportes, cámbielo a `p=quarantine`.
+3. Agregue además **DMARC**: registro TXT con nombre `_dmarc.seba.fmartinez.xyz` y contenido `v=DMARC1; p=none; rua=mailto:CORREO-DEL-RESPONSABLE`. Parte en `none` para observar; tras dos semanas sin fallos en los reportes, cámbielo a `p=quarantine`.
 4. En Resend, pulse **Verificar** y espere el estado *Verificado*.
 5. **Claves de API › Crear**: permiso **Solo envío**, limitada a ese dominio. Anótela: se muestra una sola vez.
 
@@ -157,7 +160,7 @@ Tras la primera ejecución en verde de la CI en `main`: en GitHub, **su perfil �
 
 ### 3.10 Monitor de disponibilidad
 
-En HetrixTools (plan gratuito), cree un monitor HTTP sobre `https://<subdominio>/salud/`, cada 5 minutos, que espere el código 200, con aviso a su correo. Confirme al registrarse que el plan gratuito admite uso comercial; si no, StatusCake ofrece lo mismo.
+En HetrixTools (plan gratuito), cree un monitor HTTP sobre `https://seba.fmartinez.xyz/salud/`, cada 5 minutos, que espere el código 200, con aviso a `CORREO-DEL-RESPONSABLE`. Confirme al registrarse que el plan gratuito admite uso comercial; si no, StatusCake ofrece lo mismo.
 
 ## 4. Primera instalación en la VM
 
@@ -179,12 +182,12 @@ Complételos con `sudo nano /etc/web-seba/compose.env` y `sudo nano /etc/web-seb
 | `TUNNEL_TOKEN` | `compose.env` | Paso 3.6 |
 | `RESPALDOS_BUCKET` | `compose.env` | Paso 3.5 |
 | `SECRET_KEY` | `web.env` | `openssl rand -base64 48` |
-| `ALLOWED_HOSTS`, `SITIO_URL` | `web.env` | El `<subdominio>` |
+| `ALLOWED_HOSTS`, `SITIO_URL` | `web.env` | `seba.fmartinez.xyz` y `https://seba.fmartinez.xyz` |
 | `DJANGO_ADMIN_RUTA` | `web.env` | `openssl rand -hex 8` |
 | `DATABASE_URL` | `web.env` | Con la misma clave de `POSTGRES_PASSWORD` |
 | `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | `web.env` | Paso 3.4 |
 | `CORREO_CLAVE`, `CORREO_REMITENTE` | `web.env` | Paso 3.8 |
-| `NOTIFICACIONES_DESTINATARIOS`, `ERRORES_DESTINATARIOS` | `web.env` | Sus correos. **Aún no definidos** |
+| `NOTIFICACIONES_DESTINATARIOS`, `ERRORES_DESTINATARIOS` | `web.env` | `CORREO-DEL-RESPONSABLE` en ambas: escriba ahí su correo real, que no figura en el repositorio |
 
 No cambie `PROXY_CONFIANZA_REDES`, `PROXY_CONFIANZA_ENCABEZADO` ni `PROXY_HTTPS_ENCABEZADO`: hacen que la aplicación acepte la IP del visitante solo del contenedor del túnel (comprobado en local el 11-10-2026: desde esa dirección la auditoría registra la IP de `CF-Connecting-IP`; desde otro contenedor de la misma red, la ignora).
 
@@ -363,7 +366,7 @@ Nada de esta tabla está verificado todavía. Se completa al ejecutar cada paso.
 | Qué | Cómo | Requisito | Estado |
 | --- | --- | --- | --- |
 | El sitio responde por HTTPS y HTTP redirige | `curl -sI` a ambas | SEG-01 | Pendiente |
-| Encabezados de seguridad en la respuesta real | `curl -sI https://<subdominio>/acceso/` | SEG-01, SEG-02 | Pendiente |
+| Encabezados de seguridad en la respuesta real | `curl -sI https://seba.fmartinez.xyz/acceso/` | SEG-01, SEG-02 | Pendiente |
 | `check --deploy` | Lo ejecuta `desplegar.sh` | SEG-01 | Pendiente |
 | La VM no acepta conexiones | Lista de reglas de firewall; prueba de conexión al puerto 22 y al 443 de su IP | — | Pendiente |
 | La auditoría registra la IP real | Un acceso fallido desde su red; mirar el evento en el panel | AUT-04 | Pendiente |
