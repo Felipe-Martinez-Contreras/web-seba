@@ -132,6 +132,22 @@ Decisiones técnicas y dependencias, con su motivo. Cada dependencia indica para
 | DEC-124 | 11-10-2026 | "Nuevo" se calcula con la fecha de la versión vigente: menos de 14 días desde la subida o el reemplazo. La ficha no muestra número de versión | CLI-01 y E4: un reemplazo es un documento nuevo para el cliente, que no ve versiones (CLI-05) |
 | DEC-125 | 11-10-2026 | Clase `enlace-tactil` (44 px de alto) en los enlaces de texto sueltos: migas de pan, "Ver todas", título de las filas con acciones, "¿Olvidó su contraseña?" y "Volver al acceso" | La medición a 360 px de la revisión en el navegador mostró esos enlaces con 17 a 20 px de alto (sección 9: áreas táctiles de 44 px) |
 | DEC-126 | 11-10-2026 | `paginar` pasa a `core/paginacion.py` y el resumen de carpetas a `CarpetaQuerySet.con_resumen()` | Los usan el portal y el panel |
+| DEC-127 | 11-10-2026 | Dos apps nuevas: `sitio` (páginas, servicios, datos del negocio) y `solicitudes` (formularios, antispam, notificación) | Sección 5. `Servicio` usa clave numérica y `slug`; `DatosNegocio` es un registro único que la base no deja duplicar (`pk = 1`) y que una migración crea vacío |
+| DEC-128 | 11-10-2026 | Un servicio no se borra: se desactiva. `Solicitud.servicio` usa `PROTECT` y queda vacío para "Otro / no estoy seguro" | ADM-10 no pide borrar, y las solicitudes recibidas siguen nombrando su servicio. El `slug` se fija al crear y no cambia al renombrar |
+| DEC-129 | 11-10-2026 | La notificación sale de la petición, por el hilo de `core/tareas.py`. La solicitud nace con notificación "por enviar" y pasa a enviada, fallida o correo no configurado | SOL-05. Enviar dentro de la petición haría esperar al visitante hasta 10 segundos si el SMTP no responde. Mismo criterio que DEC-64 y DEC-65. `reintentar_notificaciones` retoma las "por enviar" de más de 5 minutos |
+| DEC-130 | 11-10-2026 | `notificar` bloquea la fila con `select_for_update(skip_locked=True)` durante el envío | Si el hilo de la petición y el cron coinciden, el profesional no recibe dos correos |
+| DEC-131 | 11-10-2026 | La confirmación solo se muestra a quien acaba de enviar: el aviso viaja en una cookie firmada de mensajes de Django, sin crear sesión. Abrir la dirección sin él lleva al inicio | R4: la página afirma "Recibimos su solicitud" |
+| DEC-132 | 11-10-2026 | Lo que el antispam descarta vuelve al mismo formulario, con lo escrito y un aviso neutro; si hay teléfono o correo registrados, los ofrece | Decidido por el responsable: no explica el motivo (SOL-04) ni afirma una recepción que no ocurrió (R4), y una persona real puede reintentar |
+| DEC-133 | 11-10-2026 | Antispam: marca de tiempo firmada con `django.core.signing`, vigente 24 horas; al corregir un error se conserva la marca original. El límite por IP cuenta solo los envíos válidos | Sin servicios externos ni sesión. Quien corrige un campo no espera de nuevo. La IP vive una hora en la caché y no se guarda en la solicitud |
+| DEC-134 | 11-10-2026 | Sin texto de política de privacidad no hay formularios: no se muestran, no se muestran los botones "Solicitar cotización" y un POST responde 404. En su lugar va el contacto registrado | Decidido por el responsable (SEG-12): no se registra un consentimiento a una política que no existe |
+| DEC-135 | 11-10-2026 | Una página pública sin su contenido lleva `noindex` y no entra al sitemap. Todo lo que no es una página pública responde con `X-Robots-Tag: noindex`. `robots.txt` no enumera rutas privadas | PUB-07 y SEG-13. Prohibir una ruta en `robots.txt` la anuncia y le impide al buscador leer su `noindex`. `/acceso/` sigue con `noindex` |
+| DEC-136 | 11-10-2026 | `sitemap.xml` y la URL canónica se arman con `SITIO_URL`, con una vista propia | `django.contrib.sitemaps` usa el encabezado `Host`; mismo criterio que DEC-66 |
+| DEC-137 | 11-10-2026 | Contenido pendiente con dos reglas: lo vacío o con `[COMPLETAR]` no se muestra; lo de prueba ("TEXTO DE PRUEBA", "(DEMO)", correos `@ejemplo.test`) se muestra. Ambos se listan en `contenido_pendiente` y en el panel | Ajusta el plan: con los datos de `cargar_demo` hay que poder ver el sitio completo, y `--estricto` impide publicarlos |
+| DEC-138 | 11-10-2026 | `cargar_demo` se adelanta a la Etapa 6. Corre con `DEBUG` o con `DEMO_PERMITIDO=true`, exige que exista un administrador y no pisa datos existentes | Pedido por el responsable. Cada versión de un documento registra quién la subió |
+| DEC-139 | 11-10-2026 | El velo sobre fotografías pasa de 75 % a 80 % | Con 75 %, el texto secundario `#C7D0DD` sobre una zona blanca de la foto queda en 4,0:1; con 80 %, en 4,7:1. Una prueba lo comprueba |
+| DEC-140 | 11-10-2026 | En el inicio, el encabezado va dentro de la portada, sobre la fotografía; en las demás páginas es una franja azul marino | Revisa DEC-42: es la pantalla 1 del mockup, sin posicionar el encabezado en forma absoluta |
+| DEC-141 | 11-10-2026 | Fotografías sin rostros reconocibles ni logos; tampoco escenas de trabajo inseguro. Conversión a WebP con Pillow de un solo uso, fuera del `uv.lock` | Criterio aprobado por el responsable: las licencias no cubren la imagen de las personas ni las marcas. Un trabajador en altura sin protección es mala referencia para un servicio de prevención. Detalle en `FOTOS.md` |
+| DEC-142 | 11-10-2026 | Recibir una solicitud no deja evento de auditoría; sí lo dejan el cambio de estado y el reintento de la notificación. Nombre, empresa, teléfono y comuna rechazan saltos de línea | El evento guardaría la IP del visitante (sección 6). Esos datos van al asunto del correo de notificación |
 
 ## Dependencias de ejecución
 
@@ -228,6 +244,27 @@ El paquete de Inter coincide además con el `shasum` SHA-1 que publica el regist
 | `templates/iconos/LICENCIA-lucide.txt` | lucide-static: `package/LICENSE` | `b495047bd93a9b06913511076f504daba17d5bbeb3e0650f3bb53a4220329c57` |
 
 Los ocho íconos de la Etapa 3 (flechas, copiar, historial, candado abierto, lápiz, más y papelera) y los dos de la Etapa 4 (subir y restaurar) se extrajeron el 11-10-2026 del mismo paquete, descargado de nuevo y con el mismo sha256.
+
+Los catorce íconos de la Etapa 6 se extrajeron el 11-10-2026 del mismo paquete, descargado de nuevo y con el mismo sha256: ocho para la lista fija de servicios (`hard-hat`, `clipboard-check`, `file-check`, `graduation-cap`, `search-check`, `flame`, `heart-pulse` y `scale`) y seis de interfaz (`phone`, `mail`, `map-pin`, `clock`, `message-circle` y `globe`).
+
+| Archivo en el repositorio | sha256 del archivo |
+| --- | --- |
+| `templates/iconos/hard-hat.svg` | `64aaedb5d82deed59964d8da9850aa900ae4c6dd6d6dbf86163433e4995a4176` |
+| `templates/iconos/clipboard-check.svg` | `282e9e20933834fb68470b3a14beef8090013eb08089b25eb7c8223115f7941b` |
+| `templates/iconos/file-check.svg` | `56090986c724b52161759e94615a22afd0a9f0784f1f973d920316859cd56cae` |
+| `templates/iconos/graduation-cap.svg` | `7eca97c943744559bd5fff5e75168116694d64d3cd8364adceb5d3301d2593a7` |
+| `templates/iconos/search-check.svg` | `dae78db399184a25f8e4ee436d4fd153341698064ba6421004d8803613fb879a` |
+| `templates/iconos/flame.svg` | `2ebdce96af7f4971df532cac68c4bdf3faa1af732887e857308c4e6320c1c5c4` |
+| `templates/iconos/heart-pulse.svg` | `9367c76677f019829e7d25469ebf49ae5f150aa382c30bd1b227971156351fda` |
+| `templates/iconos/scale.svg` | `7cb6f487ae10569256c116f0e94c872c04627135367a470d379787c9c7c7bfc5` |
+| `templates/iconos/phone.svg` | `3cc192c0af510ffb0157833aac736e02f316c5ff7b3f028abd2b0e0908e4c550` |
+| `templates/iconos/mail.svg` | `7c8d6e81dba3a89b5826338470f3aa28bae322813d8f6f0e338c4430d1c11ac5` |
+| `templates/iconos/map-pin.svg` | `1cdff837a47df6bde70b81168e9e13c7008b8997e38a97d2cb6daab8e184ee43` |
+| `templates/iconos/clock.svg` | `c321654a4cf667a6321296c359e8203ff238936ac09ecb4dc1fb0601df7acf4a` |
+| `templates/iconos/message-circle.svg` | `5ad14e9dd248ea27450a2f6f5ba41a46c98b58fb5036ced2f9509c80548ba690` |
+| `templates/iconos/globe.svg` | `5d591ab9888ac71f268923abc8c2552c8840b3775aeea5b78131638e9a700073` |
+
+Las fotografías del sitio tienen su propio registro en `docs/FOTOS.md`.
 
 Los archivos se copiaron sin modificar; todos tienen fin de línea LF, que es como el repositorio guarda el texto (`.gitattributes`).
 

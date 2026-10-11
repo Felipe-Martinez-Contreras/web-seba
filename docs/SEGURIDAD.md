@@ -56,6 +56,14 @@ Amenazas principales, el control que mitiga cada una y las limitaciones conocida
 | Archivos sin registro, o registros sin archivo | Si la base falla tras guardar, el objeto se borra. La purga borra primero los objetos y después las filas | `documentos/services.py` | `test_si_la_base_falla_el_objeto_guardado_se_borra`, `test_si_la_purga_falla_a_medias_la_siguiente_ejecucion_la_termina` |
 | Perder documentos al eliminar una carpeta | Una carpeta con documentos, también en la papelera, no se elimina: lo impiden el servicio y la base (`PROTECT`) | `empresas/services.py` (`eliminar_carpeta`), `documentos/models.py` | `test_una_carpeta_con_documentos_no_se_elimina_*`, `test_los_documentos_de_la_papelera_tambien_impiden_eliminar_la_carpeta`, `test_la_base_protege_la_carpeta_aunque_se_salte_el_servicio` |
 | Alterar un archivo ya publicado | Las versiones no se editan: reemplazar crea otra. Se guarda el SHA-256 de cada una | `documentos/models.py` | `test_las_versiones_no_se_editan_ni_se_borran` |
+| Spam por los formularios públicos | Campo trampa, tiempo mínimo de 3 segundos con marca firmada y 5 envíos por hora por IP. Lo descartado no se guarda ni se notifica, y el aviso no dice qué control actuó | `solicitudes/antispam.py` | `solicitudes/tests/test_antispam.py` |
+| Usar los formularios para enviar correo a terceros | Ningún correo al visitante: el único destinatario es `NOTIFICACIONES_DESTINATARIOS` | `solicitudes/services.py` | `test_sol_07_el_visitante_no_recibe_ningun_correo` |
+| Inyectar encabezados en el correo de notificación | Nombre, empresa, teléfono y comuna rechazan saltos de línea y caracteres de control; el correo es de texto plano | `solicitudes/forms.py` | `test_sol_03_*` (casos con saltos de línea) |
+| Perder una solicitud porque el correo falla | La solicitud se guarda antes de notificar, y la notificación ocurre fuera de la petición | `solicitudes/services.py` | `test_prueba_13_*`, `test_si_la_notificacion_revienta_*` |
+| HTML o scripts en los textos editables y en los datos del visitante | Autoescape en todas las plantillas; saltos de línea con `linebreaksbr`; sin `safe` | Plantillas de `sitio`, `solicitudes` y `panel` | `test_prueba_14_*`, `test_seg_06_*` |
+| Enlace del sitio o del correo que apunta al dominio de un atacante | Canónica, sitemap, Open Graph y enlace al panel se arman con `SITIO_URL` | `sitio/paginas.py`, `solicitudes/services.py` | `test_la_canonica_usa_sitio_url_y_no_el_encabezado_host` |
+| Buscadores indexando pantallas privadas | `X-Robots-Tag: noindex` en todo lo que no es una página pública con contenido; `robots.txt` no enumera rutas | `sitio/middleware.py` | `test_pub_07_solo_las_paginas_publicas_quedan_sin_noindex` |
+| Datos de demostración en producción | `cargar_demo` solo corre con `DEBUG` o `DEMO_PERMITIDO`; sus datos quedan listados en `contenido_pendiente --estricto` | `sitio/management/commands/cargar_demo.py` | `test_cargar_demo_se_niega_a_correr_en_produccion` |
 
 ## 2. Cómo se obtiene la IP del cliente
 
@@ -131,6 +139,11 @@ La medición es local y sobre un equipo de desarrollo. Debe repetirse en staging
 - **El portal muestra a todas las cuentas de una empresa todos sus documentos.** No hay permisos por carpeta ni por persona (fuera de alcance, sección 16).
 - **La búsqueda del portal necesita la extensión `unaccent` en la base.** La crea una migración; en producción el usuario de la base debe poder crearla o debe existir de antemano (Etapa 8).
 - **Si el proceso muere entre guardar el objeto y confirmar la base,** puede quedar un objeto sin registro. No es accesible por ninguna vista y su clave no revela nada. No hay todavía un comando que los detecte.
+- **El antispam no detiene a un atacante dedicado.** Frena a los robots genéricos. Quien lea el formulario puede dejar vacío el campo trampa, esperar 3 segundos y repartir los envíos entre muchas IP. Para ese caso queda el punto de extensión del captcha (`SOLICITUDES_CAPTCHA`), desactivado.
+- **El límite de envíos es por IP.** Varias personas detrás de una misma IP comparten los 5 envíos por hora. El contador, como los del acceso, no es atómico.
+- **La IP del visitante no se guarda,** pero vive hasta una hora en la clave del contador, en la tabla de caché.
+- **Una notificación puede demorarse.** Si el proceso se reinicia antes de enviar, la solicitud queda "por enviar" hasta la siguiente corrida de `reintentar_notificaciones`. Mientras ese comando no esté programado (Etapa 8), hay que reintentar desde el panel.
+- **Los datos personales de las solicitudes no tienen plazo de retención.** Nombre, correo, teléfono y mensaje quedan hasta que alguien los borre en la base. Definir el plazo es parte de la asesoría legal pendiente (Ley 21.719).
 
 ## 5. Excepciones justificadas
 

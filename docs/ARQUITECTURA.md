@@ -1,6 +1,6 @@
 # Arquitectura
 
-Componentes, modelo de datos y flujo de descarga segura. Describe lo construido hasta la Etapa 4; se completa con cada etapa. El porqué de cada decisión está en `DECISIONES.md` y los controles de seguridad, en `SEGURIDAD.md`.
+Componentes, modelo de datos y flujo de descarga segura. Describe lo construido hasta la Etapa 6; se completa con cada etapa. El porqué de cada decisión está en `DECISIONES.md` y los controles de seguridad, en `SEGURIDAD.md`.
 
 ## 1. Componentes
 
@@ -24,6 +24,8 @@ Apps y su responsabilidad:
 | `auditoria` | Eventos: solo se agregan |
 | `panel` | Vistas del administrador |
 | `portal` | Vistas del cliente |
+| `sitio` | Páginas públicas, servicios, datos del negocio, fotografías y contenido pendiente |
+| `solicitudes` | Formularios públicos, antispam y notificación al profesional |
 
 Dependencias entre apps: `panel` y `portal` usan a las demás; `documentos` usa `empresas` y `auditoria`; `empresas` no conoce a `documentos` (llega a sus documentos solo por la relación inversa de la carpeta).
 
@@ -128,3 +130,39 @@ Solo lectura: todas sus vistas admiten únicamente GET y heredan de `ClienteMixi
 - **Búsqueda sin tildes** con la extensión `unaccent` de PostgreSQL, creada por la migración `documentos/0002_unaccent`. El texto se recorta a 100 caracteres.
 - **"Nuevo"** se calcula con la fecha de la versión vigente: 14 días desde la subida o el último reemplazo.
 - **Dos clics (CLI-07):** las filas de carpeta y de búsqueda llevan Ver y Descargar, además del enlace a la ficha.
+
+## 7. Sitio público
+
+| Ruta | Qué muestra |
+| --- | --- |
+| `/` | Portada, servicios activos, bloque de contacto con el formulario de cotización y pie |
+| `/servicios/` | Presentación y servicios activos, cada uno con su botón de cotización |
+| `/contacto/` | Datos de contacto y formulario de consulta |
+| `/cotizacion/` | Formulario de cotización; `?servicio=<slug>` lo preselecciona |
+| `/solicitud-recibida/` | Confirmación, solo para quien acaba de enviar |
+| `/privacidad/` | Política de privacidad |
+| `/sitemap.xml`, `/robots.txt` | Páginas públicas con contenido; sin rutas privadas |
+
+- **Todo el contenido sale de la base:** `DatosNegocio` (registro único) y `Servicio`. Se editan en Panel › Configuración › Contenido del sitio.
+- **Una sola regla de contenido pendiente** (`sitio/pendientes.py`): lo vacío o con `[COMPLETAR]` no se muestra; lo de prueba se muestra. La usan las páginas, el panel y el comando `contenido_pendiente`.
+- **`PaginaPublica`** (`sitio/paginas.py`) arma navegación, pie y SEO de cada página, como `core/navegacion.py` lo hace para el portal y el panel.
+- **Sin política de privacidad no hay formularios.**
+- **Fotografías:** archivos estáticos propios, descritos en `sitio/fotos.py` y registrados en `FOTOS.md`.
+
+## 8. Recorrido de una solicitud
+
+```
+Visitante ── POST /contacto/ o /cotizacion/
+   1. Token CSRF                     sin él: 403
+   2. Validación del formulario      con errores: mismo formulario, con lo escrito
+   3. Antispam                       descarte: mismo formulario y aviso neutro
+   4. Guardar la solicitud           desde aquí no se pierde
+   5. Redirección a la confirmación  "Recibimos su solicitud..."
+        └─ en un hilo, unos segundos después:
+   6. Notificar al profesional       enviada · fallida · correo no configurado
+```
+
+- El visitante ve lo mismo pase lo que pase en el paso 6. El resultado se ve en el panel.
+- `reintentar_notificaciones` (cron, cada 15 minutos) vuelve a intentar las fallidas, hasta `NOTIFICACIONES_INTENTOS_MAXIMOS`, y envía las que quedaron sin intentar.
+- El correo va solo a `NOTIFICACIONES_DESTINATARIOS`, con `Reply-To` del visitante. El visitante no recibe ningún correo automático.
+- La solicitud no guarda la IP. El seguimiento (Pendiente, En proceso, Resuelta, Descartada) y las notas internas se llevan en el panel; cada cambio de estado deja un evento de auditoría.

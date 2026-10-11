@@ -93,6 +93,9 @@ La guía de uso para el profesional está en [`docs/MANUAL_ADMIN.md`](docs/MANUA
 | Desbloquear un RUT o una IP | `docker compose run --rm web python manage.py desbloquear_acceso --rut <rut>` (o `--ip <ip>`) |
 | Borrar la auditoría más antigua que la retención | `docker compose run --rm web python manage.py depurar_auditoria` |
 | Borrar definitivamente lo que lleva más de 30 días en la papelera | `docker compose run --rm web python manage.py purgar_papelera` |
+| Listar el contenido del sitio que falta completar | `docker compose run --rm web python manage.py contenido_pendiente` (con `--estricto` termina con error si queda algo) |
+| Cargar datos de demostración, marcados DEMO | `docker compose run --rm web python manage.py cargar_demo` |
+| Reintentar las notificaciones de solicitudes que fallaron | `docker compose run --rm web python manage.py reintentar_notificaciones` |
 | Comprobar el almacenamiento de documentos configurado | `docker compose run --rm web python manage.py comprobar_almacenamiento` |
 | Levantar el emulador de S3 | `docker compose --profile s3 up -d s3` |
 | Recompilar el CSS al guardar | `docker compose --profile css up -d` |
@@ -112,6 +115,26 @@ Con un cliente activo y documentos subidos, entre como ese cliente en `http://lo
 5. En el panel, reemplace o elimine ese documento y recargue el portal: el cliente ve el archivo nuevo, o deja de verlo.
 
 **En un teléfono real.** La revisión de la etapa se hizo con el modo móvil del navegador, no con un teléfono. Para probarlo en uno, conectado a la misma red Wi-Fi que el equipo: publique el puerto en la red cambiando en `compose.yaml` `127.0.0.1:8000:8000` por `8000:8000`, agregue la IP del equipo a `ALLOWED_HOSTS` en `.env` (por ejemplo `localhost,127.0.0.1,192.168.1.20`), ejecute `docker compose up -d` y abra `http://<IP del equipo>:8000/acceso/` en el teléfono. Use solo datos de prueba y deshaga ambos cambios al terminar.
+
+### Ver el sitio público y probar los formularios
+
+Recién instalado, `http://localhost:8000/` muestra solo la navegación y el pie: los datos del negocio están vacíos y lo que falta no se muestra. Para verlo completo, con un administrador ya creado:
+
+```powershell
+docker compose run --rm web python manage.py cargar_demo
+```
+
+Carga datos marcados DEMO: contenido del sitio, cuatro servicios, una política de privacidad encabezada "TEXTO DE PRUEBA" y dos empresas con un usuario y dos PDF cada una. No pisa datos que ya existan. Se niega a correr fuera de desarrollo, salvo con `DEMO_PERMITIDO=true` (staging).
+
+1. Abra `http://localhost:8000/`: portada, servicios, formulario de cotización y pie.
+2. En **Servicios**, pulse "Solicitar cotización" en uno: el formulario llega con ese servicio elegido.
+3. Envíe el formulario (espere al menos 3 segundos tras abrirlo). Verá "Recibimos su solicitud".
+4. El correo de aviso se imprime en la consola: `docker compose logs web`. Para que exista un destinatario, defina `NOTIFICACIONES_DESTINATARIOS` en `.env` y reinicie; sin ella, la solicitud queda como "Correo no configurado".
+5. En el panel, **Solicitudes** muestra la solicitud con su estado y el de su notificación.
+6. Para ver un fallo de correo: ponga en `.env` `CORREO_HOST=127.0.0.1`, `CORREO_PUERTO=1` y un `CORREO_REMITENTE`, reinicie y envíe otra. El visitante ve la misma confirmación; el panel la muestra "Fallida", con el botón para reintentar.
+7. `docker compose run --rm web python manage.py contenido_pendiente` lista lo que falta para publicar.
+
+El contenido real se carga en el panel, en **Configuración › Contenido del sitio**. Las fotografías y su licencia están en [`docs/FOTOS.md`](docs/FOTOS.md).
 
 ## Pruebas y calidad
 
@@ -146,9 +169,11 @@ empresas/      Empresas (clientes) y sus carpetas
 auditoria/     Registro de eventos (solo se agregan), filtros y retención
 documentos/    Documentos y versiones, validación de archivos, almacenamiento (local y S3) y papelera
 portal/        Vistas del cliente: inicio, carpetas, buscador, ficha del documento, ver y descargar
-panel/         Vistas del administrador: inicio, clientes, usuarios, carpetas, documentos y auditoría
+panel/         Vistas del administrador: inicio, clientes, usuarios, carpetas, documentos, solicitudes, contenido del sitio y auditoría
+sitio/         Páginas públicas, servicios, datos del negocio, fotografías y contenido pendiente
+solicitudes/   Formularios de consulta y cotización, antispam y notificación al profesional
 templates/     Plantillas base, componentes, íconos y páginas 404 y 500
-static/        HTMX, fuentes y JavaScript propios (sin CDN), incluida la subida con progreso
+static/        HTMX, fuentes, fotografías y JavaScript propios (sin CDN), incluida la subida con progreso
 static_src/    Entrada de Tailwind con los tokens de diseño
 docker/        Script de arranque de desarrollo
 docs/          Especificación, plan, arquitectura, decisiones, trazabilidad, seguridad y manual del administrador

@@ -136,7 +136,41 @@ En el menú **Acciones** de cada usuario:
 
 Generar un enlace nuevo deja sin efecto el anterior.
 
-## Auditoría
+## Solicitudes
+
+En **Solicitudes** llegan las consultas y las solicitudes de cotización que se envían desde el sitio. Hay una pestaña para cada tipo.
+
+- Puede buscar por nombre, correo o empresa, y filtrar por estado y por fechas.
+- Abra una solicitud para ver todos sus datos.
+- **Para responder, escriba al correo o llame al teléfono de la solicitud.** La plataforma no envía mensajes al visitante.
+- Cambie el **estado** para llevar el seguimiento: Pendiente, En proceso, Resuelta o Descartada.
+- Las **notas internas** son solo para usted y su equipo.
+
+Cada solicitud muestra además qué pasó con el correo de aviso que el sistema le envía a usted:
+
+| Notificación | Qué significa |
+| --- | --- |
+| Enviada | El aviso salió hacia su correo |
+| Por enviar | Se está enviando; espere unos segundos y recargue |
+| Fallida | El aviso no se pudo enviar. La solicitud está guardada completa. Pulse **Reintentar notificación** |
+| Correo no configurado | El sistema aún no tiene un correo para avisarle. La solicitud está guardada completa |
+
+La solicitud se guarda siempre, aunque el aviso falle. Si recibe pocos avisos, revise igual la bandeja: el inicio del panel muestra cuántas están pendientes.
+
+## Contenido del sitio
+
+En **Configuración › Contenido del sitio** se edita lo que muestra el sitio público.
+
+- **Datos del negocio:** nombre comercial, titular y bajada de la portada, presentación, contacto, redes sociales y texto de la política de privacidad.
+- **Servicios:** cree, edite, ordene con las flechas, y active o desactive. Un servicio no se elimina: al desactivarlo deja de mostrarse.
+
+Reglas que conviene conocer:
+
+- **Lo que deja vacío no se muestra.** Sin titular no hay portada; sin servicios activos no hay sección de servicios. El sitio nunca muestra un espacio en blanco ni un texto de relleno.
+- Cada dato que falta aparece con la marca **[COMPLETAR]**, y el inicio del panel dice cuántos quedan.
+- **Sin el texto de la política de privacidad, los formularios del sitio no se muestran.** En su lugar van su teléfono y su correo, si los registró.
+- Los textos son simples: se respetan los saltos de línea, sin negritas ni enlaces.
+- WhatsApp y las redes sociales son opcionales.
 
 En **Auditoría** queda registrado quién entró, quién falló al entrar y qué cambios se hicieron: clientes, usuarios, carpetas, enlaces generados y documentos (subidas, reemplazos, movimientos, eliminaciones y restauraciones). También queda cada vez que alguien ve o descarga un documento, y quién fue. Puede filtrar por cliente, por RUT, por tipo de acción y por fechas.
 
@@ -155,5 +189,8 @@ Los registros no se pueden editar ni borrar desde el panel.
 | Necesita eliminar una carpeta y no aparece el botón | Tiene documentos, quizá en la papelera. Muévalos o restáurelos y muévalos |
 | Subió un documento al cliente equivocado | Elimínelo de inmediato desde su ficha: ese cliente deja de verlo. En Auditoría puede revisar si alguien alcanzó a verlo o descargarlo. Luego súbalo al cliente correcto |
 | Eliminó un documento por error | Vaya a la Papelera del cliente y pulse Restaurar, dentro de los 30 días |
+| El sitio público se ve casi vacío | Faltan datos en Contenido del sitio. El aviso del inicio del panel dice cuántos |
+| El sitio no muestra los formularios | Falta el texto de la política de privacidad, en Contenido del sitio |
+| Una solicitud dice "Fallida" | El aviso por correo no salió, pero la solicitud está completa. Ábrala y pulse Reintentar notificación. Si sigue fallando, avise a quien mantiene el sistema |
 | Usted quedó bloqueado | Espere 15 minutos o pida a quien mantiene el sistema que lo desbloquee |
 | Perdió su teléfono con la aplicación de autenticación | Use uno de sus códigos de recuperación. Si no los tiene, pida a quien mantiene el sistema que restablezca su verificación en dos pasos |

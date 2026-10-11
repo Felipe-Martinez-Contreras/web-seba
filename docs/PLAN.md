@@ -13,7 +13,7 @@ Plan de la Etapa 0 (sección 11 de `ESPECIFICACION.md`). Se actualiza al avanzar
 | 3 | Empresas, usuarios y carpetas | Aprobada por el responsable el 11-10-2026, tras probar el flujo en el navegador |
 | 4 | Documentos | Aprobada por el responsable el 11-10-2026, tras probarla en el navegador |
 | 5 | Portal del cliente | Terminada el 11-10-2026; pendiente de aprobación del responsable |
-| 6 | Sitio público y solicitudes | Pendiente |
+| 6 | Sitio público y solicitudes | Terminada el 11-10-2026, con las fotografías aprobadas; pendiente de aprobación del responsable |
 | 7 | Endurecimiento y calidad | Pendiente |
 | 8 | Despliegue y operación | Pendiente |
 
@@ -107,6 +107,8 @@ Aprobadas por el responsable el 09-10-2026.
 - **Equipo de desarrollo con poca memoria** (6,8 GB; ≈ 430 MB libres con Docker Desktop abierto). Mitigación: imágenes livianas y, si hace falta, limitar la memoria de WSL2 en `.wslconfig`. El plan B (Django en local contra el PostgreSQL 16 instalado) requiere autorización previa del responsable.
 - **El almacenamiento S3 solo se probó contra un emulador** (`moto`), que no valida firmas ni vencimientos. Falta el bucket real, con `comprobar_almacenamiento --firma`, antes de producción (Etapa 8). Se descartó `django-storages`, que no declara soporte para Django 6.x (DEC-96).
 - **Con el versionado del bucket, purgar la papelera no borra el archivo al instante** (ver `SEGURIDAD.md`). Importa para las solicitudes de eliminación de datos.
+- **Una notificación de solicitud puede tardar hasta 15 minutos.** Si el proceso se reinicia antes de que parta el hilo que envía el correo, la solicitud queda "por enviar" y la retoma `reintentar_notificaciones`. La solicitud nunca se pierde.
+- **El límite de 5 envíos por hora es por IP.** Varias personas detrás de una misma IP (una oficina) comparten el cupo; quien lo supera ve el aviso neutro con el teléfono y el correo de contacto.
 - **Contadores de bloqueo en caché de base de datos** no atómicos; aceptable para este volumen. Documentado en `SEGURIDAD.md`, junto con las demás limitaciones de la Etapa 2.
 - **Dos clics con carpetas grandes (CLI-07).** En una carpeta con más de 25 documentos, los de la segunda página quedan a dos clics solo por el buscador (DEC-122).
 - **Un RUT = una cuenta = una empresa.** Una persona que trabaje para dos empresas cliente no puede tener dos cuentas (multiempresa está fuera de alcance, sección 16).
@@ -137,22 +139,23 @@ Aprobadas por el responsable el 09-10-2026.
 - Texto de la política de privacidad y revisión legal de la Ley 19.628 y la Ley 21.719 (responsable del negocio).
 - Hosting, correo y almacenamiento: propuesta comparada en la Etapa 8, incluida la VM única.
 - Migración a Django 6.2 LTS cuando se publique.
-- Etapa 6: agregar a la página 404 el enlace al inicio, cuando exista (DEC-25).
-- Etapa 6: Solicitudes y Contenido del sitio en el menú del panel; indicadores y tabla de solicitudes y avisos de notificaciones y de contenido en el inicio (ADM-02).
 - Etapa 8: programar `depurar_auditoria` una vez al mes y `purgar_papelera` a diario.
 - Etapa 8: comprobar el almacenamiento contra un bucket de prueba real con `comprobar_almacenamiento --firma`, incluido que el objeto no se lea sin firma (prueba 11); credenciales con permisos mínimos; versionado del bucket con expiración de versiones antiguas, y el procedimiento para una solicitud de eliminación de datos.
 - Etapa 8: límite de tamaño de subida en el servidor web y el proxy (SEG-07) y tiempos de espera para 25 MB (RNF-02).
-- Etapa 6: contacto del profesional en el estado vacío del portal, desde `DatosNegocio` (CLI-06, DEC-118).
 - Etapa 8: la base de producción debe permitir crear la extensión `unaccent`, o traerla creada (DEC-116).
 - Revisión del responsable: recorrer el portal en un teléfono real (pasos en el README).
 - Etapa 7: la barra de pestañas muestra una barra de desplazamiento fina en pantallas angostas (portal y panel); es solo de aspecto.
 - Etapa 7: "Ver en pantalla" con `Content-Security-Policy: sandbox` en Firefox y Safari (en Edge ya se comprobó).
 - Revisión del responsable: recorrer E2 y E6 en el navegador con un administrador real y su 2FA, y probar el botón "Copiar enlace".
-- Etapa 6: fotografía con velo en el bloque inferior de la pantalla de acceso; marca en esa pantalla cuando exista el nombre comercial; `noindex` del admin de Django (SEG-13).
 - Etapa 7: repetir en staging la medición de tiempos de `SEGURIDAD.md`.
 - Etapa 8: valor de `PROXY_CONFIANZA_REDES` según el hosting; formato de los logs de Gunicorn y del proxy sin el token de los enlaces; proveedor SMTP.
-- Etapa 6: fotografías con licencia y `docs/FOTOS.md` (PUB-08); modelos `Servicio`, `DatosNegocio` y `Solicitud` con la forma de la especificación actualizada (DEC-50).
 - Etapa 7: revisión de accesibilidad con lector de pantalla y teclado sobre pantallas reales.
+- Fotos reales del profesional: cuando existan, reemplazan a las de banco (`docs/FOTOS.md`).
+- Responsable: cargar los datos del negocio y los servicios en Panel › Configuración › Contenido del sitio; hasta entonces el sitio público muestra solo navegación y pie.
+- Etapa 8: definir `NOTIFICACIONES_DESTINATARIOS` y el proveedor SMTP; programar `reintentar_notificaciones` cada 15 minutos; ejecutar `contenido_pendiente --estricto` antes de publicar.
+- Etapa 8: `cargar_demo` en staging con `DEMO_PERMITIDO=true`; producción no define esa variable.
+- Etapa 7: `favicon.ico` (hoy responde 404) y Lighthouse del sitio público.
+- Logo real: hasta tenerlo se usa la marca provisional (DEC-48).
 
 ## 9. Etapa 1: qué quedó construido
 
@@ -276,3 +279,30 @@ Lo que todavía no existe: el contacto del profesional en el estado vacío (Etap
 - Se agregó la clase `enlace-tactil` (DEC-125): la medición a 360 px mostró enlaces de 17 a 20 px de alto, dos de ellos en pantallas de la Etapa 2 (acceso y recuperación).
 - El resultado del reemplazo reutiliza `resultado_subida.html`, con un parámetro nuevo para el número de versión.
 - La revisión en el navegador fue con Edge sin interfaz emulando un teléfono (360 px, táctil), no con un teléfono real. La sesión del administrador se creó por script, sin código 2FA real, y el enlace de E7 se leyó de la consola del contenedor.
+
+## 15. Etapa 6: qué quedó construido
+
+Requisitos PUB-01 a PUB-08, SOL-01 a SOL-11, ADM-10, el cierre de ADM-01, ADM-02 y CLI-06, SEG-06, SEG-13 y el mecanismo de SEG-12; pruebas 12, 13 y 14 de la sección 12.2 y escenario E1. Decisiones DEC-127 a DEC-142.
+
+- **Sitio público:** Inicio (portada con fotografía, servicios, bloque de contacto con el formulario de cotización y pie), Servicios, Contacto, Solicitar cotización, Política de privacidad, `sitemap.xml` y `robots.txt`. Todo el contenido sale de la base de datos.
+- **Formularios:** consulta y cotización con validación en el servidor, antispam (campo trampa, 3 segundos, 5 por hora por IP) y confirmación neutra.
+- **Solicitudes:** se guardan primero y se notifican después, fuera de la petición. El resultado queda en la solicitud: enviada, fallida o correo no configurado.
+- **Panel:** bandeja con pestañas Consultas y Cotizaciones, detalle con estado, notas y reintento; Contenido del sitio (datos del negocio y servicios); inicio con indicadores, solicitudes recientes y avisos.
+- **Contenido pendiente:** una sola regla (`sitio/pendientes.py`) para el sitio, el panel y el comando `contenido_pendiente`.
+- **Fotografías:** tres fotos de Unsplash (una obra en construcción, un casco colgado y un casco sobre fondo oscuro), optimizadas y registradas en `docs/FOTOS.md`.
+- **Portal:** contacto del profesional en el estado vacío, cuando está registrado.
+- **Comandos:** `contenido_pendiente`, `reintentar_notificaciones` y `cargar_demo`.
+
+Estado real del sitio hoy: los datos de la sección 0 siguen en [COMPLETAR], así que el sitio público muestra solo la navegación y el pie. Con `cargar_demo` se ve completo, con datos marcados DEMO.
+
+### Diferencias con el plan aprobado de la etapa
+
+- **Fotografías.** Ninguna de las candidatas del plan quedó. Al verlas se descartaron dos: una muestra un rostro y el logo de una empresa; la otra, un trabajador en altura sin protección contra caídas. De la primera selección, el responsable aprobó la de contacto y pidió cambiar la portada (una refinería, por una obra en construcción) y la de acceso (su humo se lee como contaminación). Las tres finales son de Unsplash, sin personas; no se encontró un trabajador de espaldas con casco y chaleco que cumpliera el criterio.
+- **Datos de prueba.** El plan decía que un dato con "TEXTO DE PRUEBA" estaba pendiente. Quedó en dos reglas: lo vacío o con [COMPLETAR] no se muestra; lo de prueba (los datos de `cargar_demo`) sí se muestra, y ambos se listan como pendientes (DEC-137).
+- **`cargar_demo` exige un administrador.** Los documentos de demostración necesitan a alguien que los haya subido (DEC-138).
+- **Página de confirmación.** Solo se muestra a quien acaba de enviar un formulario; abrirla directamente lleva al inicio (DEC-131).
+- **Páginas sin contenido.** Además de no mostrarse sus secciones, no se indexan ni entran al sitemap (DEC-135).
+- **Áreas táctiles.** La medición a 360 px encontró enlaces de 17 a 40 px de alto en el panel y en la marca del encabezado; se llevaron a 44 px.
+- **Pruebas anteriores actualizadas.** Tres pruebas afirmaban el estado anterior y se ajustaron al nuevo: las pantallas de acceso ahora llevan una imagen (solo la propia), y el inicio y el menú del panel ahora incluyen las solicitudes.
+- **Commits.** Se hicieron al final, después de que el responsable aprobó las fotos: el plan comprometía mostrárselas antes de confirmarlas.
+- La revisión en el navegador fue con Edge sin interfaz sobre una base temporal (DEC-94), con una sesión de administrador creada por script. La llegada real de un correo por un proveedor SMTP no se probó: no hay proveedor.
