@@ -68,8 +68,10 @@ def test_tras_usar_el_enlace_de_activacion_el_administrador_enrola_y_entra(clien
     assert pagina.status_code == 200
     contenido = pagina.content.decode()
     assert "<svg width=" in contenido and 'class="qr"' in contenido
-    # Compatible con la CSP: sin estilos ni scripts en línea, y sin imágenes externas.
-    assert " style=" not in contenido and "<img" not in contenido
+    # Compatible con la CSP: sin estilos ni scripts en línea, y sin imágenes externas. El
+    # código QR es un SVG incrustado; la única imagen es la fotografía propia del pie.
+    assert " style=" not in contenido
+    assert re.findall(r'<img[^>]* src="([^"]+)"', contenido) == ["/static/img/acceso.webp"]
     dispositivo = TOTPDevice.objects.get()
     assert dispositivo.confirmed is False and dispositivo.user == administrador
     # Recargar la página no cambia la clave que ya se escaneó.

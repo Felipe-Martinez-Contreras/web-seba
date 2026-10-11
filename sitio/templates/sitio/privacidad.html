@@ -1,0 +1,13 @@
+{% extends "base_publica.html" %}
+{% block contenido %}
+<div class="max-w-lectura">
+  <h1 class="text-3xl">Política de privacidad</h1>
+  {% if politica %}
+  <div class="texto-largo mt-6">{{ politica|linebreaks }}</div>
+  {% else %}
+  <div class="mt-6">
+    {% include "componentes/estado_vacio.html" with titulo="La política de privacidad aún no está publicada" texto="Estamos terminando de preparar esta página. Vuelva a intentarlo más adelante." only %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

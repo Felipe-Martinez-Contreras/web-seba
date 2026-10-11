@@ -1,0 +1,36 @@
+{% comment %}
+Datos de contacto del profesional, con enlaces para llamar y escribir.
+Parámetros: contacto (sitio.services.Contacto). Solo muestra lo registrado (PUB-05).
+{% endcomment %}
+<ul class="flex flex-col gap-1 text-sm">
+  {% if contacto.telefono %}
+  <li class="flex items-center gap-3">
+    {% include "componentes/icono.html" with nombre="phone" clase="text-texto-secundario" only %}
+    <a class="enlace enlace-tactil" href="{{ contacto.telefono_enlace }}"><span class="sr-only">Teléfono: </span>{{ contacto.telefono }}</a>
+  </li>
+  {% endif %}
+  {% if contacto.email %}
+  <li class="flex items-center gap-3">
+    {% include "componentes/icono.html" with nombre="mail" clase="text-texto-secundario" only %}
+    <a class="enlace enlace-tactil break-all" href="mailto:{{ contacto.email }}"><span class="sr-only">Correo: </span>{{ contacto.email }}</a>
+  </li>
+  {% endif %}
+  {% if contacto.whatsapp %}
+  <li class="flex items-center gap-3">
+    {% include "componentes/icono.html" with nombre="message-circle" clase="text-texto-secundario" only %}
+    <a class="enlace enlace-tactil" href="{{ contacto.whatsapp_enlace }}" rel="noopener noreferrer">WhatsApp: {{ contacto.whatsapp }}</a>
+  </li>
+  {% endif %}
+  {% if contacto.ubicacion %}
+  <li class="flex min-h-11 items-center gap-3">
+    {% include "componentes/icono.html" with nombre="map-pin" clase="text-texto-secundario" only %}
+    <span><span class="sr-only">Ubicación: </span>{{ contacto.ubicacion }}</span>
+  </li>
+  {% endif %}
+  {% if contacto.horario %}
+  <li class="flex min-h-11 items-center gap-3">
+    {% include "componentes/icono.html" with nombre="clock" clase="text-texto-secundario" only %}
+    <span><span class="sr-only">Horario: </span>{{ contacto.horario }}</span>
+  </li>
+  {% endif %}
+</ul>

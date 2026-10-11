@@ -265,7 +265,9 @@ def test_las_pantallas_de_acceso_no_llevan_estilos_ni_scripts_en_linea(client, r
     """La CSP los bloquearía (SEG-02)."""
     respuesta = client.get(ruta)
     contenido = respuesta.content.decode()
-    for prohibido in (" style=", "<style", "<script>", " onclick=", "<img"):
+    for prohibido in (" style=", "<style", "<script>", " onclick="):
         assert prohibido not in contenido, (ruta, prohibido)
+    # La única imagen es la fotografía propia del pie (PUB-08): nada externo.
+    assert re.findall(r'<img[^>]* src="([^"]+)"', contenido) == ["/static/img/acceso.webp"]
     assert "script-src 'self'" in respuesta["Content-Security-Policy"]
     assert 'content="noindex"' in contenido

@@ -84,6 +84,8 @@ class EventoAuditoria(models.Model):
         DOCUMENTO_VISTO = "documento_visto", "Documento visto en pantalla"
         DOCUMENTO_DESCARGADO = "documento_descargado", "Documento descargado"
         AUDITORIA_DEPURADA = "auditoria_depurada", "Depuración de la auditoría"
+        SOLICITUD_ESTADO = "solicitud_estado", "Cambio de estado de solicitud"
+        SOLICITUD_REINTENTO = "solicitud_reintento", "Reintento de notificación de solicitud"
 
     fecha = models.DateTimeField("fecha", default=timezone.now, editable=False)
     actor = models.ForeignKey(

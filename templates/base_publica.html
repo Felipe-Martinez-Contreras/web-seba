@@ -1,16 +1,19 @@
 {% extends "base.html" %}
 {% comment %}
-Sitio público: encabezado azul marino, portada opcional a todo el ancho, contenido y pie.
+Sitio público: encabezado azul marino, contenido y pie. El inicio reemplaza el bloque
+"cabecera" por la portada, que lleva el encabezado sobre su fotografía.
 {% endcomment %}
+{% block titulo %}{{ seo_titulo|default:"Inicio" }}{% endblock %}
+{% block meta %}{% include "componentes/meta_publica.html" %}{% endblock %}
 {% block cuerpo %}
 <div class="flex min-h-screen flex-col bg-superficie">
-  {% include "componentes/encabezado_publico.html" %}
-  {% block portada %}{% endblock %}
+  {% block cabecera %}{% include "componentes/encabezado_publico.html" %}{% endblock %}
   <main id="contenido" class="flex-1" tabindex="-1">
+    {% block principal %}
     <div class="contenedor py-10">
-      {% include "componentes/mensajes.html" %}
       {% block contenido %}{% endblock %}
     </div>
+    {% endblock %}
   </main>
   {% include "componentes/pie_publico.html" %}
 </div>

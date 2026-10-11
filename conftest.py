@@ -10,6 +10,7 @@ from django_otp.plugins.otp_totp.models import TOTPDevice
 
 from cuentas.models import Usuario
 from empresas.models import Carpeta, Empresa
+from sitio.models import DatosNegocio, Servicio
 
 CLAVE = "caballo-bateria-grapa-2026"
 RUT_CLIENTE_A = "11.111.111-1"
@@ -189,3 +190,71 @@ def cualquier_almacen(request, almacen_de_prueba):
     if request.param == "s3":
         return request.getfixturevalue("almacen_s3")
     return almacen_de_prueba
+
+
+# --- Sitio público y solicitudes ------------------------------------------------------
+
+POLITICA = "Política de privacidad de prueba.\n\nSegundo párrafo de la política."
+
+
+@pytest.fixture
+def negocio(db):
+    """Datos del negocio completos, con política de privacidad: los formularios funcionan."""
+    datos = DatosNegocio.cargar()
+    datos.nombre_comercial = "Prevención de Prueba"
+    datos.titular = "Titular de prueba"
+    datos.bajada = "Bajada de prueba para la portada."
+    datos.presentacion = "Presentación de prueba."
+    datos.telefono = "+56 9 8765 4321"
+    datos.email_publico = "contacto@prevencion-de-prueba.cl"
+    datos.ubicacion = "Talca, Región del Maule"
+    datos.horario = "Lunes a viernes, de 9:00 a 18:00"
+    datos.politica_privacidad = POLITICA
+    datos.save()
+    return datos
+
+
+@pytest.fixture
+def servicio(db):
+    return Servicio.objects.create(
+        nombre="Servicio de prueba",
+        slug="servicio-de-prueba",
+        icono="hard-hat",
+        resumen="Resumen de prueba.",
+        descripcion="Descripción de prueba.",
+        orden=1,
+    )
+
+
+def marca_de_hace(segundos):
+    """Marca de tiempo del antispam emitida hace `segundos`, como la de un formulario que
+    lleva ese tiempo abierto."""
+    from solicitudes import antispam
+
+    return antispam._firmante.sign(str(int(time.time() - segundos)))
+
+
+def datos_de_consulta(**cambios):
+    return {
+        "nombre": "Visitante de Prueba",
+        "email": "visitante@ejemplo.test",
+        "telefono": "",
+        "mensaje": "Necesito información sobre sus servicios.",
+        "consentimiento": "on",
+        "sitio_web": "",
+        "marca": marca_de_hace(30),
+        **cambios,
+    }
+
+
+def datos_de_cotizacion(**cambios):
+    return datos_de_consulta(
+        **{
+            "telefono": "+56 9 1234 5678",
+            "empresa": "Constructora de Prueba Ltda.",
+            "servicio": "servicio-de-prueba",
+            "trabajadores": "11-25",
+            "comuna": "Talca",
+            **cambios,
+        }
+    )

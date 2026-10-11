@@ -129,3 +129,28 @@ def test_ninguna_plantilla_carga_recursos_de_terceros():
             contenido = ruta.read_text(encoding="utf-8")
             assert "//fonts.googleapis.com" not in contenido, ruta
             assert not re.search(r'(?:src|href)="https?://', contenido), ruta
+
+
+def _mezcla(color, fondo, opacidad):
+    """Color que resulta de poner `color` con esa opacidad sobre `fondo`."""
+    canales = [
+        round(int(color[i : i + 2], 16) * opacidad + int(fondo[i : i + 2], 16) * (1 - opacidad))
+        for i in (1, 3, 5)
+    ]
+    return "#" + "".join(f"{canal:02x}" for canal in canales)
+
+
+def test_el_velo_asegura_el_contraste_del_texto_sobre_cualquier_fotografia():
+    """Sección 9: velo azul marino al 70-80 %. Se usa 80 %: el peor caso es un píxel blanco
+    bajo el velo, y aun ahí el texto blanco y el secundario cumplen AA. Con 75 % el
+    secundario no llegaba."""
+    velo = re.search(r"\.velo \{\s*background-color: rgb\(27 45 79 / ([0-9.]+)\);", CSS)
+    opacidad = float(velo.group(1))
+    assert 0.7 <= opacidad <= 0.8
+    assert TOKENS["primario"] == "#1b2d4f"
+    for fondo_de_la_foto in ("#ffffff", "#ffff00", "#808080", "#000000"):
+        fondo = _mezcla(TOKENS["primario"], fondo_de_la_foto, opacidad)
+        assert contraste("#ffffff", fondo) >= 4.5, fondo_de_la_foto
+        assert contraste(TOKENS["sobre-primario-secundario"], fondo) >= 4.5, fondo_de_la_foto
+    peor = _mezcla(TOKENS["primario"], "#ffffff", 0.75)
+    assert contraste(TOKENS["sobre-primario-secundario"], peor) < 4.5

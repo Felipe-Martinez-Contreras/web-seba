@@ -2,18 +2,9 @@ from django import forms
 
 from auditoria.models import EventoAuditoria
 from core import rut as utilidades_rut
+from core.formularios import campo_de_fecha
 from core.validators import validar_rut
 from empresas.models import Empresa
-
-
-def _campo_de_fecha(etiqueta):
-    # El control nativo de fecha siempre envía y espera aaaa-mm-dd, sea cual sea el idioma.
-    return forms.DateField(
-        label=etiqueta,
-        required=False,
-        input_formats=["%Y-%m-%d"],
-        widget=forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"}),
-    )
 
 
 class FormularioFiltros(forms.Form):
@@ -40,8 +31,8 @@ class FormularioFiltros(forms.Form):
             *sorted(EventoAuditoria.Accion.choices, key=lambda opcion: opcion[1]),
         ],
     )
-    desde = _campo_de_fecha("Desde")
-    hasta = _campo_de_fecha("Hasta")
+    desde = campo_de_fecha("Desde")
+    hasta = campo_de_fecha("Hasta")
 
     def clean_rut(self):
         return utilidades_rut.normalizar(self.cleaned_data["rut"])

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% comment %}
-Pantallas de acceso (pantallas 2 y 7 del mockup): columna centrada sobre blanco y bloque
-azul marino al pie. La fotografía con velo de ese bloque llega en la Etapa 6 (PUB-08).
+Pantallas de acceso (pantallas 2 y 7 del mockup): columna centrada sobre blanco y, al pie,
+un bloque con fotografía y velo azul marino (PUB-08; origen en docs/FOTOS.md).
 Bloques: titulo, encabezado, bajada y contenido.
 {% endcomment %}
 {% block meta %}<meta name="robots" content="noindex">{% endblock %}
@@ -18,6 +18,8 @@ Bloques: titulo, encabezado, bajada y contenido.
       </div>
     </div>
   </main>
-  <div class="h-32 bg-primario sm:h-48" aria-hidden="true"></div>
+  <div class="relative isolate h-32 bg-primario sm:h-48">
+    {% include "componentes/foto_fondo.html" with foto=foto_acceso only %}
+  </div>
 </div>
 {% endblock %}

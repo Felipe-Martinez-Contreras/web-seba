@@ -1,10 +1,11 @@
 {% comment %}
 Encabezado del sitio público, azul marino, continuo con la portada.
 Parámetros (todos opcionales; lo que falta no se muestra): marca_nombre y marca_url;
-enlaces_publicos: lista de pares (texto, url); acceso_texto y acceso_url: botón de acceso de clientes.
+enlaces_publicos: lista de pares (texto, url); acceso_texto y acceso_url: botón de acceso de clientes;
+encabezado_transparente: sin fondo propio, para ir dentro de la portada, sobre su fotografía.
 En pantallas angostas la navegación queda dentro de un menú desplegable nativo.
 {% endcomment %}
-<header class="sobre-primario bg-primario text-blanco">
+<header class="sobre-primario{% if not encabezado_transparente %} bg-primario{% endif %} text-blanco">
   <div class="contenedor flex min-h-16 items-center justify-between gap-6 py-2">
     {% include "componentes/marca.html" %}
     {% if enlaces_publicos or acceso_url %}

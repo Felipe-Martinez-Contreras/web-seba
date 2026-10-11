@@ -1,0 +1,10 @@
+{% load static %}
+{% comment %}
+Fotografía de fondo con velo azul marino, para un bloque con texto encima (PUB-08).
+El bloque que la contiene debe llevar las clases "relative isolate".
+Parámetros: foto (sitio.fotos.Foto); prioridad (la primera imagen de la página: no se difiere).
+El velo al 80 % asegura el contraste AA del texto blanco y del secundario sobre cualquier
+fotografía (core/tests/test_diseno.py).
+{% endcomment %}
+<img class="absolute inset-0 -z-20 size-full object-cover" src="{% static foto.archivo %}" srcset="{% static foto.archivo_movil %} 960w, {% static foto.archivo %} 1920w" sizes="100vw" width="{{ foto.ancho }}" height="{{ foto.alto }}" alt="{{ foto.alt }}"{% if prioridad %} fetchpriority="high"{% else %} loading="lazy"{% endif %}>
+<div class="velo absolute inset-0 -z-10"></div>

@@ -1,0 +1,19 @@
+{% autoescape off %}Se recibió una {{ solicitud.get_tipo_display|lower }} desde el sitio web.
+
+Fecha: {{ solicitud.creado_en|date:"d-m-Y" }} a las {{ solicitud.creado_en|date:"H:i" }}
+Nombre: {{ solicitud.nombre }}
+Correo: {{ solicitud.email }}
+{% if solicitud.telefono %}Teléfono: {{ solicitud.telefono }}
+{% endif %}{% if solicitud.empresa %}Empresa: {{ solicitud.empresa }}
+{% endif %}{% if solicitud.servicio_texto %}Servicio de interés: {{ solicitud.servicio_texto }}
+{% endif %}{% if solicitud.trabajadores %}Cantidad de trabajadores: {{ solicitud.get_trabajadores_display }}
+{% endif %}{% if solicitud.comuna %}Comuna o región: {{ solicitud.comuna }}
+{% endif %}
+Mensaje:
+{{ solicitud.mensaje }}
+
+Ver la solicitud en el panel:
+{{ url }}
+
+Para contestar, responda este correo: la respuesta le llega a quien envió el formulario.
+{% endautoescape %}

@@ -34,6 +34,8 @@ INSTALLED_APPS = [
     "documentos",
     "portal",
     "panel",
+    "sitio",
+    "solicitudes",
 ]
 
 MIDDLEWARE = [
@@ -49,6 +51,7 @@ MIDDLEWARE = [
     "django_otp.middleware.OTPMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "sitio.middleware.NoIndexarMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -64,6 +67,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "sitio.context_processors.marca",
             ],
         },
     },
@@ -138,6 +142,18 @@ FILE_UPLOAD_HANDLERS = [
     "django.core.files.uploadhandler.MemoryFileUploadHandler",
     "django.core.files.uploadhandler.TemporaryFileUploadHandler",
 ]
+
+# Solicitudes del sitio público (SOL-04, SOL-08, SOL-11). Sin destinatarios, la solicitud
+# se guarda igual y su notificación queda como "correo no configurado".
+NOTIFICACIONES_DESTINATARIOS = env.lista("NOTIFICACIONES_DESTINATARIOS")
+NOTIFICACIONES_INTENTOS_MAXIMOS = env.entero("NOTIFICACIONES_INTENTOS_MAXIMOS", 5)
+SOLICITUDES_MAXIMO_POR_HORA_IP = env.entero("SOLICITUDES_MAXIMO_POR_HORA_IP", 5)
+SOLICITUDES_TIEMPO_MINIMO_SEGUNDOS = env.entero("SOLICITUDES_TIEMPO_MINIMO_SEGUNDOS", 3)
+# Punto de extensión para un captcha, desactivado: ruta de una función que recibe la
+# petición y devuelve si el captcha fue resuelto.
+SOLICITUDES_CAPTCHA = env.texto("SOLICITUDES_CAPTCHA", "")
+# `cargar_demo` solo corre en desarrollo o con esta variable; producción nunca la define.
+DEMO_PERMITIDO = env.booleano("DEMO_PERMITIDO", False)
 
 # Retención de la auditoría (AUD-03): el comando `depurar_auditoria` borra lo anterior.
 AUDITORIA_RETENCION_MESES = env.entero("AUDITORIA_RETENCION_MESES", 24)

@@ -1,0 +1,25 @@
+{% extends "base_publica.html" %}
+{% block contenido %}
+<div class="grid gap-10 lg:grid-cols-[1fr_1.4fr]">
+  <div>
+    <h1 class="text-3xl">Contacto</h1>
+    {% if formularios_disponibles %}
+    <p class="mt-3 max-w-lectura text-texto-secundario">Escríbanos su consulta y le responderemos al correo o teléfono que indique.</p>
+    {% if contacto.hay or contacto.ubicacion or contacto.horario %}
+    <div class="mt-6">{% include "componentes/datos_contacto.html" with contacto=contacto only %}</div>
+    {% endif %}
+    <p class="mt-6 text-sm">¿Necesita una cotización? <a class="enlace enlace-tactil" href="{% url 'solicitudes:cotizacion' %}">Solicitar cotización</a></p>
+    {% endif %}
+  </div>
+  <div>
+    {% if formularios_disponibles %}
+    <div class="tarjeta p-5 sm:p-6">
+      <h2 class="mb-5 text-lg">Envíe su consulta</h2>
+      {% include "solicitudes/_formulario.html" with boton="Enviar consulta" %}
+    </div>
+    {% else %}
+    {% include "solicitudes/_sin_formulario.html" %}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

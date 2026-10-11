@@ -4,7 +4,7 @@ Parámetros: marca_nombre; marca_url (opcional); marca_tono: claro (por defecto,
 marino) u oscuro (sobre blanco). Sin nombre no se muestra nada.
 {% endcomment %}
 {% if marca_nombre %}
-{% if marca_url %}<a class="flex items-center gap-2 text-base font-semibold {% if marca_tono == "oscuro" %}text-primario{% else %}text-blanco{% endif %} no-underline" href="{{ marca_url }}">{% else %}<span class="flex items-center gap-2 text-base font-semibold {% if marca_tono == "oscuro" %}text-primario{% else %}text-blanco{% endif %}">{% endif %}
+{% if marca_url %}<a class="flex min-h-11 items-center gap-2 text-base font-semibold {% if marca_tono == "oscuro" %}text-primario{% else %}text-blanco{% endif %} no-underline" href="{{ marca_url }}">{% else %}<span class="flex items-center gap-2 text-base font-semibold {% if marca_tono == "oscuro" %}text-primario{% else %}text-blanco{% endif %}">{% endif %}
   {% include "componentes/icono.html" with nombre="shield-check" clase="icono-grande" only %}
   <span class="leading-tight">{{ marca_nombre }}</span>
 {% if marca_url %}</a>{% else %}</span>{% endif %}

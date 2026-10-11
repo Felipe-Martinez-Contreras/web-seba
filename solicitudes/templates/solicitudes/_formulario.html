@@ -1,0 +1,43 @@
+{% comment %}
+Formulario público de consulta o de cotización (SOL-01, SOL-02), con sus controles antispam.
+Parámetros: formulario; marca (marca de tiempo firmada); url_formulario (destino del POST);
+aviso (texto del descarte, si lo hubo); boton (texto del botón); dos_columnas.
+{% endcomment %}
+{% if aviso %}
+<div class="mb-6" aria-live="assertive">{% include "componentes/alerta.html" with tipo="error" mensaje=aviso only %}</div>
+{% else %}
+{% include "componentes/resumen_errores.html" %}
+{% endif %}
+<form class="flex flex-col gap-5" method="post" action="{{ url_formulario }}" novalidate>
+  {% csrf_token %}
+  <div class="grid gap-5{% if dos_columnas %} sm:grid-cols-2{% endif %}">
+    {% for campo in formulario %}
+    {% if campo.name == "mensaje" %}
+    <div class="{% if dos_columnas %}sm:col-span-2{% endif %}">{% include "componentes/campo.html" with campo=campo %}</div>
+    {% elif campo.name != "consentimiento" %}
+    {% include "componentes/campo.html" with campo=campo %}
+    {% endif %}
+    {% endfor %}
+  </div>
+  {# Campo trampa: las personas no lo ven ni llegan a él con el teclado. #}
+  <div class="trampa" aria-hidden="true">
+    <label for="id_sitio_web">Deje este campo vacío</label>
+    <input type="text" id="id_sitio_web" name="sitio_web" value="" tabindex="-1" autocomplete="off">
+  </div>
+  <input type="hidden" name="marca" value="{{ marca }}">
+  <div>
+    {% include "componentes/casilla.html" with campo=formulario.consentimiento %}
+    <p class="text-sm"><a class="enlace enlace-tactil" href="{% url 'sitio:privacidad' %}" target="_blank" rel="noopener">Leer la política de privacidad<span class="sr-only"> (se abre en una pestaña nueva)</span></a></p>
+    {% if formulario.consentimiento.errors %}
+    <div id="{{ formulario.consentimiento.auto_id }}_error">
+      {% for error in formulario.consentimiento.errors %}
+      <p class="campo-error">
+        <span class="icono icono-chico mt-0.5" aria-hidden="true">{% include "iconos/circle-alert.svg" %}</span>
+        <span>{{ error }}</span>
+      </p>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+  <div>{% include "componentes/boton.html" with texto=boton|default:"Enviar solicitud" ancho=True only %}</div>
+</form>

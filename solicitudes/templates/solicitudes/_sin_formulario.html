@@ -1,0 +1,10 @@
+{% comment %}
+Lo que ocupa el lugar de un formulario mientras no existe el texto de la política de
+privacidad: el contacto registrado o, si tampoco hay, un aviso de qué pasa.
+{% endcomment %}
+{% if contacto.hay %}
+<p class="text-sm text-texto-secundario">Puede contactarnos directamente:</p>
+<div class="mt-2">{% include "componentes/datos_contacto.html" with contacto=contacto only %}</div>
+{% else %}
+{% include "componentes/estado_vacio.html" with titulo="El formulario no está disponible por ahora" texto="Estamos terminando de preparar esta página. Vuelva a intentarlo más adelante." only %}
+{% endif %}

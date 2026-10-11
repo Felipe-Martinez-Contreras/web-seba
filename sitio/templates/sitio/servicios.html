@@ -1,0 +1,28 @@
+{% extends "base_publica.html" %}
+{% block contenido %}
+<h1 class="text-3xl">Servicios</h1>
+{% if presentacion %}<p class="mt-3 max-w-lectura text-texto-secundario">{{ presentacion|linebreaksbr }}</p>{% endif %}
+{% if servicios %}
+<ul class="mt-8 flex flex-col gap-4">
+  {% for servicio in servicios %}
+  <li class="tarjeta flex flex-wrap items-start gap-4 p-5 sm:p-6" id="{{ servicio.slug }}">
+    <span class="cuadro-icono cuadro-icono-contorno" aria-hidden="true">{% include "iconos/"|add:servicio.icono|add:".svg" %}</span>
+    <div class="min-w-0 flex-1 basis-64">
+      <h2 class="text-lg break-words">{{ servicio.nombre }}</h2>
+      {% if servicio.resumen %}<p class="mt-1 text-sm font-medium">{{ servicio.resumen }}</p>{% endif %}
+      {% if servicio.descripcion %}<p class="mt-2 max-w-lectura text-sm text-texto-secundario">{{ servicio.descripcion|linebreaksbr }}</p>{% endif %}
+    </div>
+    {% if formularios_disponibles %}
+    <a class="boton boton-secundario" href="{{ url_cotizacion }}?servicio={{ servicio.slug }}">
+      <span>Solicitar cotización<span class="sr-only"> de {{ servicio.nombre }}</span></span>
+    </a>
+    {% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<div class="mt-8">
+  {% include "componentes/estado_vacio.html" with titulo="Aún no hay servicios publicados" texto="Estamos terminando de preparar esta página. Vuelva a intentarlo más adelante." only %}
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "base_publica.html" %}
+{% block contenido %}
+<div class="mx-auto max-w-3xl">
+  <h1 class="text-3xl">Solicitar cotización</h1>
+  {% if formularios_disponibles %}
+  <p class="mt-3 max-w-lectura text-texto-secundario">Cuéntenos qué necesita y le responderemos al correo o teléfono que indique.</p>
+  <div class="tarjeta mt-6 p-5 sm:p-6">
+    {% include "solicitudes/_formulario.html" with dos_columnas=True %}
+  </div>
+  {% else %}
+  <div class="mt-6">{% include "solicitudes/_sin_formulario.html" %}</div>
+  {% endif %}
+</div>
+{% endblock %}

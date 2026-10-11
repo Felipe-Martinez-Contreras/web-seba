@@ -551,6 +551,22 @@
     @apply text-primario-hover;
   }
 
+  /* Velo sobre fotografías: azul marino al 80 %. Con esa opacidad el texto blanco y el
+     secundario cumplen AA sobre cualquier fotografía (core/tests/test_diseno.py). */
+  .velo {
+    background-color: rgb(27 45 79 / 0.8);
+  }
+
+  /* Campo trampa del antispam: fuera de pantalla, sin estilos en línea (CSP) */
+  .trampa {
+    @apply absolute -left-[9999px] size-px overflow-hidden;
+  }
+
+  /* Texto largo editable (política de privacidad): párrafos separados */
+  .texto-largo p + p {
+    @apply mt-4;
+  }
+
   /* Navegación pública, sobre azul marino */
   .nav-publica {
     @apply flex min-h-11 items-center rounded-boton px-3 text-sm font-medium text-blanco no-underline;

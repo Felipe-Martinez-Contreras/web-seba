@@ -1,0 +1,48 @@
+{% extends "base_publica.html" %}
+{% block cabecera %}
+{% if titular %}
+{% url 'solicitudes:cotizacion' as url_cotizacion %}
+{% url 'sitio:servicios' as url_servicios %}
+{% if formularios_disponibles %}
+{% include "componentes/portada.html" with foto=foto_portada con_encabezado=True accion_texto="Solicitar cotización" accion_url=url_cotizacion accion2_texto="Conozca nuestros servicios" accion2_url=url_servicios %}
+{% else %}
+{% include "componentes/portada.html" with foto=foto_portada con_encabezado=True accion2_texto="Conozca nuestros servicios" accion2_url=url_servicios %}
+{% endif %}
+{% else %}
+{% include "componentes/encabezado_publico.html" %}
+{% endif %}
+{% endblock %}
+{% block principal %}
+{% if servicios %}
+<section class="contenedor py-12" aria-labelledby="servicios-titulo">
+  <h2 class="text-2xl" id="servicios-titulo">Nuestros servicios</h2>
+  <ul class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    {% url 'sitio:servicios' as url_servicios %}
+    {% for servicio in servicios %}
+    <li class="grid">{% include "componentes/tarjeta_servicio.html" with titulo=servicio.nombre resumen=servicio.resumen icono=servicio.icono url=url_servicios|add:"#"|add:servicio.slug only %}</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if formularios_disponibles or contacto.hay %}
+<section class="contenedor pb-12{% if not servicios %} pt-12{% endif %}" id="contacto" aria-labelledby="contacto-titulo">
+  <div class="tarjeta grid overflow-hidden lg:grid-cols-[1fr_1.3fr]">
+    <div class="sobre-primario relative isolate flex min-h-48 flex-col justify-end bg-primario p-6 text-blanco sm:p-8">
+      {% include "componentes/foto_fondo.html" with foto=foto_contacto only %}
+      <h2 class="text-2xl" id="contacto-titulo">¿Tiene alguna consulta o necesita una cotización?</h2>
+      {% if formularios_disponibles %}
+      <p class="mt-3 text-sm text-sobre-primario-secundario">Complete el formulario y le responderemos al correo o teléfono que indique.</p>
+      {% endif %}
+    </div>
+    <div class="p-5 sm:p-8">
+      {% if formularios_disponibles %}
+      {% include "solicitudes/_formulario.html" with dos_columnas=True %}
+      {% else %}
+      {% include "solicitudes/_sin_formulario.html" %}
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

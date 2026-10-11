@@ -11,6 +11,12 @@ DJANGO_ADMIN_RUTA = "admin-tecnico"
 PROXY_CONFIANZA_REDES = []
 MAILERS = {"default": {"BACKEND": "django.core.mail.backends.locmem.EmailBackend"}}
 DEFAULT_FROM_EMAIL = "pruebas@ejemplo.test"
+NOTIFICACIONES_DESTINATARIOS = ["profesional@ejemplo.test"]
+NOTIFICACIONES_INTENTOS_MAXIMOS = 5
+SOLICITUDES_MAXIMO_POR_HORA_IP = 5
+SOLICITUDES_TIEMPO_MINIMO_SEGUNDOS = 3
+SOLICITUDES_CAPTCHA = ""
+DEMO_PERMITIDO = False
 # El envío de correo se ejecuta en el mismo hilo, dentro de la transacción de la prueba.
 TAREAS_SINCRONAS = True
 # Cada prueba usa su propia carpeta temporal (conftest.py); el S3 de las pruebas es moto.

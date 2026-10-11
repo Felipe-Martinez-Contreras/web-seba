@@ -1,0 +1,9 @@
+{% extends "base_publica.html" %}
+{% block contenido %}
+<div class="mx-auto max-w-lectura py-6" role="status">
+  <span class="cuadro-icono cuadro-icono-exito" aria-hidden="true">{% include "iconos/circle-check.svg" %}</span>
+  <h1 class="mt-4 text-3xl">Recibimos su solicitud</h1>
+  <p class="mt-3">{{ detalle }}</p>
+  <p class="mt-8">{% url 'sitio:inicio' as url_inicio %}{% include "componentes/boton.html" with texto="Volver al inicio" href=url_inicio variante="secundario" only %}</p>
+</div>
+{% endblock %}
