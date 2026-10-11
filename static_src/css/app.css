@@ -521,12 +521,15 @@
   }
 
   /* Pestañas */
+  /* La línea inferior es una sombra interior: con un borde y el margen negativo de cada
+     pestaña, el contenido desbordaba 1 px y aparecía una barra de desplazamiento vertical. */
   .pestanas {
-    @apply flex gap-6 overflow-x-auto border-b border-divisor;
+    @apply flex gap-6 overflow-x-auto;
+    box-shadow: inset 0 -1px 0 var(--color-divisor);
   }
 
   .pestana {
-    @apply -mb-px flex min-h-11 items-center border-b-2 border-transparent text-sm font-medium whitespace-nowrap text-texto-secundario no-underline;
+    @apply flex min-h-11 items-center border-b-2 border-transparent text-sm font-medium whitespace-nowrap text-texto-secundario no-underline;
   }
 
   .pestana:hover {
