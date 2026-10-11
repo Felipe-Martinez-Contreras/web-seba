@@ -1,6 +1,69 @@
 {% extends "base_panel.html" %}
+{% load formato %}
 {% block titulo %}Panel de administración{% endblock %}
 {% block contenido %}
 <h1 class="text-2xl">Panel de administración</h1>
-<p class="mt-2 text-texto-secundario">Hola, {{ user.nombre }}.</p>
+<p class="mt-1 text-sm text-texto-secundario">Resumen de la actividad de la plataforma.</p>
+
+<div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+  {% url 'panel:clientes' as url_clientes %}
+  {% include "componentes/tarjeta_indicador.html" with etiqueta="Clientes activos" valor=clientes_activos icono="users" url=url_clientes|add:"?estado=activos" only %}
+</div>
+
+{% if con_cuentas_pendientes %}
+<section class="tarjeta mt-6" aria-labelledby="pendientes-titulo">
+  <div class="flex items-start gap-3 px-5 pt-5">
+    <span class="icono mt-0.5 text-advertencia" aria-hidden="true">{% include "iconos/triangle-alert.svg" %}</span>
+    <div>
+      <h2 class="text-base" id="pendientes-titulo">Cuentas pendientes de activación</h2>
+      <p class="mt-1 text-sm text-texto-secundario">Estas cuentas aún no definen su contraseña. Si el enlace venció o se perdió, genere uno nuevo desde los usuarios del cliente.</p>
+    </div>
+  </div>
+  <ul class="mt-3 divide-y divide-divisor border-t border-divisor">
+    {% for cliente in con_cuentas_pendientes %}
+    <li>
+      <a class="fila" href="{% url 'panel:cliente_usuarios' cliente.pk %}">
+        <span class="min-w-0 flex-1">
+          <span class="fila-titulo block">{{ cliente.razon_social }}</span>
+          <span class="fila-meta block tabular-nums">{{ cliente.cuentas_pendientes }} cuenta{{ cliente.cuentas_pendientes|pluralize }} pendiente{{ cliente.cuentas_pendientes|pluralize }}</span>
+        </span>
+        <span class="icono icono-chico text-texto-secundario" aria-hidden="true">{% include "iconos/chevron-right.svg" %}</span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% if hay_mas_pendientes %}
+  <p class="border-t border-divisor px-5 py-3 text-xs text-texto-secundario">Hay más clientes con cuentas pendientes; se muestran los primeros.</p>
+  {% endif %}
+</section>
+{% endif %}
+
+<section class="mt-8" aria-labelledby="recientes-titulo">
+  <div class="flex items-center justify-between gap-4">
+    <h2 class="text-lg" id="recientes-titulo">Clientes recientes</h2>
+    {% if clientes_recientes %}<a class="enlace text-sm" href="{% url 'panel:clientes' %}">Ver todos</a>{% endif %}
+  </div>
+  <div class="mt-3">
+    {% if clientes_recientes %}
+    <ul class="lista-filas">
+      {% for cliente in clientes_recientes %}
+      <li>
+        <a class="fila" href="{% url 'panel:cliente' cliente.pk %}">
+          <span class="cuadro-icono cuadro-icono-contorno" aria-hidden="true">{% include "iconos/building-2.svg" %}</span>
+          <span class="min-w-0 flex-1">
+            <span class="fila-titulo block">{{ cliente.razon_social }}</span>
+            <span class="fila-meta block tabular-nums">{{ cliente.rut|rut }}</span>
+          </span>
+          {% if not cliente.activa %}{% include "componentes/insignia.html" with texto="Inactivo" only %}{% endif %}
+          <span class="icono icono-chico text-texto-secundario" aria-hidden="true">{% include "iconos/chevron-right.svg" %}</span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    {% url 'panel:cliente_nuevo' as url_nuevo %}
+    {% include "componentes/estado_vacio.html" with titulo="Aún no hay clientes" texto="Cree el primer cliente para registrar sus carpetas y sus usuarios." accion_texto="Nuevo cliente" accion_url=url_nuevo only %}
+    {% endif %}
+  </div>
+</section>
 {% endblock %}

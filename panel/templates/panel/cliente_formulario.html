@@ -1,0 +1,39 @@
+{% extends "base_panel.html" %}
+{% block titulo %}{% if edicion %}Editar cliente{% else %}Nuevo cliente{% endif %}{% endblock %}
+{% block contenido %}
+{% include "componentes/migas.html" with migas=migas only %}
+<h1 class="mt-4 text-2xl">{% if edicion %}Editar cliente{% else %}Nuevo cliente{% endif %}</h1>
+
+<div class="tarjeta mt-6 max-w-2xl p-5">
+  {% include "componentes/resumen_errores.html" with formulario=form %}
+  <form class="flex flex-col gap-5" method="post" novalidate>
+    {% csrf_token %}
+    <div class="grid gap-5 sm:grid-cols-2">
+      {% include "componentes/campo.html" with campo=form.rut %}
+      {% include "componentes/campo.html" with campo=form.razon_social %}
+    </div>
+    {% include "componentes/campo.html" with campo=form.nombre_fantasia %}
+
+    <fieldset class="flex flex-col gap-5">
+      <legend class="text-base font-semibold">Contacto</legend>
+      <div class="mt-4 grid gap-5 sm:grid-cols-2">
+        {% include "componentes/campo.html" with campo=form.contacto_nombre %}
+        {% include "componentes/campo.html" with campo=form.contacto_telefono %}
+      </div>
+      {% include "componentes/campo.html" with campo=form.contacto_email %}
+    </fieldset>
+
+    {% include "componentes/campo.html" with campo=form.notas_internas %}
+    {% if form.carpetas_base %}{% include "componentes/casilla.html" with campo=form.carpetas_base %}{% endif %}
+
+    <div class="flex flex-wrap gap-3">
+      {% if edicion %}
+      {% include "componentes/boton.html" with texto="Guardar cambios" only %}
+      {% else %}
+      {% include "componentes/boton.html" with texto="Crear cliente" only %}
+      {% endif %}
+      {% include "componentes/boton.html" with texto="Cancelar" href=url_cancelar variante="secundario" only %}
+    </div>
+  </form>
+</div>
+{% endblock %}

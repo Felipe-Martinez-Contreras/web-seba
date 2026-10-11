@@ -1,0 +1,20 @@
+{% extends "base_panel.html" %}
+{% block titulo %}Actividad · {{ empresa.razon_social }}{% endblock %}
+{% block contenido %}
+{% include "panel/_cliente_cabecera.html" %}
+
+<section class="mt-6" aria-labelledby="actividad-titulo">
+  <div class="flex flex-wrap items-center justify-between gap-4">
+    <h2 class="text-lg" id="actividad-titulo">Actividad</h2>
+    {% if pagina.object_list %}<a class="enlace text-sm" href="{{ url_auditoria }}">Ver en Auditoría, con filtros</a>{% endif %}
+  </div>
+  <div class="mt-3">
+    {% if pagina.object_list %}
+    <div class="tarjeta">{% include "panel/_eventos.html" with eventos=pagina con_cliente=False only %}</div>
+    <div class="mt-4">{% include "componentes/paginacion.html" %}</div>
+    {% else %}
+    {% include "componentes/estado_vacio.html" with titulo="Aún no hay actividad registrada" texto="Aquí aparecerán los accesos de sus usuarios y los cambios hechos a este cliente." only %}
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

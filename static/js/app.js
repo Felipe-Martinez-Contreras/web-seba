@@ -42,7 +42,49 @@ document.addEventListener("click", function (evento) {
       dialogo.showModal();
     }
   }
+
+  // Copiar al portapapeles el texto de un campo de solo lectura.
+  var copiador = evento.target.closest("[data-copia]");
+  if (copiador) {
+    var origen = document.getElementById(copiador.dataset.copia);
+    if (origen instanceof HTMLInputElement) {
+      copiar(origen);
+    }
+  }
 });
+
+// Un menú desplegable abierto se cierra al hacer clic fuera de él.
+document.addEventListener("click", function (evento) {
+  document.querySelectorAll("details[open] > .menu-flotante").forEach(function (menu) {
+    var desplegable = menu.parentElement;
+    if (!(evento.target instanceof Node) || !desplegable.contains(evento.target)) {
+      desplegable.removeAttribute("open");
+    }
+  });
+});
+
+function copiar(origen) {
+  var estado = document.getElementById(origen.id + "-estado");
+  function avisar(texto) {
+    if (estado) {
+      estado.textContent = texto;
+    }
+  }
+  origen.select();
+  // El portapapeles solo existe en contextos seguros (HTTPS o localhost).
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(origen.value).then(
+      function () {
+        avisar("Copiado al portapapeles.");
+      },
+      function () {
+        avisar("No se pudo copiar. El texto quedó seleccionado: cópielo con Ctrl+C.");
+      }
+    );
+  } else {
+    avisar("El texto quedó seleccionado: cópielo con Ctrl+C.");
+  }
+}
 
 // Al volver con el botón "atrás" del navegador, el formulario debe poder enviarse de nuevo.
 window.addEventListener("pageshow", function () {

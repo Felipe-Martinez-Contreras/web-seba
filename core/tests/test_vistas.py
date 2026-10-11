@@ -106,6 +106,9 @@ def test_la_referencia_muestra_los_componentes(client):
         'class="tabla"',
         'data-etiqueta="Estado"',
         "cuadro-icono-info",
+        'data-copia="copiable-muestra"',
+        'class="casilla"',
+        'class="lateral-grupo"',
     ):
         assert marcador in contenido, marcador
 

@@ -304,6 +304,11 @@
     @apply inline-flex;
   }
 
+  /* Casilla de verificación con su etiqueta al lado */
+  .casilla input {
+    @apply size-5 shrink-0 cursor-pointer accent-primario;
+  }
+
   /* Tarjetas: solo servicios, indicadores, empresa y paneles de contenido */
   .tarjeta {
     @apply rounded-caja border border-divisor bg-superficie;
@@ -450,6 +455,15 @@
     @apply bg-fondo px-4 py-3 text-xs font-medium text-texto-secundario;
   }
 
+  /* Cuando abre una tarjeta, el encabezado sigue sus esquinas sin recortar los menús de las filas */
+  .tarjeta > .tabla:first-child th:first-child {
+    @apply rounded-tl-caja;
+  }
+
+  .tarjeta > .tabla:first-child th:last-child {
+    @apply rounded-tr-caja;
+  }
+
   .tabla tr {
     @apply block border-b border-divisor py-3 md:table-row md:py-0;
   }
@@ -465,6 +479,26 @@
   .tabla td::before {
     content: attr(data-etiqueta);
     @apply shrink-0 text-xs font-medium text-texto-secundario md:hidden;
+  }
+
+  /* Tabla con muchas columnas: sigue como lista hasta los 1280 px, porque entre 768 y 1279 px
+     el contenido mide unos 720 px (desde 1024 px la barra lateral ocupa 240). */
+  @media (min-width: 48rem) and (max-width: 79.999rem) {
+    .tabla-ancha thead {
+      @apply sr-only;
+    }
+
+    .tabla-ancha tr {
+      @apply block py-3;
+    }
+
+    .tabla-ancha td {
+      @apply flex py-1;
+    }
+
+    .tabla-ancha td::before {
+      display: inline;
+    }
   }
 
   /* Pestañas */
@@ -513,6 +547,11 @@
 
   .lateral-enlace[aria-current="page"] {
     @apply bg-blanco text-primario;
+  }
+
+  /* Nombre de un grupo de la barra lateral: no es un enlace */
+  .lateral-grupo {
+    @apply flex min-h-11 items-center gap-3 px-3 text-sm font-medium text-sobre-primario-secundario;
   }
 
   /* Menús desplegables nativos (details) */

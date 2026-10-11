@@ -27,6 +27,9 @@ class FormularioDeReferencia(forms.Form):
         choices=[("", "Seleccione una opción"), ("a", "Opción A"), ("b", "Opción B")],
     )
     mensaje = forms.CharField(label="Mensaje", widget=forms.Textarea(attrs={"rows": 3}))
+    casilla = forms.BooleanField(
+        label="Casilla de verificación", required=False, help_text="Ayuda de la casilla."
+    )
 
 
 @require_http_methods(["GET", "POST"])
@@ -56,7 +59,11 @@ def componentes(request):
         "menu_lateral": [
             {"texto": "Elemento activo", "url": "#", "icono": "house", "activo": True},
             {"texto": "Otro elemento", "url": "#", "icono": "folder", "activo": False},
-            {"texto": "Tercer elemento", "url": "#", "icono": "settings", "activo": False},
+            {
+                "texto": "Grupo de muestra",
+                "icono": "settings",
+                "hijos": [{"texto": "Elemento del grupo", "url": "#", "activo": False}],
+            },
         ],
         "url_cerrar_sesion": request.path,
         "buscador_accion": request.path,

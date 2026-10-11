@@ -5,6 +5,8 @@ Solo se listan las secciones que existen: cada etapa agrega las suyas.
 
 from django.urls import reverse
 
+# Cada elemento: (clave, texto, nombre de la ruta, ícono). Un grupo no lleva ruta y trae
+# sus elementos dentro.
 _SECCIONES = {
     "cliente": [
         ("inicio", "Inicio", "portal:inicio", "house"),
@@ -12,7 +14,14 @@ _SECCIONES = {
     ],
     "administrador": [
         ("inicio", "Inicio", "panel:inicio", "house"),
-        ("cuenta", "Mi cuenta", "cuentas:mi_cuenta", "circle-user"),
+        ("clientes", "Clientes", "panel:clientes", "users"),
+        ("auditoria", "Auditoría", "panel:auditoria", "history"),
+        (
+            "configuracion",
+            "Configuración",
+            [("cuenta", "Mi cuenta", "cuentas:mi_cuenta", "circle-user")],
+            "settings",
+        ),
     ],
 }
 _BASE = {"cliente": "base_portal.html", "administrador": "base_panel.html"}
@@ -23,14 +32,26 @@ def inicio_de(usuario):
     return reverse("panel:inicio" if usuario.es_administrador else "portal:inicio")
 
 
+def _elemento(clave, texto, destino, icono, seccion):
+    if isinstance(destino, list):
+        return {
+            "texto": texto,
+            "icono": icono,
+            "hijos": [_elemento(*hijo, seccion) for hijo in destino],
+        }
+    return {"texto": texto, "url": reverse(destino), "icono": icono, "activo": clave == seccion}
+
+
 def contexto(usuario, seccion):
-    return {
+    datos = {
         "plantilla_base": _BASE[usuario.rol],
-        "menu_lateral": [
-            {"texto": texto, "url": reverse(ruta), "icono": icono, "activo": clave == seccion}
-            for clave, texto, ruta, icono in _SECCIONES[usuario.rol]
-        ],
+        "menu_lateral": [_elemento(*elemento, seccion) for elemento in _SECCIONES[usuario.rol]],
         "url_cerrar_sesion": reverse("cuentas:salir"),
         "usuario_nombre": usuario.nombre,
         "menu_usuario": [("Mi cuenta", reverse("cuentas:mi_cuenta"))],
     }
+    if usuario.es_administrador:
+        # El buscador del panel se limita a los clientes (DISENO.md, diferencia 6).
+        datos["buscador_accion"] = reverse("panel:clientes")
+        datos["buscador_etiqueta"] = "Buscar clientes por RUT o razón social"
+    return datos

@@ -8,11 +8,15 @@ import re
 import uuid
 
 import pytest
+from django.core import mail
 from django.test import Client
 from django.urls import URLPattern, URLResolver, get_resolver
 from django.urls.resolvers import RegexPattern, RoutePattern
 
-from conftest import RUT_CLIENTE_A, entrar
+from auditoria.models import EventoAuditoria
+from conftest import RUT_ADMINISTRADOR, RUT_CLIENTE_A, entrar, verificar_segundo_factor
+from cuentas.models import EnlaceAcceso, Usuario
+from empresas.models import Carpeta, Empresa
 
 pytestmark = pytest.mark.django_db
 
@@ -35,12 +39,16 @@ _VALORES = {
 }
 
 
-def _ruta_de(patron):
-    """Convierte el patrón en una ruta concreta, con valores de relleno."""
+def _ruta_de(patron, reales):
+    """Convierte el patrón en una ruta concreta. Cada parámetro toma el valor real que se
+    haya entregado para su nombre y, si no hay, uno de relleno según su tipo."""
     if isinstance(patron, RoutePattern):
 
         def relleno(coincidencia):
-            conversor = patron.converters[coincidencia.group(1)]
+            nombre = coincidencia.group(1)
+            if nombre in reales:
+                return str(reales[nombre])
+            conversor = patron.converters[nombre]
             return str(_VALORES.get(type(conversor).__name__, "x"))
 
         return re.sub(r"<(?:\w+:)?(\w+)>", relleno, str(patron))
@@ -56,15 +64,56 @@ def _ruta_de(patron):
     raise AssertionError(f"Patrón con expresión regular no contemplado: {texto}")
 
 
-def _recorrer(patrones, prefijo="", espacios=()):
+def _recorrer(patrones, prefijo="", espacios=(), reales=None):
+    reales = reales or {}
     for patron in patrones:
         if isinstance(patron, URLResolver):
             nuevos = (*espacios, patron.namespace) if patron.namespace else espacios
-            yield from _recorrer(patron.url_patterns, prefijo + _ruta_de(patron.pattern), nuevos)
+            yield from _recorrer(
+                patron.url_patterns, prefijo + _ruta_de(patron.pattern, reales), nuevos, reales
+            )
         else:
             assert isinstance(patron, URLPattern)
             nombre = ":".join((*espacios, patron.name or ""))
-            yield nombre, "/" + prefijo + _ruta_de(patron.pattern), patron.callback
+            yield nombre, "/" + prefijo + _ruta_de(patron.pattern, reales), patron.callback
+
+
+# Rutas del panel que deben aparecer en el recorrido: si faltara alguna, las pruebas de
+# abajo pasarían sin haberla probado.
+PANEL = {
+    "panel:inicio",
+    "panel:clientes",
+    "panel:cliente_nuevo",
+    "panel:cliente",
+    "panel:cliente_documentos",
+    "panel:cliente_usuarios",
+    "panel:cliente_actividad",
+    "panel:cliente_editar",
+    "panel:cliente_estado",
+    "panel:carpeta_nueva",
+    "panel:carpeta_editar",
+    "panel:carpeta_mover",
+    "panel:carpeta_eliminar",
+    "panel:usuario_nuevo",
+    "panel:usuario_editar",
+    "panel:usuario_estado",
+    "panel:usuario_enlace",
+    "panel:usuario_desbloquear",
+    "panel:auditoria",
+}
+
+# Datos con los que un POST válido sí modificaría algo, si llegara a la vista.
+DATOS_POST = {
+    "rut": "5.126.663-3",
+    "razon_social": "Empresa creada por un intruso",
+    "nombre": "Nombre puesto por un intruso",
+    "email": "intruso@ejemplo.test",
+    "carpetas_base": "on",
+    "por_correo": "si",
+    "activa": "no",
+    "activo": "no",
+    "direccion": "bajar",
+}
 
 
 @pytest.fixture(scope="module")
@@ -72,9 +121,32 @@ def urls():
     encontradas = list(_recorrer(get_resolver().url_patterns))
     # Si el recorrido dejara de encontrar las URL, la prueba pasaría sin probar nada.
     nombres = {nombre for nombre, _, _ in encontradas}
-    assert {"portal:inicio", "panel:inicio", "panel:usuario_desbloquear", "admin:index"} <= nombres
+    assert {"portal:inicio", "admin:index"} | PANEL <= nombres
     assert nombres >= PUBLICAS
     return encontradas
+
+
+def _rutas_del_panel(empresa, usuario, carpeta):
+    """Las rutas del panel con los identificadores reales de una empresa y de lo suyo."""
+    reales = {"empresa": empresa.pk, "usuario": usuario.uuid, "carpeta": carpeta.pk}
+    rutas = [
+        (nombre, ruta)
+        for nombre, ruta, _ in _recorrer(get_resolver().url_patterns, reales=reales)
+        if nombre.startswith("panel:")
+    ]
+    assert {nombre for nombre, _ in rutas} == PANEL
+    return rutas
+
+
+def _foto_de_la_base():
+    """Todo lo que el panel puede modificar, para comprobar que un rechazo no cambió nada."""
+    return {
+        "empresas": list(Empresa.objects.order_by("rut").values()),
+        "usuarios": list(Usuario.objects.order_by("rut").values()),
+        "carpetas": list(Carpeta.objects.order_by("empresa", "orden", "nombre").values()),
+        "enlaces": EnlaceAcceso.objects.count(),
+        "eventos": EventoAuditoria.objects.count(),
+    }
 
 
 def test_un_anonimo_solo_accede_a_la_lista_publica(urls):
@@ -112,7 +184,69 @@ def test_un_cliente_recibe_404_en_el_panel_y_en_el_admin(urls, cliente_a_activo)
         for metodo in (cliente.get, cliente.post):
             respuesta = metodo(ruta, follow=True)
             assert respuesta.status_code in (403, 404), (nombre, ruta, respuesta.status_code)
-    assert probadas >= 3
+    assert probadas >= len(PANEL) + 3
+
+
+@pytest.mark.parametrize("de_su_empresa", [True, False])
+def test_un_cliente_recibe_404_en_el_panel_con_identificadores_reales_y_nada_cambia(
+    de_su_empresa, cliente_a_activo, cliente_b_activo, carpeta_a, carpeta_b
+):
+    """Prueba 1 de la sección 12.2, con UUID que existen: el 404 es por el rol, no porque
+    el objeto falte. Vale igual para su propia empresa que para una ajena."""
+    cliente = Client()
+    entrar(cliente, RUT_CLIENTE_A)
+    assert cliente.get("/portal/").status_code == 200
+    rutas = (
+        _rutas_del_panel(cliente_a_activo.empresa, cliente_a_activo, carpeta_a)
+        if de_su_empresa
+        else _rutas_del_panel(cliente_b_activo.empresa, cliente_b_activo, carpeta_b)
+    )
+    antes = _foto_de_la_base()
+    for nombre, ruta in rutas:
+        assert cliente.get(ruta).status_code == 404, nombre
+        assert cliente.post(ruta, DATOS_POST).status_code == 404, nombre
+    assert _foto_de_la_base() == antes
+    assert mail.outbox == []
+    # El cliente sigue con su sesión: el rechazo no lo expulsa ni lo bloquea.
+    assert cliente.get("/portal/").status_code == 200
+
+
+def test_un_anonimo_es_enviado_al_acceso_con_identificadores_reales(cliente_b_activo, carpeta_b):
+    cliente = Client()
+    antes = _foto_de_la_base()
+    for nombre, ruta in _rutas_del_panel(cliente_b_activo.empresa, cliente_b_activo, carpeta_b):
+        for respuesta in (cliente.get(ruta), cliente.post(ruta, DATOS_POST)):
+            assert respuesta.status_code == 302, nombre
+            assert respuesta["Location"] == f"/acceso/?next={ruta}", nombre
+    assert _foto_de_la_base() == antes
+
+
+def test_un_administrador_sin_segundo_factor_no_usa_ninguna_ruta_del_panel(
+    administrador_activo, totp, cliente_b_activo, carpeta_b
+):
+    """Prueba 9 de la sección 12.2 sobre todas las rutas del panel: la contraseña sola no basta."""
+    cliente = Client()
+    entrar(cliente, RUT_ADMINISTRADOR)
+    antes = _foto_de_la_base()
+    for nombre, ruta in _rutas_del_panel(cliente_b_activo.empresa, cliente_b_activo, carpeta_b):
+        for respuesta in (cliente.get(ruta), cliente.post(ruta, DATOS_POST)):
+            assert respuesta.status_code == 302, nombre
+            assert respuesta["Location"] == f"/acceso/verificacion/?next={ruta}", nombre
+    assert _foto_de_la_base() == antes
+
+
+def test_ninguna_ruta_del_panel_acepta_un_post_sin_token_csrf(
+    administrador_activo, totp, cliente_b_activo, carpeta_b
+):
+    """SEG-03 y prueba 12: ni siquiera un administrador verificado modifica algo sin el token."""
+    admin = verificar_segundo_factor(Client(enforce_csrf_checks=True), administrador_activo, totp)
+    assert admin.get("/panel/").status_code == 200
+    antes = _foto_de_la_base()
+    for nombre, ruta in _rutas_del_panel(cliente_b_activo.empresa, cliente_b_activo, carpeta_b):
+        respuesta = admin.post(ruta, DATOS_POST)
+        assert respuesta.status_code == 403, nombre
+        assert "No pudimos procesar el formulario" in respuesta.content.decode(), nombre
+    assert _foto_de_la_base() == antes
 
 
 def test_un_administrador_recibe_404_en_el_portal(urls, cliente_http_admin):
@@ -128,8 +262,6 @@ def test_ninguna_vista_esta_exenta_de_csrf(urls):
 
 
 def test_un_formulario_sin_token_csrf_responde_403(cliente_a_activo, administrador_activo, totp):
-    from django_otp import DEVICE_ID_SESSION_KEY
-
     cliente = Client(enforce_csrf_checks=True)
     for ruta, datos in (
         ("/acceso/", {"rut": RUT_CLIENTE_A, "contrasena": "x"}),
@@ -147,12 +279,11 @@ def test_un_formulario_sin_token_csrf_responde_403(cliente_a_activo, administrad
     assert cliente.post("/salir/").status_code == 403
     assert cliente.get("/portal/").status_code == 200
 
-    admin = Client(enforce_csrf_checks=True)
-    admin.force_login(administrador_activo)
-    sesion = admin.session
-    sesion[DEVICE_ID_SESSION_KEY] = totp.persistent_id
-    sesion.save()
-    url = f"/panel/usuarios/{cliente_a_activo.uuid}/desbloquear/"
+    admin = verificar_segundo_factor(Client(enforce_csrf_checks=True), administrador_activo, totp)
+    url = (
+        f"/panel/clientes/{cliente_a_activo.empresa_id}/usuarios/{cliente_a_activo.uuid}"
+        "/desbloquear/"
+    )
     assert admin.post(url).status_code == 403
     # Con el token en el encabezado, como lo envía HTMX, la petición pasa.
     token = admin.get("/panel/").cookies["csrftoken"].value

@@ -1,0 +1,52 @@
+{% load formato %}
+{% comment %}
+Cabecera de la ficha de un cliente: migas, tarjeta de la empresa con su estado y sus acciones,
+datos de contacto y pestañas. La usan las tres pestañas de la ficha (ADM-05).
+{% endcomment %}
+{% include "componentes/migas.html" with migas=migas only %}
+
+<div class="tarjeta mt-4 flex flex-wrap items-center gap-4 p-5">
+  <span class="cuadro-icono icono-grande" aria-hidden="true">{% include "iconos/building-2.svg" %}</span>
+  <div class="min-w-0 flex-1 basis-48">
+    <h1 class="text-xl break-words">{{ empresa.razon_social }}</h1>
+    <p class="text-xs text-texto-secundario tabular-nums">{% if empresa.nombre_fantasia %}{{ empresa.nombre_fantasia }} · {% endif %}RUT: {{ empresa.rut|rut }}</p>
+  </div>
+  {% if empresa.activa %}{% include "componentes/insignia.html" with texto="Activo" tono="exito" only %}{% else %}{% include "componentes/insignia.html" with texto="Inactivo" only %}{% endif %}
+  <div class="flex flex-wrap gap-2">
+    {% url 'panel:cliente_editar' empresa.pk as url_editar %}
+    {% include "componentes/boton.html" with texto="Editar" href=url_editar variante="secundario" icono="pencil" only %}
+    {% if empresa.activa %}
+    {% include "componentes/boton.html" with texto="Desactivar" tipo="button" variante="fantasma" abre_dialogo="dialogo-estado-cliente" only %}
+    {% else %}
+    {% include "componentes/boton.html" with texto="Reactivar" tipo="button" variante="secundario" abre_dialogo="dialogo-estado-cliente" only %}
+    {% endif %}
+  </div>
+</div>
+
+{% if not empresa.activa %}
+<div class="mt-4">{% include "componentes/alerta.html" with tipo="advertencia" mensaje="Este cliente está inactivo: sus usuarios no pueden ingresar al portal ni usar enlaces de activación." only %}</div>
+{% endif %}
+
+{% if empresa.contacto_nombre or empresa.contacto_email or empresa.contacto_telefono or empresa.notas_internas %}
+<details class="tarjeta mt-4">
+  <summary class="flex min-h-11 items-center justify-between gap-3 px-5 text-sm font-medium">
+    <span>Contacto y notas internas</span>
+    {% include "componentes/icono.html" with nombre="chevron-down" clase="icono-chico" only %}
+  </summary>
+  <dl class="grid gap-4 border-t border-divisor p-5 text-sm sm:grid-cols-3">
+    {% if empresa.contacto_nombre %}<div><dt class="text-texto-secundario">Contacto</dt><dd class="font-medium break-words">{{ empresa.contacto_nombre }}</dd></div>{% endif %}
+    {% if empresa.contacto_email %}<div><dt class="text-texto-secundario">Correo</dt><dd class="font-medium break-all">{{ empresa.contacto_email }}</dd></div>{% endif %}
+    {% if empresa.contacto_telefono %}<div><dt class="text-texto-secundario">Teléfono</dt><dd class="font-medium">{{ empresa.contacto_telefono }}</dd></div>{% endif %}
+    {% if empresa.notas_internas %}<div class="sm:col-span-3"><dt class="text-texto-secundario">Notas internas (no las ve el cliente)</dt><dd class="break-words">{{ empresa.notas_internas|linebreaksbr }}</dd></div>{% endif %}
+  </dl>
+</details>
+{% endif %}
+
+<div class="mt-6">{% include "componentes/pestanas.html" with pestanas=pestanas pestanas_etiqueta="Secciones del cliente" only %}</div>
+
+{% url 'panel:cliente_estado' empresa.pk as url_estado %}
+{% if empresa.activa %}
+{% include "componentes/dialogo_confirmacion.html" with id="dialogo-estado-cliente" titulo="¿Desactivar este cliente?" mensaje="Sus usuarios perderán el acceso de inmediato, incluso con la sesión abierta. Sus datos y documentos se conservan y podrá reactivarlo cuando quiera." accion=url_estado confirmar_texto="Desactivar cliente" peligro=True campo_nombre="activa" campo_valor="no" %}
+{% else %}
+{% include "componentes/dialogo_confirmacion.html" with id="dialogo-estado-cliente" titulo="¿Reactivar este cliente?" mensaje="Sus usuarios activos podrán volver a ingresar con su RUT y contraseña." accion=url_estado confirmar_texto="Reactivar cliente" peligro=False campo_nombre="activa" campo_valor="si" %}
+{% endif %}

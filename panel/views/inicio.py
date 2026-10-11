@@ -1,27 +1,28 @@
-from django.contrib import messages
-from django.shortcuts import get_object_or_404, redirect
-from django.views import View
 from django.views.generic import TemplateView
 
 from core.mixins import AdministradorMixin
-from cuentas import services
-from cuentas.models import Usuario
+from empresas.models import Empresa
+
+MAXIMO_EN_AVISO = 10
+CLIENTES_RECIENTES = 5
 
 
 class Inicio(AdministradorMixin, TemplateView):
-    """Inicio del panel. Indicadores, clientes y solicitudes llegan en las etapas 3 y 6."""
+    """Inicio del panel (ADM-02), solo con datos que existen: los indicadores de solicitudes
+    y de documentos llegan con sus modelos, en las etapas 4 y 6."""
 
     template_name = "panel/inicio.html"
     seccion = "inicio"
 
-
-class DesbloquearUsuario(AdministradorMixin, View):
-    """Desbloqueo manual de un usuario (AUT-04). El usuario se identifica por su UUID."""
-
-    http_method_names = ["post"]
-
-    def post(self, request, uuid):
-        usuario = get_object_or_404(Usuario.objects.select_related("empresa"), uuid=uuid)
-        services.desbloquear(usuario, actor=request.user, request=request)
-        messages.success(request, f"Se desbloqueó el acceso de {usuario.nombre}.")
-        return redirect("panel:inicio")
+    def get_context_data(self, **kwargs):
+        contexto = super().get_context_data(**kwargs)
+        pendientes = list(
+            Empresa.objects.con_cuentas_pendientes().order_by("razon_social")[: MAXIMO_EN_AVISO + 1]
+        )
+        contexto.update(
+            clientes_activos=Empresa.objects.filter(activa=True).count(),
+            clientes_recientes=Empresa.objects.order_by("-creado_en")[:CLIENTES_RECIENTES],
+            con_cuentas_pendientes=pendientes[:MAXIMO_EN_AVISO],
+            hay_mas_pendientes=len(pendientes) > MAXIMO_EN_AVISO,
+        )
+        return contexto

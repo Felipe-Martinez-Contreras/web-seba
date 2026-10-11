@@ -1,0 +1,62 @@
+{% extends "base_panel.html" %}
+{% load formato %}
+{% block titulo %}Clientes{% endblock %}
+{% block contenido %}
+<div class="flex flex-wrap items-center justify-between gap-4">
+  <h1 class="text-2xl">Clientes</h1>
+  {% url 'panel:cliente_nuevo' as url_nuevo %}
+  {% include "componentes/boton.html" with texto="Nuevo cliente" href=url_nuevo icono="plus" only %}
+</div>
+
+{% if busqueda %}
+<p class="mt-4 text-sm" aria-live="polite">
+  Resultados para <span class="font-semibold">«{{ busqueda }}»</span>.
+  <a class="enlace" href="{{ url_sin_busqueda }}">Quitar la búsqueda</a>
+</p>
+{% endif %}
+
+<div class="tarjeta mt-6">
+  <div class="px-4 pt-2">{% include "componentes/pestanas.html" with pestanas=pestanas pestanas_etiqueta="Filtrar por estado" only %}</div>
+  {% if pagina.object_list %}
+  <table class="tabla">
+    <thead>
+      <tr>
+        <th scope="col">Razón social</th>
+        <th scope="col">RUT</th>
+        <th scope="col">Usuarios</th>
+        <th scope="col">Estado</th>
+        <th scope="col">Creado</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for cliente in pagina %}
+      <tr>
+        <td data-etiqueta="Razón social">
+          <span class="min-w-0 text-right md:text-left">
+            <a class="enlace font-medium break-words" href="{% url 'panel:cliente' cliente.pk %}">{{ cliente.razon_social }}</a>
+            {% if cliente.nombre_fantasia %}<span class="block text-xs text-texto-secundario">{{ cliente.nombre_fantasia }}</span>{% endif %}
+          </span>
+        </td>
+        <td data-etiqueta="RUT" class="whitespace-nowrap">{{ cliente.rut|rut }}</td>
+        <td data-etiqueta="Usuarios">{{ cliente.cantidad_usuarios }}</td>
+        <td data-etiqueta="Estado">{% if cliente.activa %}{% include "componentes/insignia.html" with texto="Activo" tono="exito" only %}{% else %}{% include "componentes/insignia.html" with texto="Inactivo" only %}{% endif %}</td>
+        <td data-etiqueta="Creado" class="whitespace-nowrap">{{ cliente.creado_en|date }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="px-6 py-10 text-center">
+    {% if busqueda %}
+    <p class="text-base font-semibold">Sin resultados</p>
+    <p class="mx-auto mt-1 max-w-lectura text-sm text-texto-secundario">Ningún cliente coincide con la búsqueda. Revise el RUT o la razón social, o quite la búsqueda para ver todos.</p>
+    {% else %}
+    <p class="text-base font-semibold">No hay clientes en esta lista</p>
+    <p class="mx-auto mt-1 max-w-lectura text-sm text-texto-secundario">Cuando cree un cliente con "Nuevo cliente", aparecerá aquí.</p>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<div class="mt-4">{% include "componentes/paginacion.html" %}</div>
+{% endblock %}

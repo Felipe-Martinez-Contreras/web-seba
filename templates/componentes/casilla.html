@@ -1,0 +1,13 @@
+{% comment %}
+Casilla de verificación con su etiqueta al lado y la ayuda debajo.
+Parámetros: campo (BoundField de un BooleanField, obligatorio).
+{% endcomment %}
+<div class="casilla">
+  <div class="flex min-h-11 items-center gap-3">
+    {{ campo }}
+    <label class="text-sm font-medium" for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+  </div>
+  {% if campo.help_text %}
+  <p class="campo-ayuda" id="{{ campo.auto_id }}_helptext">{{ campo.help_text }}</p>
+  {% endif %}
+</div>

@@ -9,7 +9,7 @@ from django_otp.plugins.otp_static.models import StaticDevice, StaticToken
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
 from cuentas.models import Usuario
-from empresas.models import Empresa
+from empresas.models import Carpeta, Empresa
 
 CLAVE = "caballo-bateria-grapa-2026"
 RUT_CLIENTE_A = "11.111.111-1"
@@ -26,6 +26,16 @@ def empresa_a(db):
 @pytest.fixture
 def empresa_b(db):
     return Empresa.objects.create(rut="76.222.222-1", razon_social="Empresa B de Prueba Ltda.")
+
+
+@pytest.fixture
+def carpeta_a(empresa_a):
+    return Carpeta.objects.create(empresa=empresa_a, nombre="Carpeta de A", orden=1)
+
+
+@pytest.fixture
+def carpeta_b(empresa_b):
+    return Carpeta.objects.create(empresa=empresa_b, nombre="Carpeta de B", orden=1)
 
 
 @pytest.fixture
@@ -108,11 +118,16 @@ def entrar(cliente_http, rut, clave=CLAVE, **extra):
     return cliente_http.post("/acceso/", {"rut": rut, "contrasena": clave}, **extra)
 
 
+def verificar_segundo_factor(cliente_http, administrador, dispositivo):
+    """Deja al cliente HTTP con la sesión de un administrador que ya pasó el segundo factor."""
+    cliente_http.force_login(administrador)
+    sesion = cliente_http.session
+    sesion[DEVICE_ID_SESSION_KEY] = dispositivo.persistent_id
+    sesion.save()
+    return cliente_http
+
+
 @pytest.fixture
 def cliente_http_admin(client, administrador_activo, totp):
     """Cliente HTTP con la sesión de un administrador que ya pasó el segundo factor."""
-    client.force_login(administrador_activo)
-    sesion = client.session
-    sesion[DEVICE_ID_SESSION_KEY] = totp.persistent_id
-    sesion.save()
-    return client
+    return verificar_segundo_factor(client, administrador_activo, totp)

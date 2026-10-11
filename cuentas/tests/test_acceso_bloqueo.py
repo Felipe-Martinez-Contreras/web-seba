@@ -51,18 +51,38 @@ def test_un_rut_inexistente_se_bloquea_igual_y_con_el_mismo_mensaje(
     assert EventoAuditoria.objects.filter(accion=Accion.BLOQUEO).count() == 2
 
 
-def test_el_administrador_desbloquea_desde_el_panel(
-    client, cliente_http_admin, cliente_a_activo, settings, django_user_model
+def _url_desbloquear(usuario, empresa=None):
+    empresa_id = empresa.pk if empresa else usuario.empresa_id
+    return f"/panel/clientes/{empresa_id}/usuarios/{usuario.uuid}/desbloquear/"
+
+
+def test_el_administrador_desbloquea_con_el_boton_de_la_lista_de_usuarios(
+    client, cliente_http_admin, cliente_a_activo, settings
 ):
+    """Prueba 6 de la sección 12.2, por el camino real: la lista muestra el bloqueo y su botón."""
     from django.test import Client
 
     settings.ACCESO_INTENTOS_MAXIMOS = 3
+    usuarios = f"/panel/clientes/{cliente_a_activo.empresa_id}/usuarios/"
+    url = _url_desbloquear(cliente_a_activo)
+    # Sin bloqueo, la lista no ofrece desbloquear.
+    contenido = cliente_http_admin.get(usuarios).content.decode()
+    assert "Bloqueado" not in contenido and f'action="{url}"' not in contenido
+
     visitante = Client()
     _fallar(visitante, RUT_CLIENTE_A, 3)
     assert MENSAJE_BLOQUEO in entrar(visitante, RUT_CLIENTE_A).content.decode()
 
-    respuesta = cliente_http_admin.post(f"/panel/usuarios/{cliente_a_activo.uuid}/desbloquear/")
-    assert respuesta.status_code == 302 and respuesta["Location"] == "/panel/"
+    contenido = cliente_http_admin.get(usuarios).content.decode()
+    assert "Bloqueado" in contenido and "Por intentos fallidos" in contenido
+    assert f'<form method="post" action="{url}">' in contenido
+    assert "Desbloquear" in contenido
+
+    respuesta = cliente_http_admin.post(url, follow=True)
+    assert respuesta.redirect_chain == [(usuarios, 302)]
+    contenido = respuesta.content.decode()
+    assert "Se desbloqueó el acceso de Cliente de A." in contenido
+    assert "Bloqueado" not in contenido and f'action="{url}"' not in contenido
 
     desbloqueo = EventoAuditoria.objects.get(accion=Accion.DESBLOQUEO)
     assert desbloqueo.actor.es_administrador
@@ -76,7 +96,7 @@ def test_el_administrador_desbloquea_desde_el_panel(
 def test_solo_un_administrador_verificado_puede_desbloquear(
     client, cliente_a_activo, cliente_b_activo, administrador_activo, totp
 ):
-    url = f"/panel/usuarios/{cliente_a_activo.uuid}/desbloquear/"
+    url = _url_desbloquear(cliente_a_activo)
     # Anónimo: al acceso.
     assert client.post(url)["Location"] == f"/acceso/?next={url}"
     # Cliente: 404, aunque el UUID sea correcto.
@@ -89,16 +109,25 @@ def test_solo_un_administrador_verificado_puede_desbloquear(
     assert not EventoAuditoria.objects.filter(accion=Accion.DESBLOQUEO).exists()
 
 
-def test_el_desbloqueo_exige_post_y_un_uuid_existente(cliente_http_admin, cliente_a_activo):
-    url = f"/panel/usuarios/{cliente_a_activo.uuid}/desbloquear/"
+def test_el_desbloqueo_exige_post_y_un_usuario_de_esa_empresa(
+    cliente_http_admin, cliente_a_activo, cliente_b_activo, administrador_activo
+):
+    url = _url_desbloquear(cliente_a_activo)
     assert cliente_http_admin.get(url).status_code == 405
-    inexistente = "/panel/usuarios/00000000-0000-4000-8000-000000000000/desbloquear/"
+    base = f"/panel/clientes/{cliente_a_activo.empresa_id}/usuarios"
+    inexistente = f"{base}/00000000-0000-4000-8000-000000000000/desbloquear/"
     assert cliente_http_admin.post(inexistente).status_code == 404
     # El ID entero no sirve como identificador en la URL.
+    assert cliente_http_admin.post(f"{base}/{cliente_a_activo.pk}/desbloquear/").status_code == 404
+    # Un usuario solo se alcanza bajo su propia empresa.
+    ajena = _url_desbloquear(cliente_a_activo, empresa=cliente_b_activo.empresa)
+    assert cliente_http_admin.post(ajena).status_code == 404
+    # Un administrador no es usuario de ninguna empresa: se desbloquea con el comando.
     assert (
-        cliente_http_admin.post(f"/panel/usuarios/{cliente_a_activo.pk}/desbloquear/").status_code
+        cliente_http_admin.post(f"{base}/{administrador_activo.uuid}/desbloquear/").status_code
         == 404
     )
+    assert not EventoAuditoria.objects.filter(accion=Accion.DESBLOQUEO).exists()
 
 
 def test_cambiar_x_forwarded_for_no_evita_el_bloqueo(client, cliente_a_activo, settings):

@@ -1,11 +1,30 @@
-{% comment %}Enlaces de la barra lateral. Uso interno de barra_lateral.html.{% endcomment %}
+{% comment %}
+Enlaces de la barra lateral. Uso interno de barra_lateral.html.
+Un elemento con "hijos" es un grupo: muestra su nombre sin enlace y sus elementos debajo.
+{% endcomment %}
 <ul class="flex flex-col gap-1">
   {% for elemento in menu_lateral %}
   <li>
+    {% if elemento.hijos %}
+    <span class="lateral-grupo">
+      {% if elemento.icono %}{% include "componentes/icono.html" with nombre=elemento.icono only %}{% endif %}
+      <span>{{ elemento.texto }}</span>
+    </span>
+    <ul class="mt-1 flex flex-col gap-1 pl-8">
+      {% for hijo in elemento.hijos %}
+      <li>
+        <a class="lateral-enlace" href="{{ hijo.url }}"{% if hijo.activo %} aria-current="page"{% endif %}>
+          <span>{{ hijo.texto }}</span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
     <a class="lateral-enlace" href="{{ elemento.url }}"{% if elemento.activo %} aria-current="page"{% endif %}>
       {% if elemento.icono %}{% include "componentes/icono.html" with nombre=elemento.icono only %}{% endif %}
       <span>{{ elemento.texto }}</span>
     </a>
+    {% endif %}
   </li>
   {% endfor %}
 </ul>

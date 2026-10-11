@@ -1,0 +1,95 @@
+{% extends "base_panel.html" %}
+{% load formato %}
+{% block titulo %}Usuarios · {{ empresa.razon_social }}{% endblock %}
+{% block contenido %}
+{% include "panel/_cliente_cabecera.html" %}
+
+<section class="mt-6" aria-labelledby="usuarios-titulo">
+  <div class="flex flex-wrap items-center justify-between gap-4">
+    <h2 class="text-lg" id="usuarios-titulo">Usuarios</h2>
+    {% url 'panel:usuario_nuevo' empresa.pk as url_nuevo %}
+    {% if pagina.object_list %}
+    {% include "componentes/boton.html" with texto="Crear usuario" href=url_nuevo variante="secundario" icono="plus" only %}
+    {% endif %}
+  </div>
+
+  <div class="mt-3">
+    {% if pagina.object_list %}
+    <div class="tarjeta">
+      <table class="tabla tabla-ancha">
+        <thead>
+          <tr>
+            <th scope="col">Nombre</th>
+            <th scope="col">RUT</th>
+            <th scope="col">Correo</th>
+            <th scope="col">Estado</th>
+            <th scope="col">Último acceso</th>
+            <th scope="col"><span class="sr-only">Acciones</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cuenta in pagina %}
+          {% with id_dialogo="dialogo-estado-"|add:cuenta.uuid.hex %}
+          <tr>
+            <td data-etiqueta="Nombre" class="font-medium"><span class="min-w-0 break-words">{{ cuenta.nombre }}</span></td>
+            <td data-etiqueta="RUT" class="whitespace-nowrap">{{ cuenta.rut|rut }}</td>
+            <td data-etiqueta="Correo"><span class="min-w-0 break-all">{% if cuenta.email %}{{ cuenta.email }}{% else %}<span class="text-texto-secundario">Sin correo</span>{% endif %}</span></td>
+            <td data-etiqueta="Estado">
+              <span class="flex flex-col items-end gap-1 xl:items-start">
+                {% include "componentes/insignia.html" with texto=cuenta.estado.texto tono=cuenta.estado.tono only %}
+                {% if cuenta.estado.detalle %}<span class="text-xs text-texto-secundario">{{ cuenta.estado.detalle }}</span>{% endif %}
+              </span>
+            </td>
+            <td data-etiqueta="Último acceso" class="whitespace-nowrap">{% if cuenta.last_login %}{{ cuenta.last_login|date:"d-m-Y H:i" }}{% else %}<span class="text-texto-secundario">Nunca</span>{% endif %}</td>
+            <td data-etiqueta="Acciones">
+              <div class="flex flex-wrap items-center justify-end gap-2">
+                {% if cuenta.estado.clave == "bloqueado" %}
+                <form method="post" action="{% url 'panel:usuario_desbloquear' empresa.pk cuenta.uuid %}">
+                  {% csrf_token %}
+                  {% include "componentes/boton.html" with texto="Desbloquear" variante="secundario" icono="lock-open" only %}
+                </form>
+                {% endif %}
+                <details class="relative">
+                  <summary class="boton boton-fantasma">
+                    <span>Acciones<span class="sr-only"> de {{ cuenta.nombre }}</span></span>
+                    {% include "componentes/icono.html" with nombre="chevron-down" clase="icono-chico" only %}
+                  </summary>
+                  <div class="menu-flotante">
+                    <a class="menu-enlace" href="{% url 'panel:usuario_editar' empresa.pk cuenta.uuid %}">Editar</a>
+                    {% if cuenta.is_active and empresa.activa %}
+                    <form method="post" action="{% url 'panel:usuario_enlace' empresa.pk cuenta.uuid %}">
+                      {% csrf_token %}
+                      <button class="menu-enlace" type="submit">{% if cuenta.has_usable_password %}Generar enlace de restablecimiento{% else %}Generar enlace de activación{% endif %}</button>
+                    </form>
+                    {% if correo_configurado and cuenta.email %}
+                    <form method="post" action="{% url 'panel:usuario_enlace' empresa.pk cuenta.uuid %}">
+                      {% csrf_token %}
+                      <input type="hidden" name="por_correo" value="si">
+                      <button class="menu-enlace" type="submit">Generar enlace y enviarlo por correo</button>
+                    </form>
+                    {% endif %}
+                    {% endif %}
+                    <button class="menu-enlace" type="button" data-abre-dialogo="{{ id_dialogo }}">{% if cuenta.is_active %}Desactivar{% else %}Reactivar{% endif %}</button>
+                  </div>
+                </details>
+              </div>
+              {% url 'panel:usuario_estado' empresa.pk cuenta.uuid as url_estado %}
+              {% if cuenta.is_active %}
+              {% include "componentes/dialogo_confirmacion.html" with id=id_dialogo titulo="¿Desactivar esta cuenta?" mensaje=cuenta.nombre|add:" perderá el acceso de inmediato, incluso con la sesión abierta. Podrá reactivarla cuando quiera." accion=url_estado confirmar_texto="Desactivar cuenta" peligro=True campo_nombre="activo" campo_valor="no" %}
+              {% else %}
+              {% include "componentes/dialogo_confirmacion.html" with id=id_dialogo titulo="¿Reactivar esta cuenta?" mensaje=cuenta.nombre|add:" podrá volver a ingresar. Si no recuerda su contraseña, genere un enlace nuevo." accion=url_estado confirmar_texto="Reactivar cuenta" peligro=False campo_nombre="activo" campo_valor="si" %}
+              {% endif %}
+            </td>
+          </tr>
+          {% endwith %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="mt-4">{% include "componentes/paginacion.html" %}</div>
+    {% else %}
+    {% include "componentes/estado_vacio.html" with titulo="Este cliente aún no tiene usuarios" texto="Cree un usuario para que una persona de la empresa pueda ingresar al portal. Al crearlo obtendrá un enlace de activación para entregárselo." accion_texto="Crear usuario" accion_url=url_nuevo only %}
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% comment %}
+Texto de solo lectura con un botón para copiarlo al portapapeles.
+Parámetros: id; etiqueta; valor; boton_texto (por defecto "Copiar").
+Sin JavaScript el texto igual se puede seleccionar y copiar a mano.
+{% endcomment %}
+<div class="campo">
+  <label class="campo-etiqueta" for="{{ id }}">{{ etiqueta }}</label>
+  <div class="flex flex-col gap-2 sm:flex-row">
+    <input id="{{ id }}" type="text" value="{{ valor }}" readonly spellcheck="false" aria-describedby="{{ id }}-estado">
+    <button class="boton boton-secundario shrink-0" type="button" data-copia="{{ id }}">
+      {% include "componentes/icono.html" with nombre="copy" clase="icono-chico" only %}
+      <span>{{ boton_texto|default:"Copiar" }}</span>
+    </button>
+  </div>
+  <p class="campo-ayuda" id="{{ id }}-estado" role="status" aria-live="polite"></p>
+</div>

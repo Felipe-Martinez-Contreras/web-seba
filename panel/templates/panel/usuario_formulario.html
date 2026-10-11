@@ -1,0 +1,34 @@
+{% extends "base_panel.html" %}
+{% block titulo %}{% if cuenta %}Editar usuario{% else %}Nuevo usuario{% endif %} · {{ empresa.razon_social }}{% endblock %}
+{% block contenido %}
+{% include "componentes/migas.html" with migas=migas only %}
+<h1 class="mt-4 text-2xl">{% if cuenta %}Editar usuario{% else %}Nuevo usuario{% endif %}</h1>
+<p class="mt-1 text-sm text-texto-secundario">Cliente: {{ empresa.razon_social }}</p>
+
+<div class="tarjeta mt-6 max-w-xl p-5">
+  {% include "componentes/resumen_errores.html" with formulario=form %}
+  <form class="flex flex-col gap-5" method="post" novalidate>
+    {% csrf_token %}
+    {% include "componentes/campo.html" with campo=form.rut %}
+    {% include "componentes/campo.html" with campo=form.nombre %}
+    {% include "componentes/campo.html" with campo=form.email %}
+    {% if not cuenta %}
+    {% if form.por_correo %}
+    {% include "componentes/casilla.html" with campo=form.por_correo %}
+    {% else %}
+    {% include "componentes/alerta.html" with tipo="info" mensaje="El correo no está configurado: al crear la cuenta deberá copiar el enlace de activación y entregarlo por otro canal." only %}
+    {% endif %}
+    <p class="text-sm text-texto-secundario">La cuenta se crea sin contraseña. La persona la define con su enlace de activación; usted nunca la conoce.</p>
+    {% endif %}
+    <div class="flex flex-wrap gap-3">
+      {% if cuenta %}
+      {% include "componentes/boton.html" with texto="Guardar cambios" only %}
+      {% else %}
+      {% include "componentes/boton.html" with texto="Crear usuario y generar enlace" only %}
+      {% endif %}
+      {% url 'panel:cliente_usuarios' empresa.pk as url_cancelar %}
+      {% include "componentes/boton.html" with texto="Cancelar" href=url_cancelar variante="secundario" only %}
+    </div>
+  </form>
+</div>
+{% endblock %}

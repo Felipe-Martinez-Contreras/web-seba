@@ -1,0 +1,42 @@
+{% load formato %}
+{% comment %}
+Tabla de eventos de auditoría, de solo lectura. Parámetros: eventos (lista o página);
+con_cliente (muestra la columna Cliente).
+{% endcomment %}
+<table class="tabla tabla-ancha">
+  <thead>
+    <tr>
+      <th scope="col">Fecha y hora</th>
+      <th scope="col">Acción</th>
+      <th scope="col">Usuario</th>
+      {% if con_cliente %}<th scope="col">Cliente</th>{% endif %}
+      <th scope="col">Detalle</th>
+      <th scope="col">IP</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for evento in eventos %}
+    <tr>
+      <td data-etiqueta="Fecha y hora" class="whitespace-nowrap">{{ evento.fecha|date:"d-m-Y H:i" }}</td>
+      <td data-etiqueta="Acción" class="font-medium"><span class="min-w-0 text-right xl:text-left">{{ evento.get_accion_display }}</span></td>
+      <td data-etiqueta="Usuario">
+        <span class="min-w-0 text-right xl:text-left">
+          {% if evento.actor %}
+          <span class="break-words">{{ evento.actor.nombre }}</span>
+          <span class="block text-xs whitespace-nowrap text-texto-secundario">{{ evento.actor.rut|rut }}</span>
+          {% elif evento.rut_intentado %}
+          <span class="text-texto-secundario">RUT ingresado:</span> <span class="whitespace-nowrap">{{ evento.rut_intentado|rut }}</span>
+          {% else %}
+          <span class="text-texto-secundario">Sin sesión</span>
+          {% endif %}
+        </span>
+      </td>
+      {% if con_cliente %}
+      <td data-etiqueta="Cliente"><span class="min-w-0 text-right break-words xl:text-left">{% if evento.empresa %}{{ evento.empresa.razon_social }}{% else %}<span class="text-texto-secundario">—</span>{% endif %}</span></td>
+      {% endif %}
+      <td data-etiqueta="Detalle"><span class="min-w-0 text-right break-words xl:text-left">{% if evento.detalle %}{{ evento.detalle }}{% else %}<span class="text-texto-secundario">—</span>{% endif %}</span></td>
+      <td data-etiqueta="IP" class="whitespace-nowrap">{% if evento.ip %}{{ evento.ip }}{% else %}<span class="text-texto-secundario">—</span>{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>

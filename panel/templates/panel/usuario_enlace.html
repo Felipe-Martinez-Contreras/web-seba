@@ -1,0 +1,31 @@
+{% extends "base_panel.html" %}
+{% load formato %}
+{% block titulo %}{{ titulo }} · {{ empresa.razon_social }}{% endblock %}
+{% block contenido %}
+{% include "componentes/migas.html" with migas=migas only %}
+<h1 class="mt-4 text-2xl">{{ titulo }}</h1>
+<p class="mt-1 text-sm text-texto-secundario">{{ cuenta.nombre }} · RUT {{ cuenta.rut|rut }} · {{ empresa.razon_social }}</p>
+
+<div class="mt-6 flex max-w-2xl flex-col gap-4">
+  {% if creada %}
+  {% include "componentes/alerta.html" with tipo="exito" mensaje="Se creó la cuenta. Queda pendiente hasta que la persona use este enlace." only %}
+  {% endif %}
+
+  <div class="tarjeta p-5">
+    {% include "componentes/campo_copiable.html" with id="enlace-de-acceso" etiqueta="Enlace para entregar a la persona" valor=entrega.url boton_texto="Copiar enlace" only %}
+    <p class="mt-4 text-sm">Válido hasta el {{ entrega.enlace.expira_en|date:"d-m-Y" }} a las {{ entrega.enlace.expira_en|date:"H:i" }}. Se puede usar una sola vez: con él la persona define su contraseña.</p>
+  </div>
+
+  {% if entrega.envio == "enviada" %}
+  {% include "componentes/alerta.html" with tipo="exito" mensaje="El enlace también se envió por correo a "|add:cuenta.email|add:"." only %}
+  {% elif entrega.envio == "fallida" %}
+  {% include "componentes/alerta.html" with tipo="error" titulo="No se pudo enviar el correo" mensaje="El enlace sí se generó: cópielo y entréguelo por otro canal." only %}
+  {% elif entrega.envio == "no_configurada" %}
+  {% include "componentes/alerta.html" with tipo="advertencia" titulo="El correo no está configurado" mensaje="No se envió ningún correo: copie el enlace y entréguelo por otro canal." only %}
+  {% endif %}
+
+  {% include "componentes/alerta.html" with tipo="info" mensaje="Este enlace se muestra solo ahora y no se guarda. Si lo pierde, genere uno nuevo desde los usuarios del cliente: el anterior dejará de servir." only %}
+
+  <div>{% include "componentes/boton.html" with texto="Volver a los usuarios" href=url_usuarios variante="secundario" only %}</div>
+</div>
+{% endblock %}

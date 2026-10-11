@@ -74,6 +74,8 @@
         {% include "componentes/campo.html" with campo=formulario.clave contrasena=True %}
         {% include "componentes/campo.html" with campo=formulario.opcion %}
         {% include "componentes/campo.html" with campo=formulario.mensaje %}
+        {% include "componentes/casilla.html" with campo=formulario.casilla %}
+        {% include "componentes/campo_copiable.html" with id="copiable-muestra" etiqueta="Texto para copiar" valor="Texto de muestra para copiar" only %}
         {% include "componentes/boton.html" with texto="Botón a todo el ancho" tipo="button" ancho=True only %}
       </div>
       <div class="tarjeta flex flex-col gap-4 p-5">
