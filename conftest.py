@@ -131,3 +131,61 @@ def verificar_segundo_factor(cliente_http, administrador, dispositivo):
 def cliente_http_admin(client, administrador_activo, totp):
     """Cliente HTTP con la sesión de un administrador que ya pasó el segundo factor."""
     return verificar_segundo_factor(client, administrador_activo, totp)
+
+
+@pytest.fixture(autouse=True)
+def almacen_de_prueba(settings, tmp_path):
+    """Cada prueba guarda sus archivos en una carpeta temporal propia, con el backend local."""
+    settings.DOCUMENTOS_ALMACENAMIENTO = "local"
+    settings.DOCUMENTOS_DIR = str(tmp_path / "documentos")
+    from documentos import almacenamiento
+
+    return almacenamiento.almacen()
+
+
+def subir_documento(carpeta, administrador, archivo=None):
+    """Sube un PDF válido a la carpeta por el servicio real, como lo hace el panel."""
+    from documentos import services
+    from documentos.tests import archivos
+
+    return services.subir(carpeta, archivo or archivos.pdf(), actor=administrador, request=None)
+
+
+@pytest.fixture
+def documento_a(carpeta_a, administrador):
+    return subir_documento(carpeta_a, administrador)
+
+
+@pytest.fixture
+def documento_b(carpeta_b, administrador):
+    return subir_documento(carpeta_b, administrador)
+
+
+@pytest.fixture
+def almacen_s3(settings):
+    """Almacenamiento S3 contra moto, un emulador que corre dentro del proceso de pruebas:
+    sin red y sin contenedor. No reemplaza la verificación contra un bucket real."""
+    from moto import mock_aws
+
+    from documentos import almacenamiento
+
+    with mock_aws():
+        settings.DOCUMENTOS_ALMACENAMIENTO = "s3"
+        settings.S3_BUCKET = "documentos-de-prueba"
+        settings.S3_ENDPOINT_URL = ""
+        settings.S3_REGION = "us-east-1"
+        settings.S3_ACCESS_KEY_ID = "clave-de-prueba"
+        settings.S3_SECRET_ACCESS_KEY = "secreto-de-prueba"
+        almacenamiento._almacen_s3.cache_clear()
+        almacen = almacenamiento.almacen()
+        almacen._cliente.create_bucket(Bucket=settings.S3_BUCKET)
+        yield almacen
+    almacenamiento._almacen_s3.cache_clear()
+
+
+@pytest.fixture(params=["local", "s3"])
+def cualquier_almacen(request, almacen_de_prueba):
+    """La misma prueba contra los dos almacenamientos."""
+    if request.param == "s3":
+        return request.getfixturevalue("almacen_s3")
+    return almacen_de_prueba

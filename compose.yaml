@@ -32,6 +32,8 @@ services:
     volumes:
       - .:/app
       - css_compilado:/opt/estaticos/css
+      # Documentos subidos: fuera del código y sin ninguna URL que los sirva.
+      - documentos_datos:/var/app/media
     depends_on:
       db:
         condition: service_healthy
@@ -67,6 +69,19 @@ services:
       - css_compilado:/opt/estaticos/css
     mem_limit: 384m
 
+  # Opcional: emulador de S3 (moto) para revisar a mano la descarga con URL firmada.
+  # Uso: docker compose --profile s3 up -d (ver README). Los datos viven en memoria.
+  s3:
+    profiles: ["s3"]
+    build:
+      context: .
+      target: dev
+    command: ["moto_server", "--host", "0.0.0.0", "--port", "5000"]
+    ports:
+      - "127.0.0.1:5000:5000"
+    mem_limit: 192m
+
 volumes:
+  documentos_datos:
   db_datos:
   css_compilado:

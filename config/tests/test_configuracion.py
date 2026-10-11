@@ -17,6 +17,7 @@ ENTORNO_VALIDO = {
     "DATABASE_URL": "postgres://usuario:clave@db.ejemplo.cl:5432/base",
     "PROXY_CONFIANZA_REDES": "10.0.0.0/8",
     "SITIO_URL": "https://ejemplo.cl",
+    "DOCUMENTOS_ALMACENAMIENTO": "local",
 }
 
 
@@ -187,3 +188,10 @@ def test_env_example_documenta_todas_las_variables_que_lee_la_configuracion():
     ejemplo = (settings.BASE_DIR / ".env.example").read_text(encoding="utf-8")
     documentadas = set(re.findall(r"^([A-Z0-9_]+)=", ejemplo, flags=re.M))
     assert leidas <= documentadas, sorted(leidas - documentadas)
+
+
+def test_prod_exige_declarar_el_almacenamiento_de_documentos():
+    sin_variable = {k: v for k, v in ENTORNO_VALIDO.items() if k != "DOCUMENTOS_ALMACENAMIENTO"}
+    resultado = _importar_prod(sin_variable)
+    assert resultado.returncode != 0
+    assert "DOCUMENTOS_ALMACENAMIENTO" in resultado.stderr

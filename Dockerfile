@@ -28,8 +28,8 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --locked --no-cache
 
 RUN useradd --create-home --uid 1000 app \
-    && mkdir -p /opt/estaticos/css \
-    && chown -R app:app /opt/estaticos
+    && mkdir -p /opt/estaticos/css /var/app/media \
+    && chown -R app:app /opt/estaticos /var/app/media
 
 COPY --chown=app:app . .
 

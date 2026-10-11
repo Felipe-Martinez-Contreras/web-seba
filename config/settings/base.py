@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     "empresas",
     "cuentas",
     "auditoria",
+    "documentos",
     "portal",
     "panel",
 ]
@@ -106,6 +107,34 @@ CARPETAS_BASE = [
     "Reglamento interno",
     "Formatos de inspección",
     "Documentos preventivos",
+]
+
+# Documentos (DOC-01 a DOC-04). "local" guarda en DOCUMENTOS_DIR, fuera de toda ruta pública;
+# "s3", en un bucket privado compatible con S3. El código de subida y de descarga es el mismo.
+DOCUMENTOS_ALMACENAMIENTO = env.texto("DOCUMENTOS_ALMACENAMIENTO", "local")
+DOCUMENTOS_DIR = env.texto("DOCUMENTOS_DIR", "/var/app/media")
+S3_BUCKET = env.texto("S3_BUCKET", "")
+S3_ENDPOINT_URL = env.texto("S3_ENDPOINT_URL", "")
+S3_REGION = env.texto("S3_REGION", "")
+S3_ACCESS_KEY_ID = env.texto("S3_ACCESS_KEY_ID", "")
+S3_SECRET_ACCESS_KEY = env.texto("S3_SECRET_ACCESS_KEY", "")
+# Lista blanca de extensiones (DOC-01). Solo admite las que la validación sabe comprobar.
+DOCUMENTOS_FORMATOS = env.lista(
+    "DOCUMENTOS_FORMATOS", ["pdf", "docx", "xlsx", "pptx", "jpg", "jpeg", "png"]
+)
+DOCUMENTOS_TAMANO_MAXIMO_MB = env.entero("DOCUMENTOS_TAMANO_MAXIMO_MB", 25)
+# Vigencia de la URL firmada de descarga. Nunca supera los 120 segundos (DOC-04).
+DESCARGA_URL_SEGUNDOS = env.entero("DESCARGA_URL_SEGUNDOS", 120)
+# Días que un documento eliminado se puede restaurar antes de `purgar_papelera` (ADM-09).
+PAPELERA_DIAS = env.entero("PAPELERA_DIAS", 30)
+# Archivos por petición en la subida sin JavaScript; con JavaScript va uno por petición.
+DATA_UPLOAD_MAX_NUMBER_FILES = 20
+# El primero corta, antes de leer el cuerpo, una petición más grande que el tope de subida.
+# Los otros dos son los de Django: lo que pasa de 2,5 MB va a un archivo temporal en disco.
+FILE_UPLOAD_HANDLERS = [
+    "documentos.subida.LimiteDePeticion",
+    "django.core.files.uploadhandler.MemoryFileUploadHandler",
+    "django.core.files.uploadhandler.TemporaryFileUploadHandler",
 ]
 
 # Retención de la auditoría (AUD-03): el comando `depurar_auditoria` borra lo anterior.

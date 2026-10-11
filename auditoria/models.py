@@ -74,6 +74,15 @@ class EventoAuditoria(models.Model):
         CARPETA_CREADA = "carpeta_creada", "Carpeta creada"
         CARPETA_EDITADA = "carpeta_editada", "Carpeta editada"
         CARPETA_ELIMINADA = "carpeta_eliminada", "Carpeta eliminada"
+        DOCUMENTO_SUBIDO = "documento_subido", "Documento subido"
+        DOCUMENTO_REEMPLAZADO = "documento_reemplazado", "Documento reemplazado"
+        DOCUMENTO_EDITADO = "documento_editado", "Documento editado"
+        DOCUMENTO_MOVIDO = "documento_movido", "Documento movido"
+        DOCUMENTO_ELIMINADO = "documento_eliminado", "Documento enviado a la papelera"
+        DOCUMENTO_RESTAURADO = "documento_restaurado", "Documento restaurado"
+        DOCUMENTO_PURGADO = "documento_purgado", "Documento borrado definitivamente"
+        DOCUMENTO_VISTO = "documento_visto", "Documento visto en pantalla"
+        DOCUMENTO_DESCARGADO = "documento_descargado", "Documento descargado"
         AUDITORIA_DEPURADA = "auditoria_depurada", "Depuración de la auditoría"
 
     fecha = models.DateTimeField("fecha", default=timezone.now, editable=False)

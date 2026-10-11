@@ -33,6 +33,12 @@ if "PROXY_CONFIANZA_REDES" not in os.environ:
 if "SITIO_URL" not in os.environ or not SITIO_URL.startswith("https://"):  # noqa: F405
     raise ImproperlyConfigured("Falta la variable de entorno SITIO_URL o no empieza con https://.")
 
+# El almacenamiento de documentos se declara siempre: no se cae al disco local por omisión.
+if "DOCUMENTOS_ALMACENAMIENTO" not in os.environ:
+    raise ImproperlyConfigured(
+        "Falta la variable de entorno DOCUMENTOS_ALMACENAMIENTO (local o s3)."
+    )
+
 CSRF_TRUSTED_ORIGINS = env.lista("CSRF_TRUSTED_ORIGINS")
 
 SECURE_SSL_REDIRECT = True
