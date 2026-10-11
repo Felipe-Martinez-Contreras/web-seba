@@ -30,6 +30,8 @@ pytestmark = pytest.mark.django_db
 # Nombres completos de las únicas vistas que responden a un visitante sin sesión.
 PUBLICAS = {
     "core:salud",
+    # Redirige al ícono, que es un archivo estático.
+    "core:favicon",
     # Sitio público (PUB-01): páginas, sitemap y robots.
     "sitio:inicio",
     "sitio:servicios",
@@ -297,6 +299,7 @@ def test_un_anonimo_solo_accede_a_la_lista_publica(urls):
 def test_las_urls_publicas_responden_sin_sesion(urls):
     cliente = Client()
     esperado = {
+        "core:favicon": 302,
         "cuentas:activar": 404,
         "cuentas:restablecer": 404,
         "cuentas:salir": 405,

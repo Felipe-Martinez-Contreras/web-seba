@@ -2,7 +2,8 @@ import logging
 
 from django.db import DatabaseError, connection
 from django.http import JsonResponse
-from django.shortcuts import render
+from django.shortcuts import redirect, render
+from django.templatetags.static import static
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET
 
@@ -20,6 +21,12 @@ def salud(request):
         logger.exception("La comprobación de salud no pudo consultar la base de datos")
         return JsonResponse({"estado": "error"}, status=503)
     return JsonResponse({"estado": "ok"})
+
+
+@require_GET
+def favicon(request):
+    """Los navegadores piden /favicon.ico en la raíz aunque la página enlace otro ícono."""
+    return redirect(static("img/favicon.ico"))
 
 
 def csrf_fallido(request, reason=""):

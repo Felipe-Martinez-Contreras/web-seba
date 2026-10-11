@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+from pathlib import Path
 from unittest import mock
 
 import pytest
@@ -32,6 +33,25 @@ def test_salud_sin_base_de_datos_responde_503_sin_detalles(client):
 @pytest.mark.django_db
 def test_salud_solo_admite_get(client):
     assert client.post("/salud/").status_code == 405
+
+
+def test_el_favicon_de_la_raiz_lleva_al_archivo_estatico(client):
+    from django.contrib.staticfiles import finders
+
+    respuesta = client.get("/favicon.ico")
+    assert respuesta.status_code == 302
+    assert respuesta["Location"] == "/static/img/favicon.ico"
+    # Formato ICO con al menos una imagen, y la versión SVG a su lado.
+    ico = Path(finders.find("img/favicon.ico")).read_bytes()
+    assert ico[:4] == b"\x00\x00\x01\x00" and ico[4] >= 1
+    assert finders.find("img/favicon.svg")
+
+
+@pytest.mark.django_db
+def test_todas_las_paginas_enlazan_el_favicon(client):
+    contenido = client.get("/acceso/").content.decode()
+    assert '<link rel="icon" href="/static/img/favicon.ico" sizes="48x48">' in contenido
+    assert '<link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">' in contenido
 
 
 @pytest.mark.django_db
