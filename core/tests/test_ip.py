@@ -66,6 +66,20 @@ def test_el_encabezado_configurado_es_el_unico_que_se_lee(rf, settings):
     assert ip_cliente(_request(rf, PROXY, "203.0.113.7", nombre="HTTP_X_REAL_IP")) == "203.0.113.7"
 
 
+def test_detras_de_cloudflared_la_ip_sale_de_cf_connecting_ip(rf, settings):
+    """Producción: solo el contenedor del túnel es de confianza y Cloudflare escribe la IP
+    del visitante, una sola, en CF-Connecting-IP."""
+    settings.PROXY_CONFIANZA_REDES = ["172.30.57.2/32"]
+    settings.PROXY_CONFIANZA_ENCABEZADO = "CF-Connecting-IP"
+    cf = "HTTP_CF_CONNECTING_IP"
+    assert ip_cliente(_request(rf, "172.30.57.2", "203.0.113.7", nombre=cf)) == "203.0.113.7"
+    assert ip_cliente(_request(rf, "172.30.57.2", "2001:db8::7", nombre=cf)) == "2001:db8::7"
+    # X-Forwarded-For lo puede traer escrito el visitante: no se lee.
+    assert ip_cliente(_request(rf, "172.30.57.2", "1.2.3.4")) == "172.30.57.2"
+    # Otro contenedor de la misma red de Docker no es el túnel: su encabezado no cuenta.
+    assert ip_cliente(_request(rf, "172.30.57.9", "203.0.113.7", nombre=cf)) == "172.30.57.9"
+
+
 def test_sin_direccion_de_conexion_no_hay_ip(rf):
     assert ip_cliente(_request(rf, "")) is None
 
