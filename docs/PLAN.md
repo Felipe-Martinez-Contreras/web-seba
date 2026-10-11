@@ -11,7 +11,7 @@ Plan de la Etapa 0 (sección 11 de `ESPECIFICACION.md`). Se actualiza al avanzar
 | — | Ajuste visual (tokens azul marino, Inter y componentes del mockup) | Terminado el 09-10-2026; pendiente de aprobación del responsable |
 | 2 | Cuentas y acceso | Aprobada por el responsable el 11-10-2026 |
 | 3 | Empresas, usuarios y carpetas | Aprobada por el responsable el 11-10-2026, tras probar el flujo en el navegador |
-| 4 | Documentos | Terminada el 11-10-2026. Queda aprobada cuando el responsable la pruebe en el navegador |
+| 4 | Documentos | Aprobada por el responsable el 11-10-2026, tras probarla en el navegador |
 | 5 | Portal del cliente | Pendiente |
 | 6 | Sitio público y solicitudes | Pendiente |
 | 7 | Endurecimiento y calidad | Pendiente |
@@ -144,7 +144,6 @@ Aprobadas por el responsable el 09-10-2026.
 - Etapa 5, al inicio: barra de progreso también al reemplazar el archivo de un documento (pedido por el responsable).
 - Etapa 5: pantallas del portal que listan, buscan y enlazan los documentos; con ellas se cierran las pruebas 2 y 4 y los escenarios E3 y E5.
 - Etapa 7: "Ver en pantalla" con `Content-Security-Policy: sandbox` en Firefox y Safari (en Edge ya se comprobó).
-- Revisión del responsable: recorrer E3, E4 y E5 en el navegador con un administrador real.
 - Revisión del responsable: recorrer E2 y E6 en el navegador con un administrador real y su 2FA, y probar el botón "Copiar enlace".
 - Etapa 6: fotografía con velo en el bloque inferior de la pantalla de acceso; marca en esa pantalla cuando exista el nombre comercial; `noindex` del admin de Django (SEG-13).
 - Etapa 7: repetir en staging la medición de tiempos de `SEGURIDAD.md`.
@@ -251,4 +250,4 @@ Lo que todavía no existe: las pantallas del portal (Etapa 5), solicitudes y con
 - El reemplazo de un archivo usa un formulario normal, sin barra de progreso.
 - Se corrigió un error detectado por una prueba de la Etapa 3: al contar documentos por carpeta, la lista perdía su orden.
 
-Respuestas del responsable al cierre (11-10-2026): autorizado el `push` y la verificación de la CI; la publicación inmediata queda aprobada, con el aviso del cliente en la zona de subida y en cada resultado (DEC-114); la barra de progreso al reemplazar se agrega al inicio de la Etapa 5. La etapa queda aprobada cuando el responsable la pruebe en el navegador.
+Respuestas del responsable al cierre (11-10-2026): autorizado el `push` y la verificación de la CI; la publicación inmediata queda aprobada, con el aviso del cliente en la zona de subida y en cada resultado (DEC-114); la barra de progreso al reemplazar se agrega al inicio de la Etapa 5. El responsable probó la etapa en el navegador y la aprobó el 11-10-2026.
