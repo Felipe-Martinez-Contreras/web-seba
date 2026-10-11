@@ -11,6 +11,7 @@ dependencies = [
     "django-otp==1.7.4",
     "segno==1.6.6",
     "boto3==1.43.111",
+    "gunicorn==26.2.0",
 ]
 
 [dependency-groups]
