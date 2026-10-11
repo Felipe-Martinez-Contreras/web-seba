@@ -89,3 +89,73 @@ jobs:
       - name: Bajar
         if: always()
         run: docker compose down --volumes
+
+  imagen:
+    name: Imagen de producción
+    runs-on: ubuntu-24.04
+    needs: [lint, pruebas, auditoria, arranque]
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGEN: ghcr.io/felipe-martinez-contreras/web-seba
+      WEB_SEBA_VERSION: ${{ github.sha }}
+      WEB_SEBA_ENTORNO: ${{ github.workspace }}/web.env
+      WEB_SEBA_COMPOSE_ENV: ${{ github.workspace }}/compose.env
+    steps:
+      - uses: actions/checkout@v5
+      - name: Construir la imagen de producción
+        run: docker build --target prod --tag "$IMAGEN:$WEB_SEBA_VERSION" .
+      - name: Entorno de prueba, sin secretos reales
+        run: |
+          cat > compose.env << 'FIN'
+          POSTGRES_DB=webseba
+          POSTGRES_USER=webseba
+          POSTGRES_PASSWORD=solo-ci
+          TUNNEL_TOKEN=sin-uso-en-la-ci
+          FIN
+          cat > web.env << 'FIN'
+          SECRET_KEY=clave-solo-para-la-ci-de-la-imagen-de-produccion-sin-valor-fuera-de-aqui
+          ALLOWED_HOSTS=staging.ejemplo.test
+          SITIO_URL=https://staging.ejemplo.test
+          DATABASE_URL=postgres://webseba:solo-ci@db:5432/webseba
+          PROXY_CONFIANZA_REDES=172.30.57.2/32
+          PROXY_CONFIANZA_ENCABEZADO=CF-Connecting-IP
+          PROXY_HTTPS_ENCABEZADO=X-Forwarded-Proto
+          DOCUMENTOS_ALMACENAMIENTO=local
+          DOCUMENTOS_DIR=/tmp/documentos
+          FIN
+      # Sin el túnel: la CI no tiene, ni debe tener, su token.
+      - name: Levantar la base y la aplicación como en el servidor
+        run: |
+          despliegue/vm/dc up --detach --wait db
+          despliegue/vm/dc run --rm --no-deps web python manage.py migrate --noinput
+          despliegue/vm/dc run --rm --no-deps web python manage.py createcachetable
+          despliegue/vm/dc up --detach --wait --wait-timeout 180 db web
+      - name: Responde por Gunicorn y llega a la base de datos
+        run: despliegue/vm/dc exec -T web python docker/salud.py
+      - name: Sirve los estáticos recolectados, con nombre con hash
+        run: |
+          ruta="$(despliegue/vm/dc exec -T web python -c "import json; print('/static/' + json.load(open('staticfiles/staticfiles.json'))['paths']['css/app.css'])")"
+          echo "$ruta" | grep --quiet --extended-regexp '^/static/css/app\.[0-9a-f]+\.css$'
+          despliegue/vm/dc exec -T web python docker/salud.py "$ruta" > /dev/null
+          despliegue/vm/dc exec -T web grep --quiet --fixed-strings -e "--color-primario:" "staticfiles${ruta#/static}"
+      - name: check --deploy con la configuración de producción
+        run: despliegue/vm/dc exec -T web python manage.py check --deploy
+      - name: La aplicación no corre como root y no publica puertos
+        run: |
+          test "$(despliegue/vm/dc exec -T web id -u)" = "1000"
+          test -z "$(docker ps --filter name=web-seba --format '{{.Ports}}' | grep --fixed-strings -e '->' || true)"
+      - name: Los logs de Gunicorn salen en JSON
+        run: despliegue/vm/dc logs --no-log-prefix web | grep --fixed-strings '"origen": "gunicorn.access"' | head -n 3
+      - name: Registros si algo falla
+        if: failure()
+        run: despliegue/vm/dc logs --no-color
+      - name: Publicar en el registro de GitHub
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io --username "${{ github.actor }}" --password-stdin
+          docker push "$IMAGEN:$WEB_SEBA_VERSION"
+      - name: Bajar
+        if: always()
+        run: despliegue/vm/dc down --volumes
