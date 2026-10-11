@@ -9,9 +9,9 @@ el contraste del texto.
 {% endcomment %}
 {% if titular %}
 <div class="sobre-primario relative isolate bg-primario text-blanco">
-  {% if foto %}{% include "componentes/foto_fondo.html" with foto=foto prioridad=True only %}{% endif %}
   {% if con_encabezado %}{% include "componentes/encabezado_publico.html" with encabezado_transparente=True %}{% endif %}
   <section class="contenedor py-16 md:py-24" aria-labelledby="portada-titular">
+    {% if foto %}{% include "componentes/foto_fondo.html" with foto=foto prioridad=True only %}{% endif %}
     <div class="max-w-xl">
       <h1 class="text-3xl font-bold md:text-4xl" id="portada-titular">{{ titular }}</h1>
       {% if bajada %}<p class="mt-4 text-base text-sobre-primario-secundario">{{ bajada|linebreaksbr }}</p>{% endif %}

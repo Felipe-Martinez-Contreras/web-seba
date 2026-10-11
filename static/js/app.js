@@ -53,6 +53,30 @@ document.addEventListener("click", function (evento) {
   }
 });
 
+// Tras un envío con errores, el foco va al resumen: quien usa teclado o lector de pantalla
+// queda arriba del formulario y escucha qué pasó.
+document.addEventListener("DOMContentLoaded", function () {
+  var resumen = document.querySelector("[data-enfocar]");
+  if (resumen) {
+    resumen.focus();
+  }
+});
+
+// Escape cierra el menú desplegable abierto y devuelve el foco al botón que lo abrió.
+document.addEventListener("keydown", function (evento) {
+  if (evento.key !== "Escape") {
+    return;
+  }
+  document.querySelectorAll("details[open] > .menu-flotante").forEach(function (menu) {
+    var desplegable = menu.parentElement;
+    desplegable.removeAttribute("open");
+    var boton = desplegable.querySelector("summary");
+    if (boton) {
+      boton.focus();
+    }
+  });
+});
+
 // Un menú desplegable abierto se cierra al hacer clic fuera de él.
 document.addEventListener("click", function (evento) {
   document.querySelectorAll("details[open] > .menu-flotante").forEach(function (menu) {

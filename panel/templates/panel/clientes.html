@@ -33,7 +33,7 @@
       <tr>
         <td data-etiqueta="Razón social">
           <span class="min-w-0 text-right md:text-left">
-            <a class="enlace font-medium break-words" href="{% url 'panel:cliente' cliente.pk %}">{{ cliente.razon_social }}</a>
+            <a class="enlace enlace-tactil font-medium break-words" href="{% url 'panel:cliente' cliente.pk %}">{{ cliente.razon_social }}</a>
             {% if cliente.nombre_fantasia %}<span class="block text-xs text-texto-secundario">{{ cliente.nombre_fantasia }}</span>{% endif %}
           </span>
         </td>

@@ -1,6 +1,7 @@
 """Formularios públicos de consulta y cotización (SOL-01 a SOL-03, SOL-06, SEG-12; E1)."""
 
 import pytest
+from django.conf import settings
 from django.core import mail
 from django.test import Client
 
@@ -196,3 +197,18 @@ def test_la_base_rechaza_una_solicitud_sin_consentimiento(db):
             consentimiento=False,
             consentimiento_en=timezone.now(),
         )
+
+
+def test_tras_un_error_el_resumen_recibe_el_foco_y_se_anuncia(client, negocio, servicio):
+    """Una región aria-live que ya viene en la página no se anuncia al cargarla: el resumen
+    lleva `role="alert"` y app.js le pasa el foco (E8)."""
+    contenido = client.post("/contacto/", datos_de_consulta(nombre="")).content.decode()
+    assert (
+        '<div class="resumen-errores mb-6 flex flex-col gap-3" role="alert" '
+        'aria-live="assertive" tabindex="-1" data-enfocar>' in contenido
+    )
+    # El campo con error queda marcado y apunta a su mensaje.
+    assert 'aria-invalid="true"' in contenido and 'aria-describedby="id_nombre_error"' in contenido
+    guion = (settings.BASE_DIR / "static" / "js" / "app.js").read_text(encoding="utf-8")
+    assert 'document.querySelector("[data-enfocar]")' in guion
+    assert 'evento.key !== "Escape"' in guion

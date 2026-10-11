@@ -29,7 +29,7 @@
       <li class="fila flex-wrap">
         <span class="icono icono-grande text-primario" aria-hidden="true">{% include "iconos/folder.svg" %}</span>
         <span class="min-w-0 flex-1 basis-40">
-          <a class="fila-titulo enlace block" href="{% url 'panel:carpeta' empresa.pk carpeta.pk %}">{{ carpeta.nombre }}</a>
+          <a class="fila-titulo enlace enlace-tactil" href="{% url 'panel:carpeta' empresa.pk carpeta.pk %}">{{ carpeta.nombre }}</a>
           <span class="fila-meta block tabular-nums">{{ carpeta.cantidad }} documento{{ carpeta.cantidad|pluralize }}{% if carpeta.actualizado %} · Actualizado el {{ carpeta.actualizado|date }}{% endif %}{% if carpeta.en_papelera %} · {{ carpeta.en_papelera }} en la papelera{% endif %}</span>
           {% if carpeta.descripcion %}<span class="fila-meta block break-words">{{ carpeta.descripcion }}</span>{% endif %}
         </span>

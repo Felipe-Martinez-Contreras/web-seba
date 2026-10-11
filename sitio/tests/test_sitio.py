@@ -44,7 +44,9 @@ def test_pub_02_el_inicio_muestra_portada_servicios_formulario_y_pie(client, neg
     assert re.search(r'href="/servicios/">\s*<span>Conozca nuestros servicios</span>', contenido)
     # El encabezado va dentro de la portada, sobre la fotografía.
     portada = contenido.split('id="contenido"')[0]
-    assert portada.index('src="/static/img/portada.webp"') < portada.index("<header")
+    assert 'src="/static/img/portada.webp"' in portada and "<header" in portada
+    # La fotografía va dentro de la sección de la portada, no suelta fuera de toda región.
+    assert portada.index("<section") < portada.index('src="/static/img/portada.webp"')
     assert '<header class="sobre-primario text-blanco">' in portada
 
     # Servicios: una tarjeta por servicio activo, enlazada a la página Servicios.

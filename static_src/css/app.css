@@ -139,12 +139,18 @@
     @apply sr-only rounded-boton bg-primario px-4 py-3 font-medium text-blanco;
   }
 
+  /* `not-sr-only` quita el relleno: se repone aquí, con el alto táctil de 44 px. */
   .saltar-contenido:focus {
-    @apply not-sr-only fixed top-2 left-2 z-50 outline-2 outline-offset-2 outline-blanco;
+    @apply not-sr-only fixed top-2 left-2 z-50 inline-flex min-h-11 items-center px-4 py-3 outline-2 outline-offset-2 outline-blanco;
   }
 
   .contenedor {
     @apply mx-auto w-full max-w-contenido px-4 sm:px-6;
+  }
+
+  /* Recibe el foco al cargar la página con errores; el contorno rodea la alerta. */
+  .resumen-errores {
+    @apply rounded-caja;
   }
 
   .icono {

@@ -154,3 +154,15 @@ def test_el_velo_asegura_el_contraste_del_texto_sobre_cualquier_fotografia():
         assert contraste(TOKENS["sobre-primario-secundario"], fondo) >= 4.5, fondo_de_la_foto
     peor = _mezcla(TOKENS["primario"], "#ffffff", 0.75)
     assert contraste(TOKENS["sobre-primario-secundario"], peor) < 4.5
+
+
+def test_el_enlace_de_saltar_al_contenido_mide_44_px_al_recibir_el_foco():
+    """`not-sr-only` le quita el relleno: sin reponerlo medía 24 px de alto (medido en Edge)."""
+    estilos = (settings.BASE_DIR / "static_src" / "css" / "app.css").read_text(encoding="utf-8")
+    regla = estilos.split(".saltar-contenido:focus {")[1].split("}")[0]
+    assert "min-h-11" in regla and "py-3" in regla
+
+
+def test_las_pestanas_no_usan_el_margen_negativo_que_las_hacia_desbordar():
+    estilos = (settings.BASE_DIR / "static_src" / "css" / "app.css").read_text(encoding="utf-8")
+    assert "-mb-px" not in estilos.split(".pestana {")[1].split("}")[0]

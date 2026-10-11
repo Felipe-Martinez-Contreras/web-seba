@@ -7,19 +7,21 @@ Bloques: titulo, encabezado, bajada y contenido.
 {% block meta %}<meta name="robots" content="noindex">{% endblock %}
 {% block cuerpo %}
 <div class="flex min-h-screen flex-col bg-superficie">
-  <main id="contenido" class="flex flex-1 flex-col items-center px-4 pt-12 pb-10 sm:pt-20 sm:pb-16" tabindex="-1">
-    <div class="w-full max-w-sm">
-      <div class="flex justify-center">{% include "componentes/marca.html" with marca_tono="oscuro" marca_url="" %}</div>
-      <h1 class="mt-6 text-center text-2xl">{% block encabezado %}{% endblock %}</h1>
-      <p class="mt-2 text-center text-sm text-texto-secundario">{% block bajada %}{% endblock %}</p>
-      <div class="mt-8">
-        {% include "componentes/mensajes.html" %}
-        {% block contenido %}{% endblock %}
+  <main id="contenido" class="flex flex-1 flex-col" tabindex="-1">
+    <div class="flex flex-1 flex-col items-center px-4 pt-12 pb-10 sm:pt-20 sm:pb-16">
+      <div class="w-full max-w-sm">
+        <div class="flex justify-center">{% include "componentes/marca.html" with marca_tono="oscuro" marca_url="" %}</div>
+        <h1 class="mt-6 text-center text-2xl">{% block encabezado %}{% endblock %}</h1>
+        <p class="mt-2 text-center text-sm text-texto-secundario">{% block bajada %}{% endblock %}</p>
+        <div class="mt-8">
+          {% include "componentes/mensajes.html" %}
+          {% block contenido %}{% endblock %}
+        </div>
       </div>
     </div>
+    <div class="relative isolate h-32 bg-primario sm:h-48">
+      {% include "componentes/foto_fondo.html" with foto=foto_acceso only %}
+    </div>
   </main>
-  <div class="relative isolate h-32 bg-primario sm:h-48">
-    {% include "componentes/foto_fondo.html" with foto=foto_acceso only %}
-  </div>
 </div>
 {% endblock %}
