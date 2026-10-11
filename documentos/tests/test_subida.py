@@ -109,6 +109,10 @@ def test_e3_tres_archivos_uno_invalido_se_aceptan_dos_y_se_rechaza_uno_con_su_mo
         "Formatos admitidos: PDF, DOCX, XLSX, PPTX, JPG y PNG. Hasta 25 MB por archivo." in pagina
     )
     assert "Esta carpeta aún no tiene documentos" in pagina
+    # El cliente que verá los archivos va destacado en la zona de subida, con su RUT.
+    destino = pagina[pagina.index('id="subida-destino"') :][:1500]
+    assert "Subiendo documentos para:" in destino
+    assert "Empresa A de Prueba SpA" in destino and "RUT 76.111.111-6" in destino
 
     respuesta = cliente_http_admin.post(
         _subir(carpeta_a),
@@ -122,6 +126,8 @@ def test_e3_tres_archivos_uno_invalido_se_aceptan_dos_y_se_rechaza_uno_con_su_mo
     )
     pagina = respuesta.content.decode()
     assert pagina.count("Aceptado.") == 2 and pagina.count("Rechazado.") == 1
+    # Cada archivo aceptado dice para qué cliente quedó publicado; el rechazado, no.
+    assert pagina.count("Publicado para Empresa A de Prueba SpA.") == 2
     assert "El contenido no corresponde a un archivo PDF." in pagina
 
     # Efectos reales: dos documentos, dos objetos y dos eventos.
@@ -164,6 +170,7 @@ def test_la_subida_con_javascript_recibe_solo_el_resultado_de_su_archivo(
     documento = Documento.objects.get()
     assert contenido.startswith("<li") and contenido.endswith("</li>")
     assert "<html" not in contenido and "Aceptado." in contenido
+    assert "Publicado para Empresa A de Prueba SpA." in contenido
     assert f"/documentos/{documento.pk}/" in contenido
 
     rechazado = cliente_http_admin.post(
@@ -173,6 +180,7 @@ def test_la_subida_con_javascript_recibe_solo_el_resultado_de_su_archivo(
     )
     contenido = rechazado.content.decode()
     assert "Rechazado." in contenido and "El formato .svg" in contenido
+    assert "Publicado para" not in contenido
     # El nombre que envió la persona se muestra escapado.
     assert "<b>" not in contenido and "&lt;b&gt;negrita&lt;b&gt;.svg" in contenido
     assert Documento.objects.count() == 1 and len(almacen_de_prueba.claves()) == 1
@@ -223,3 +231,23 @@ def test_la_lista_de_documentos_pagina_de_a_25_sin_consultas_por_fila(
     # Con 2 filas o con 25, la página hace las mismas consultas.
     with django_assert_max_num_queries(con_25):
         cliente_http_admin.get(_carpeta(carpeta_a) + "?page=2")
+
+
+def test_la_subida_nombra_al_cliente_de_la_carpeta_y_no_a_otro(
+    cliente_http_admin, carpeta_a, carpeta_b, empresa_b
+):
+    """Protección contra subir al cliente equivocado: la pantalla y cada resultado nombran
+    al cliente dueño de la carpeta, con su razón social escapada."""
+    empresa_b.razon_social = "Áridos <b>Ñuble</b> Ltda."
+    empresa_b.save()
+    pagina = cliente_http_admin.get(_carpeta(carpeta_b)).content.decode()
+    destino = pagina[pagina.index('id="subida-destino"') :][:1500]
+    assert "Áridos &lt;b&gt;Ñuble&lt;/b&gt; Ltda." in destino and "RUT 76.222.222-1" in destino
+    assert "Empresa A de Prueba SpA" not in pagina
+    assert 'aria-describedby="subida-destino subida-ayuda"' in pagina
+
+    resultado = cliente_http_admin.post(
+        _subir(carpeta_b), {"archivos": [archivos.pdf()]}, headers={"X-Subida": "fragmento"}
+    ).content.decode()
+    assert "Publicado para Áridos &lt;b&gt;Ñuble&lt;/b&gt; Ltda.." in resultado
+    assert Documento.objects.get().empresa == empresa_b

@@ -55,8 +55,9 @@ Pulse el nombre de una carpeta para ver sus documentos.
 
 ### Subir documentos
 
-1. Abra la carpeta y, en **Subir documentos**, elija uno o varios archivos.
-2. Pulse **Subir documentos**. Cada archivo muestra su avance y, al terminar, su resultado: **Aceptado** o **Rechazado**, con el motivo.
+1. Abra la carpeta. Antes de elegir archivos, lea el recuadro **Subiendo documentos para:** y compruebe que la razón social y el RUT sean los del cliente correcto.
+2. En **Subir documentos**, elija uno o varios archivos.
+3. Pulse **Subir documentos**. Cada archivo muestra su avance y, al terminar, su resultado: **Aceptado**, con el cliente para el que quedó publicado, o **Rechazado**, con el motivo.
 
 Lo que debe saber:
 
@@ -151,6 +152,7 @@ Los registros no se pueden editar ni borrar desde el panel.
 | Un usuario no puede entrar y aparece Activo | Probablemente olvidó su contraseña: puede usar "¿Olvidó su contraseña?" en la página de acceso, o usted puede generarle un enlace |
 | Un archivo se rechaza y no entiende el motivo | Lea el motivo junto al nombre del archivo; la tabla de "Subir documentos" dice qué hacer en cada caso |
 | Necesita eliminar una carpeta y no aparece el botón | Tiene documentos, quizá en la papelera. Muévalos o restáurelos y muévalos |
+| Subió un documento al cliente equivocado | Elimínelo de inmediato desde su ficha: ese cliente deja de verlo. En Auditoría puede revisar si alguien alcanzó a verlo o descargarlo. Luego súbalo al cliente correcto |
 | Eliminó un documento por error | Vaya a la Papelera del cliente y pulse Restaurar, dentro de los 30 días |
 | Usted quedó bloqueado | Espere 15 minutos o pida a quien mantiene el sistema que lo desbloquee |
 | Perdió su teléfono con la aplicación de autenticación | Use uno de sus códigos de recuperación. Si no los tiene, pida a quien mantiene el sistema que restablezca su verificación en dos pasos |

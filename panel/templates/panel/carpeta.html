@@ -17,11 +17,11 @@
 
 <section class="tarjeta mt-6 p-5" aria-labelledby="subir-titulo">
   <h2 class="text-lg" id="subir-titulo">Subir documentos</h2>
-  <p class="mt-1 text-sm text-texto-secundario">Cada archivo queda publicado para el cliente apenas se acepta.</p>
+  <p class="mt-1 text-sm text-texto-secundario">Cada archivo queda publicado para este cliente apenas se acepta. Compruebe que sea el cliente correcto antes de subir.</p>
   <div class="mt-4">
     {% url 'panel:documento_subir' empresa.pk carpeta.pk as url_subir %}
     {% url 'panel:carpeta' empresa.pk carpeta.pk as url_carpeta %}
-    {% include "componentes/zona_subida.html" with accion=url_subir url_lista=url_carpeta refresca="lista-documentos" %}
+    {% include "componentes/zona_subida.html" with destinatario=empresa.razon_social destinatario_rut=empresa.rut accion=url_subir url_lista=url_carpeta refresca="lista-documentos" %}
   </div>
   <ul class="lista-filas mt-4" id="subida-resultados" aria-live="polite" aria-label="Resultado de la subida"{% if not resultados %} hidden{% endif %}>
     {% include "panel/_resultados_subida.html" %}

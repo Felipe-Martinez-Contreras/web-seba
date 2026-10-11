@@ -1,17 +1,25 @@
+{% load formato %}
 {% comment %}
 Zona de subida con progreso (ADM-08). Con JavaScript (static/js/subida.js) envía un archivo
 por petición y muestra una barra <progress> por archivo; sin JavaScript, el formulario se
 envía completo y la página muestra el resultado de cada archivo.
-Parámetros: accion (URL del POST); formatos (texto para la ayuda); extensiones (atributo
+Parámetros: destinatario y destinatario_rut (razón social y RUT del cliente que verá los
+archivos: van destacados, para no subirlos al cliente equivocado); accion (URL del POST); formatos (texto para la ayuda); extensiones (atributo
 accept); maximo_mb; maximo_bytes; url_lista (página que muestra la lista actualizada);
 refresca (opcional: id del bloque de esa página que se vuelve a cargar al terminar).
 El bloque de resultados lo llena quien la incluye, con componentes/resultado_subida.html.
 {% endcomment %}
 <form class="flex flex-col gap-4" method="post" action="{{ accion }}" enctype="multipart/form-data" data-subida="subida-resultados" data-maximo="{{ maximo_bytes }}" data-maximo-mb="{{ maximo_mb }}" data-lista="{{ url_lista }}"{% if refresca %} data-refresca="{{ refresca }}"{% endif %}>
   {% csrf_token %}
+  <p class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-caja border border-primario bg-primario-suave px-4 py-3" id="subida-destino">
+    <span class="icono text-primario" aria-hidden="true">{% include "iconos/building-2.svg" %}</span>
+    <span class="text-sm">Subiendo documentos para:</span>
+    <strong class="text-base font-semibold break-words">{{ destinatario }}</strong>
+    <span class="text-sm tabular-nums">RUT {{ destinatario_rut|rut }}</span>
+  </p>
   <div class="campo">
     <label class="campo-etiqueta" for="subida-archivos">Archivos</label>
-    <input id="subida-archivos" type="file" name="archivos" multiple required accept="{{ extensiones }}" aria-describedby="subida-ayuda">
+    <input id="subida-archivos" type="file" name="archivos" multiple required accept="{{ extensiones }}" aria-describedby="subida-destino subida-ayuda">
     <p class="campo-ayuda" id="subida-ayuda">Puede elegir varios. Formatos admitidos: {{ formatos }}. Hasta {{ maximo_mb }} MB por archivo.</p>
   </div>
   <div>{% include "componentes/boton.html" with texto="Subir documentos" icono="upload" only %}</div>

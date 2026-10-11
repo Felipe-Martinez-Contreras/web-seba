@@ -1,7 +1,7 @@
 {% comment %}
 Resultado de un archivo subido, para usar dentro de <ul class="lista-filas">.
 Parámetros: nombre (como lo envió la persona); motivo (si se rechazó); url (del documento
-creado, si se aceptó).
+creado, si se aceptó); publicado_para (razón social del cliente que ya puede verlo).
 {% endcomment %}
 <li class="fila">
   {% if motivo %}
@@ -14,7 +14,7 @@ creado, si se aceptó).
     {% if motivo %}
     <span class="block text-sm"><strong class="font-semibold text-error">Rechazado.</strong> {{ motivo }}</span>
     {% else %}
-    <span class="block text-sm"><strong class="font-semibold text-exito">Aceptado.</strong> El cliente ya puede verlo.</span>
+    <span class="block text-sm"><strong class="font-semibold text-exito">Aceptado.</strong> Publicado para {{ publicado_para }}.</span>
     {% endif %}
   </span>
   {% if url %}<a class="enlace text-sm" href="{{ url }}">Abrir<span class="sr-only"> {{ nombre }}</span></a>{% endif %}

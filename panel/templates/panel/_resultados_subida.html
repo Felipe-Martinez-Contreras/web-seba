@@ -2,7 +2,7 @@
 {% for resultado in resultados %}
 {% if resultado.documento %}
 {% url 'panel:documento' empresa.pk resultado.documento.pk as url_documento %}
-{% include "componentes/resultado_subida.html" with nombre=resultado.nombre url=url_documento only %}
+{% include "componentes/resultado_subida.html" with nombre=resultado.nombre url=url_documento publicado_para=empresa.razon_social only %}
 {% else %}
 {% include "componentes/resultado_subida.html" with nombre=resultado.nombre motivo=resultado.motivo only %}
 {% endif %}

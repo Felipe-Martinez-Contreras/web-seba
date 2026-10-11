@@ -112,7 +112,9 @@ def test_la_referencia_muestra_los_componentes(client):
         # Zona de subida: formulario real, barra de progreso nativa y los dos resultados.
         'data-subida="subida-resultados"',
         '<progress class="progreso" max="100" value="40"',
+        "Subiendo documentos para:",
         "Aceptado.",
+        "Publicado para Empresa de muestra SpA.",
         "Rechazado.",
     ):
         assert marcador in contenido, marcador

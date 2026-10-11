@@ -214,7 +214,7 @@
     <p class="mt-1 text-sm text-texto-secundario">Un archivo por petición, con una barra de progreso por archivo y el resultado de cada uno. Aquí es una muestra: la página de referencia no guarda ningún archivo.</p>
     <div class="tarjeta mt-4 p-5">
       {% url 'referencia:componentes' as url_referencia %}
-      {% include "componentes/zona_subida.html" with accion=url_referencia url_lista=url_referencia|add:"#ref-subida" formatos="PDF, DOCX, XLSX, PPTX, JPG y PNG" extensiones=".pdf,.docx,.xlsx,.pptx,.jpg,.jpeg,.png" maximo_mb=25 maximo_bytes=26214400 %}
+      {% include "componentes/zona_subida.html" with destinatario="Empresa de muestra SpA" destinatario_rut="761111116" accion=url_referencia url_lista=url_referencia|add:"#ref-subida" formatos="PDF, DOCX, XLSX, PPTX, JPG y PNG" extensiones=".pdf,.docx,.xlsx,.pptx,.jpg,.jpeg,.png" maximo_mb=25 maximo_bytes=26214400 %}
       <ul class="lista-filas mt-4" id="subida-resultados" aria-live="polite" aria-label="Resultado de la subida">
         <li class="fila flex-wrap">
           <span class="min-w-0 flex-1">
@@ -223,7 +223,7 @@
           </span>
           <progress class="progreso" max="100" value="40" aria-label="Progreso de Archivo de muestra en curso.pdf"></progress>
         </li>
-        {% include "componentes/resultado_subida.html" with nombre="Archivo de muestra aceptado.pdf" url="#ref-subida" only %}
+        {% include "componentes/resultado_subida.html" with nombre="Archivo de muestra aceptado.pdf" url="#ref-subida" publicado_para="Empresa de muestra SpA" only %}
         {% include "componentes/resultado_subida.html" with nombre="Archivo de muestra rechazado.pdf" motivo="Motivo del rechazo, en lenguaje claro." only %}
       </ul>
     </div>
