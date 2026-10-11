@@ -190,7 +190,7 @@ Reglas de las secciones 4, 5 y 6 de la especificación que sostienen a los requi
 
 | Qué pide la especificación | Archivos | Prueba o verificación | Estado |
 | --- | --- | --- | --- |
-| Dockerfile de producción | `Dockerfile` (target `prod`), `config/gunicorn.py`, `docker/salud.py` | Trabajo `imagen` de la CI; `config/tests/test_gunicorn.py` | Verificado en local el 11-10-2026: la imagen arranca con Gunicorn, responde `/salud/`, redirige a HTTPS, sirve los estáticos con hash y corre como usuario 1000. La CI repite lo mismo en cada `push` |
+| Dockerfile de producción | `Dockerfile` (target `prod`), `config/gunicorn.py`, `docker/salud.py` | Trabajo `imagen` de la CI; `config/tests/test_gunicorn.py` | Verificado en local el 11-10-2026: la imagen arranca con Gunicorn, responde `/salud/`, redirige a HTTPS, sirve los estáticos con hash y corre como usuario 1000. La CI repite lo mismo en cada `push`: en verde el 11-10-2026 (ejecución 38170239943), con la imagen del commit `163afcc` publicada en GitHub Container Registry. Pendiente (responsable): confirmar que el paquete quedó público (`DESPLIEGUE.md` §3.9) |
 | Configuración sin atarse a un proveedor | `despliegue/compose.prod.yaml`, `despliegue/*.env.example` | Trabajo `imagen` de la CI | Verificado: la imagen se configura solo por variables de entorno. La VM única es la desviación D6 |
 | Base de datos y bucket | `despliegue/compose.prod.yaml` (`db`), `docs/DESPLIEGUE.md` §3.4 | `comprobar_almacenamiento --firma` | Base: verificada en local (migraciones y `unaccent` en una base vacía). Bucket: pendiente (Fase B) |
 | Dominio y HTTPS | `despliegue/compose.prod.yaml` (`cloudflared`), `docs/DESPLIEGUE.md` §3.6, §3.7 y §10 | `DESPLIEGUE.md` §12 | Pendiente (Fase B). El subdominio no está definido |
