@@ -1,0 +1,12 @@
+{% autoescape off %}Hola, {{ nombre }}:
+
+Se creó una cuenta para usted en el portal de documentos.
+Para activarla y definir su contraseña, abra este enlace:
+
+{{ url }}
+
+El enlace vence el {{ vence|date:"d-m-Y" }} a las {{ vence|date:"H:i" }} y se puede usar una sola vez.
+Después podrá ingresar con su RUT y la contraseña que defina.
+
+Si no esperaba este mensaje, puede ignorarlo.
+{% endautoescape %}

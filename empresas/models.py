@@ -1,10 +1,12 @@
 import uuid
 
 from django.db import models
+from django.db.models.functions import Lower
 
 from core import rut as utilidades_rut
 from core.fields import CampoRut
 from core.models import ModeloConFechas
+from empresas.querysets import CarpetaQuerySet, EmpresaQuerySet
 
 
 class Empresa(ModeloConFechas):
@@ -21,6 +23,8 @@ class Empresa(ModeloConFechas):
     # Solo para administradores: nunca se muestran al cliente.
     notas_internas = models.TextField("notas internas", blank=True)
 
+    objects = EmpresaQuerySet.as_manager()
+
     class Meta:
         verbose_name = "empresa"
         verbose_name_plural = "empresas"
@@ -35,3 +39,35 @@ class Empresa(ModeloConFechas):
 
     def __str__(self):
         return f"{self.razon_social} ({utilidades_rut.formatear(self.rut)})"
+
+
+class Carpeta(ModeloConFechas):
+    """Carpeta de documentos de una empresa. No hay subcarpetas."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    empresa = models.ForeignKey(
+        Empresa, verbose_name="empresa", on_delete=models.PROTECT, related_name="carpetas"
+    )
+    nombre = models.CharField("nombre", max_length=100)
+    orden = models.PositiveIntegerField("orden", default=0)
+    descripcion = models.CharField("descripción", max_length=300, blank=True)
+
+    objects = CarpetaQuerySet.as_manager()
+
+    class Meta:
+        verbose_name = "carpeta"
+        verbose_name_plural = "carpetas"
+        ordering = ["orden", "nombre"]
+        indexes = [models.Index(fields=["empresa", "orden"], name="carpeta_empresa_orden_idx")]
+        constraints = [
+            # Sin distinguir mayúsculas: "Protocolos" y "protocolos" son la misma carpeta.
+            models.UniqueConstraint(
+                Lower("nombre"),
+                "empresa",
+                name="carpeta_nombre_unico_por_empresa",
+                violation_error_message="Ya existe una carpeta con ese nombre.",
+            ),
+        ]
+
+    def __str__(self):
+        return self.nombre

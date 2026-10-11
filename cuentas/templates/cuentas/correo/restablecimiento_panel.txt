@@ -1,0 +1,11 @@
+{% autoescape off %}Hola, {{ nombre }}:
+
+Se generó un enlace para que defina una contraseña nueva para su cuenta.
+Para hacerlo, abra este enlace:
+
+{{ url }}
+
+El enlace vence el {{ vence|date:"d-m-Y" }} a las {{ vence|date:"H:i" }} y se puede usar una sola vez.
+
+Si usted no pidió este cambio, no necesita hacer nada: su contraseña no cambia.
+{% endautoescape %}

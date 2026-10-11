@@ -14,6 +14,29 @@ class EventoQuerySet(models.QuerySet):
     def delete(self):
         raise SoloAgregar("Los eventos de auditoría no se borran.")
 
+    def filtrar(self, *, empresa=None, rut="", accion="", desde=None, hasta=None):
+        """Filtros del listado (ADM-11). El RUT busca al actor y también el RUT intentado."""
+        eventos = self
+        if empresa is not None:
+            eventos = eventos.filter(empresa=empresa)
+        if rut:
+            eventos = eventos.filter(models.Q(actor__rut=rut) | models.Q(rut_intentado=rut))
+        if accion:
+            eventos = eventos.filter(accion=accion)
+        if desde:
+            eventos = eventos.filter(fecha__date__gte=desde)
+        if hasta:
+            eventos = eventos.filter(fecha__date__lte=hasta)
+        return eventos
+
+    def depurar(self, antes_de):
+        """Borra los eventos anteriores a la fecha y devuelve cuántos eran.
+
+        Es el único borrado que existe: el de la retención (AUD-03), y solo lo usa el
+        comando `depurar_auditoria`, que requiere acceso al servidor.
+        """
+        return models.QuerySet.delete(self.filter(fecha__lt=antes_de))[0]
+
 
 class EventoAuditoria(models.Model):
     """Registro de un hecho relevante. Solo se agregan filas.
@@ -40,6 +63,18 @@ class EventoAuditoria(models.Model):
         DOS_FACTORES_FALLIDO = "2fa_fallido", "Código 2FA incorrecto"
         DOS_FACTORES_RECUPERACION = "2fa_recuperacion", "Código de recuperación 2FA usado"
         DOS_FACTORES_RESTABLECIDO = "2fa_restablecido", "2FA restablecido"
+        ENLACE_CORREO = "enlace_correo", "Correo con enlace de acceso"
+        USUARIO_EDITADO = "usuario_editado", "Usuario editado"
+        USUARIO_DESACTIVADO = "usuario_desactivado", "Usuario desactivado"
+        USUARIO_REACTIVADO = "usuario_reactivado", "Usuario reactivado"
+        EMPRESA_CREADA = "empresa_creada", "Alta de cliente"
+        EMPRESA_EDITADA = "empresa_editada", "Cliente editado"
+        EMPRESA_DESACTIVADA = "empresa_desactivada", "Cliente desactivado"
+        EMPRESA_REACTIVADA = "empresa_reactivada", "Cliente reactivado"
+        CARPETA_CREADA = "carpeta_creada", "Carpeta creada"
+        CARPETA_EDITADA = "carpeta_editada", "Carpeta editada"
+        CARPETA_ELIMINADA = "carpeta_eliminada", "Carpeta eliminada"
+        AUDITORIA_DEPURADA = "auditoria_depurada", "Depuración de la auditoría"
 
     fecha = models.DateTimeField("fecha", default=timezone.now, editable=False)
     actor = models.ForeignKey(

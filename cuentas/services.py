@@ -201,6 +201,137 @@ def cambiar_contrasena(request, formulario):
     registrar(Accion.CAMBIO_CONTRASENA, request=request, actor=usuario, objeto=usuario)
 
 
+# --- Cuentas de clientes, desde el panel (ADM-06) -------------------------------------
+
+
+def crear_cliente(empresa, *, rut, nombre, email, actor, request):
+    """Crea la cuenta sin contraseña utilizable: queda pendiente hasta que use su enlace."""
+    with transaction.atomic():
+        usuario = Usuario.objects.create_user(
+            rut, nombre=nombre, email=email, rol=Usuario.Rol.CLIENTE, empresa=empresa
+        )
+        registrar(
+            Accion.USUARIO_CREADO, request=request, actor=actor, empresa=empresa, objeto=usuario
+        )
+    return usuario
+
+
+def editar_cliente(usuario, *, rut, nombre, email, actor, request):
+    """Guarda los datos de la cuenta. El RUT solo cambia mientras la cuenta está pendiente:
+    después es su identificador de acceso."""
+    cambios = []
+    if not usuario.has_usable_password() and rut != usuario.rut:
+        usuario.rut = rut
+        cambios.append("RUT")
+    if nombre != usuario.nombre:
+        usuario.nombre = nombre
+        cambios.append("nombre")
+    if email != usuario.email:
+        usuario.email = email
+        cambios.append("correo")
+    if not cambios:
+        return False
+    with transaction.atomic():
+        usuario.full_clean()
+        usuario.save()
+        registrar(
+            Accion.USUARIO_EDITADO,
+            request=request,
+            actor=actor,
+            empresa=usuario.empresa,
+            objeto=usuario,
+            detalle="Cambió: " + ", ".join(cambios),
+        )
+    return True
+
+
+def cambiar_estado_cliente(usuario, activo, *, actor, request):
+    """Desactiva o reactiva la cuenta. Desactivar corta sus sesiones en la petición
+    siguiente (AUT-11) y revoca sus enlaces sin usar. Devuelve si hubo cambio."""
+    if usuario.is_active == activo:
+        return False
+    with transaction.atomic():
+        usuario.is_active = activo
+        usuario.save(update_fields=["is_active", "actualizado_en"])
+        if not activo:
+            usuario.enlaces.filter(usado_en__isnull=True, revocado_en__isnull=True).update(
+                revocado_en=timezone.now()
+            )
+        registrar(
+            Accion.USUARIO_REACTIVADO if activo else Accion.USUARIO_DESACTIVADO,
+            request=request,
+            actor=actor,
+            empresa=usuario.empresa,
+            objeto=usuario,
+        )
+    return True
+
+
+@dataclass
+class EnlaceEntregado:
+    """Lo que el panel muestra una sola vez: la URL no se guarda en ninguna parte."""
+
+    enlace: EnlaceAcceso
+    url: str
+    envio: correo.Resultado | None = None
+
+
+_CORREO_DEL_ENLACE = {
+    EnlaceAcceso.Tipo.ACTIVACION: ("Active su cuenta", "cuentas/correo/activacion.txt"),
+    EnlaceAcceso.Tipo.RESTABLECIMIENTO: (
+        "Defina una contraseña nueva",
+        "cuentas/correo/restablecimiento_panel.txt",
+    ),
+}
+
+
+@sensitive_variables("token", "url", "cuerpo")
+def entregar_enlace(usuario, *, por_correo, actor, request):
+    """Genera el enlace que el administrador copia y, si se pidió, lo envía por correo (AUT-06).
+
+    Es de activación si la cuenta nunca definió su contraseña y de restablecimiento si ya
+    lo hizo. El correo se envía dentro de la petición: el administrador debe saber si falló.
+    Devuelve None si la cuenta no puede acceder (inactiva, o de una empresa inactiva).
+    """
+    if not usuario.puede_acceder:
+        return None
+    tipo = (
+        EnlaceAcceso.Tipo.RESTABLECIMIENTO
+        if usuario.has_usable_password()
+        else EnlaceAcceso.Tipo.ACTIVACION
+    )
+    enviar = bool(por_correo and usuario.email)
+    enlace, token = generar_enlace(
+        usuario,
+        tipo,
+        creado_por=actor,
+        request=request,
+        envio=EnlaceAcceso.Envio.PENDIENTE if enviar else "",
+    )
+    url = url_del_enlace(tipo, token)
+    if not enviar:
+        return EnlaceEntregado(enlace, url)
+
+    asunto, plantilla = _CORREO_DEL_ENLACE[tipo]
+    cuerpo = render_to_string(
+        plantilla, {"nombre": usuario.nombre, "url": url, "vence": enlace.expira_en}
+    )
+    resultado, error = correo.enviar(asunto, cuerpo, [usuario.email])
+    EnlaceAcceso.objects.filter(pk=enlace.pk).update(envio=resultado, envio_error=error)
+    enlace.envio = resultado
+    registrar(
+        Accion.ENLACE_CORREO,
+        request=request,
+        actor=actor,
+        empresa=usuario.empresa,
+        objeto=usuario,
+        detalle=resultado.label,
+    )
+    if resultado != correo.Resultado.ENVIADA:
+        logger.warning("Correo con enlace de acceso no enviado: %s", resultado.label)
+    return EnlaceEntregado(enlace, url, resultado)
+
+
 # --- Recuperación ---------------------------------------------------------------------
 
 

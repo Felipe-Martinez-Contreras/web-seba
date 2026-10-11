@@ -98,6 +98,19 @@ RECUPERACION_MAXIMO_POR_IP = env.entero("RECUPERACION_MAXIMO_POR_IP", 10)
 ENROLAMIENTO_2FA_MINUTOS = env.entero("ENROLAMIENTO_2FA_MINUTOS", 30)
 OTP_ADMIN_HIDE_SENSITIVE_DATA = True
 
+# Carpetas que se crean con cada empresa nueva, si el administrador no desmarca la opción
+# (ADM-04). Cambiar la lista no altera las empresas que ya existen.
+CARPETAS_BASE = [
+    "Matrices de riesgos",
+    "Protocolos MINSAL",
+    "Reglamento interno",
+    "Formatos de inspección",
+    "Documentos preventivos",
+]
+
+# Retención de la auditoría (AUD-03): el comando `depurar_auditoria` borra lo anterior.
+AUDITORIA_RETENCION_MESES = env.entero("AUDITORIA_RETENCION_MESES", 24)
+
 # El envío de correo sale de la petición (core.tareas) y parte tras esta espera, más una
 # parte al azar de hasta el mismo valor. En las pruebas es inmediato.
 TAREAS_SINCRONAS = False

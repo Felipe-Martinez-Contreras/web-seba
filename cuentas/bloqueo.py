@@ -65,6 +65,15 @@ def rut_bloqueado(rut):
     return bool(cache.get(_clave_rut(rut)))
 
 
+def ruts_bloqueados(ruts):
+    """De una lista de RUT, los que tienen un bloqueo vigente. Dos lecturas de la caché en
+    total, sea cual sea el largo de la lista."""
+    ruts = list(ruts)
+    generaciones = cache.get_many([f"acceso:gen:{rut}" for rut in ruts])
+    claves = {f"acceso:rut:{generaciones.get(f'acceso:gen:{rut}', 0)}:{rut}": rut for rut in ruts}
+    return {claves[clave] for clave, valor in cache.get_many(list(claves)).items() if valor}
+
+
 def desbloquear_rut(rut):
     cache.set(f"acceso:gen:{rut}", _generacion(rut) + 1, timeout=_UN_ANO)
 
