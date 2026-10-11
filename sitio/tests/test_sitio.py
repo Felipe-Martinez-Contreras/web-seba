@@ -411,6 +411,8 @@ def test_las_fotos_llevan_texto_alternativo_y_dimensiones(client, negocio, servi
         'imagesizes="100vw" fetchpriority="high">' in cabeza
     )
     assert contenido.count('fetchpriority="high"') == 2
+    acceso = client.get("/acceso/").content.decode()
+    assert 'src="/static/img/acceso.webp"' in acceso and f'alt="{fotos.ACCESO.alt}"' in acceso
 
 
 def test_las_paginas_publicas_y_de_acceso_no_cargan_htmx(client, negocio, cliente_a_activo):
@@ -421,8 +423,6 @@ def test_las_paginas_publicas_y_de_acceso_no_cargan_htmx(client, negocio, client
     client.force_login(cliente_a_activo)
     portal = client.get("/portal/").content.decode()
     assert 'src="/static/vendor/htmx.min.js"' in portal and 'name="htmx-config"' in portal
-    acceso = client.get("/acceso/").content.decode()
-    assert 'src="/static/img/acceso.webp"' in acceso and f'alt="{fotos.ACCESO.alt}"' in acceso
 
 
 # --- Marca en el acceso y página 404 ---------------------------------------------------
