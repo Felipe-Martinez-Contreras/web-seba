@@ -10,7 +10,7 @@ Plan de la Etapa 0 (sección 11 de `ESPECIFICACION.md`). Se actualiza al avanzar
 | 1 | Base del proyecto | Terminada el 09-10-2026 |
 | — | Ajuste visual (tokens azul marino, Inter y componentes del mockup) | Terminado el 09-10-2026; pendiente de aprobación del responsable |
 | 2 | Cuentas y acceso | Aprobada por el responsable el 11-10-2026 |
-| 3 | Empresas, usuarios y carpetas | Terminada el 11-10-2026; pendiente de revisión del responsable |
+| 3 | Empresas, usuarios y carpetas | Aprobada por el responsable el 11-10-2026, tras probar el flujo en el navegador |
 | 4 | Documentos | Pendiente |
 | 5 | Portal del cliente | Pendiente |
 | 6 | Sitio público y solicitudes | Pendiente |
