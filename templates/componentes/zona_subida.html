@@ -1,0 +1,17 @@
+{% comment %}
+Zona de subida con progreso (ADM-08). Con JavaScript (static/js/subida.js) envía un archivo
+por petición y muestra una barra <progress> por archivo; sin JavaScript, el formulario se
+envía completo y la página muestra el resultado de cada archivo.
+Parámetros: accion (URL del POST); formatos (texto para la ayuda); extensiones (atributo
+accept); maximo_mb; maximo_bytes; url_lista (página que muestra la lista actualizada).
+El bloque de resultados lo llena quien la incluye, con componentes/resultado_subida.html.
+{% endcomment %}
+<form class="flex flex-col gap-4" method="post" action="{{ accion }}" enctype="multipart/form-data" data-subida="subida-resultados" data-maximo="{{ maximo_bytes }}" data-maximo-mb="{{ maximo_mb }}" data-lista="{{ url_lista }}">
+  {% csrf_token %}
+  <div class="campo">
+    <label class="campo-etiqueta" for="subida-archivos">Archivos</label>
+    <input id="subida-archivos" type="file" name="archivos" multiple required accept="{{ extensiones }}" aria-describedby="subida-ayuda">
+    <p class="campo-ayuda" id="subida-ayuda">Puede elegir varios. Formatos admitidos: {{ formatos }}. Hasta {{ maximo_mb }} MB por archivo.</p>
+  </div>
+  <div>{% include "componentes/boton.html" with texto="Subir documentos" icono="upload" only %}</div>
+</form>

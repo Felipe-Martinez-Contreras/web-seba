@@ -72,12 +72,16 @@ class CarpetaMover(VistaDeCarpeta, View):
 
 
 class CarpetaEliminar(VistaDeCarpeta, View):
-    """Solo POST, tras el diálogo de confirmación."""
+    """Solo POST, tras el diálogo de confirmación. Una carpeta con documentos no se elimina."""
 
     http_method_names = ["post"]
 
     def post(self, request, **kwargs):
         nombre = self.carpeta.nombre
-        services.eliminar_carpeta(self.carpeta, actor=request.user, request=request)
-        messages.success(request, f"Se eliminó la carpeta {nombre}.")
+        try:
+            services.eliminar_carpeta(self.carpeta, actor=request.user, request=request)
+        except services.CarpetaConDocumentos as error:
+            messages.error(request, error.motivo)
+        else:
+            messages.success(request, f"Se eliminó la carpeta {nombre}.")
         return redirect(self.url_ficha())

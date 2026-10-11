@@ -1,0 +1,120 @@
+{% extends "base_panel.html" %}
+{% block titulo %}{{ documento.titulo }} · {{ empresa.razon_social }}{% endblock %}
+{% block contenido %}
+{% include "componentes/migas.html" with migas=migas only %}
+
+{% with vigente=documento.version_vigente %}
+<div class="mt-4 flex flex-wrap items-center gap-4">
+  {% include "componentes/icono_archivo.html" with tipo=vigente.familia only %}
+  <div class="min-w-0 flex-1 basis-48">
+    <h1 class="text-2xl break-words">{{ documento.titulo }}</h1>
+    <p class="text-xs text-texto-secundario tabular-nums">{{ vigente.tamano|filesizeformat }} · Actualizado el {{ vigente.subido_en|date }} · Versión {{ vigente.numero }}</p>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    {% url 'panel:version_descargar' empresa.pk documento.pk vigente.pk as url_descargar %}
+    {% include "componentes/boton.html" with texto="Descargar" href=url_descargar icono="download" only %}
+    {% if vigente.se_puede_ver %}
+    <a class="boton boton-secundario" href="{% url 'panel:version_ver' empresa.pk documento.pk vigente.pk %}" target="_blank" rel="noopener">
+      {% include "componentes/icono.html" with nombre="eye" clase="icono-chico" only %}
+      <span>Ver en pantalla<span class="sr-only"> (se abre en una pestaña nueva)</span></span>
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="tarjeta mt-6 p-5">
+  <dl class="grid gap-4 text-sm sm:grid-cols-2">
+    <div><dt class="text-texto-secundario">Carpeta</dt><dd class="font-medium break-words">{{ documento.carpeta.nombre }}</dd></div>
+    <div><dt class="text-texto-secundario">Archivo</dt><dd class="font-medium break-all">{{ vigente.nombre_original }}</dd></div>
+    <div class="sm:col-span-2"><dt class="text-texto-secundario">Descripción</dt><dd class="break-words">{% if documento.descripcion %}{{ documento.descripcion|linebreaksbr }}{% else %}<span class="text-texto-secundario">Sin descripción</span>{% endif %}</dd></div>
+  </dl>
+  <div class="mt-4 flex flex-wrap gap-2 border-t border-divisor pt-4">
+    {% url 'panel:documento_editar' empresa.pk documento.pk as url_editar %}
+    {% include "componentes/boton.html" with texto="Editar título y descripción" href=url_editar variante="secundario" icono="pencil" only %}
+    {% include "componentes/boton.html" with texto="Eliminar" tipo="button" variante="fantasma" icono="trash-2" abre_dialogo="dialogo-eliminar-documento" only %}
+  </div>
+</div>
+{% endwith %}
+
+<section class="mt-8" aria-labelledby="versiones-titulo">
+  <h2 class="text-lg" id="versiones-titulo">Historial de versiones</h2>
+  <p class="mt-1 text-sm text-texto-secundario">El cliente solo ve la versión vigente. Las anteriores quedan aquí.</p>
+  <div class="tarjeta mt-3">
+    <table class="tabla tabla-ancha">
+      <thead>
+        <tr>
+          <th scope="col">Versión</th>
+          <th scope="col">Archivo</th>
+          <th scope="col">Tamaño</th>
+          <th scope="col">Subido</th>
+          <th scope="col">Por</th>
+          <th scope="col"><span class="sr-only">Acciones</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for version in versiones %}
+        <tr>
+          <td data-etiqueta="Versión" class="font-medium whitespace-nowrap">
+            <span class="flex flex-wrap items-center justify-end gap-2 xl:justify-start">
+              <span>Versión {{ version.numero }}</span>
+              {% if version.pk == documento.version_vigente_id %}{% include "componentes/insignia.html" with texto="Vigente" tono="exito" only %}{% endif %}
+            </span>
+          </td>
+          <td data-etiqueta="Archivo"><span class="min-w-0 break-all">{{ version.nombre_original }}</span></td>
+          <td data-etiqueta="Tamaño" class="whitespace-nowrap">{{ version.tamano|filesizeformat }}</td>
+          <td data-etiqueta="Subido" class="whitespace-nowrap">{{ version.subido_en|date:"d-m-Y H:i" }}</td>
+          <td data-etiqueta="Por"><span class="min-w-0 break-words">{{ version.subido_por.nombre }}</span></td>
+          <td data-etiqueta="Acciones">
+            <span class="flex flex-wrap justify-end gap-2">
+              {% if version.se_puede_ver %}
+              <a class="boton boton-fantasma" href="{% url 'panel:version_ver' empresa.pk documento.pk version.pk %}" target="_blank" rel="noopener">
+                {% include "componentes/icono.html" with nombre="eye" clase="icono-chico" only %}
+                <span>Ver<span class="sr-only"> la versión {{ version.numero }} (se abre en una pestaña nueva)</span></span>
+              </a>
+              {% endif %}
+              <a class="boton boton-fantasma" href="{% url 'panel:version_descargar' empresa.pk documento.pk version.pk %}">
+                {% include "componentes/icono.html" with nombre="download" clase="icono-chico" only %}
+                <span>Descargar<span class="sr-only"> la versión {{ version.numero }}</span></span>
+              </a>
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="mt-8 grid gap-6 lg:grid-cols-2">
+  <section class="tarjeta p-5" aria-labelledby="reemplazar-titulo">
+    <h2 class="text-lg" id="reemplazar-titulo">Reemplazar el archivo</h2>
+    <p class="mt-1 text-sm text-texto-secundario">El archivo nuevo pasa a ser la versión vigente. El actual se conserva en el historial.</p>
+    <form class="mt-4 flex flex-col gap-4" method="post" action="{% url 'panel:documento_reemplazar' empresa.pk documento.pk %}" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="campo">
+        <label class="campo-etiqueta" for="reemplazo-archivo">Archivo nuevo</label>
+        <input id="reemplazo-archivo" type="file" name="archivo" required accept="{{ extensiones }}" aria-describedby="reemplazo-ayuda">
+        <p class="campo-ayuda" id="reemplazo-ayuda">Formatos admitidos: {{ formatos }}. Hasta {{ maximo_mb }} MB.</p>
+      </div>
+      <div>{% include "componentes/boton.html" with texto="Reemplazar archivo" variante="secundario" icono="upload" only %}</div>
+    </form>
+  </section>
+
+  <section class="tarjeta p-5" aria-labelledby="mover-titulo">
+    <h2 class="text-lg" id="mover-titulo">Mover a otra carpeta</h2>
+    {% if formulario_mover.fields.carpeta.queryset.exists %}
+    <p class="mt-1 text-sm text-texto-secundario">Solo entre las carpetas de este cliente.</p>
+    <form class="mt-4 flex flex-col gap-4" method="post" action="{% url 'panel:documento_mover' empresa.pk documento.pk %}">
+      {% csrf_token %}
+      {% include "componentes/campo.html" with campo=formulario_mover.carpeta %}
+      <div>{% include "componentes/boton.html" with texto="Mover documento" variante="secundario" only %}</div>
+    </form>
+    {% else %}
+    <p class="mt-1 text-sm text-texto-secundario">Este cliente no tiene otra carpeta. Cree una desde la pestaña Documentos para poder mover este documento.</p>
+    {% endif %}
+  </section>
+</div>
+
+{% url 'panel:documento_eliminar' empresa.pk documento.pk as url_eliminar %}
+{% include "componentes/dialogo_confirmacion.html" with id="dialogo-eliminar-documento" titulo="¿Eliminar este documento?" mensaje=mensaje_eliminar accion=url_eliminar confirmar_texto="Eliminar documento" peligro=True campo_nombre="" %}
+{% endblock %}

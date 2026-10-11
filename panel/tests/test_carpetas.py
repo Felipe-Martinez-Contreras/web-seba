@@ -175,3 +175,108 @@ def test_una_empresa_con_carpetas_no_se_puede_borrar(carpeta_a, empresa_a):
 
     with pytest.raises(ProtectedError):
         empresa_a.delete()
+
+
+# --- ADM-07: una carpeta con documentos no se elimina (DEC-88) -------------------------
+
+
+def _eventos_de_eliminacion():
+    return EventoAuditoria.objects.filter(accion=Accion.CARPETA_ELIMINADA).count()
+
+
+def test_una_carpeta_con_documentos_no_se_elimina_ni_con_un_post_hecho_a_mano(
+    cliente_http_admin, administrador_activo, carpeta_a, empresa_a, documento_a
+):
+    # La interfaz no ofrece eliminarla y dice cuántos documentos tiene.
+    pagina = cliente_http_admin.get(_documentos(empresa_a)).content.decode()
+    assert "1 documento" in pagina
+    assert f"dialogo-eliminar-{carpeta_a.pk.hex}" not in pagina
+    assert _de(carpeta_a, "eliminar") not in pagina
+
+    # Pero la regla la aplica el servidor: el POST directo tampoco la borra.
+    respuesta = cliente_http_admin.post(_de(carpeta_a, "eliminar"), follow=True)
+    assert (
+        "No se puede eliminar: la carpeta tiene 1 documento (0 en la papelera). Muévalos a "
+        "otra carpeta o espere a que la papelera se vacíe."
+    ) in respuesta.content.decode()
+    assert Carpeta.objects.filter(pk=carpeta_a.pk).exists()
+    assert _eventos_de_eliminacion() == 0
+    with pytest.raises(services.CarpetaConDocumentos):
+        services.eliminar_carpeta(carpeta_a, actor=administrador_activo, request=None)
+
+
+def test_los_documentos_de_la_papelera_tambien_impiden_eliminar_la_carpeta(
+    cliente_http_admin, administrador_activo, carpeta_a, empresa_a, documento_a
+):
+    from conftest import subir_documento
+    from documentos import services as documentos
+
+    otro = subir_documento(carpeta_a, administrador_activo)
+    for documento in (documento_a, otro):
+        documentos.eliminar(documento, actor=administrador_activo, request=None)
+    # La carpeta se ve sin documentos vigentes, pero no ofrece eliminarla.
+    pagina = cliente_http_admin.get(_documentos(empresa_a)).content.decode()
+    assert "0 documentos" in pagina and "2 en la papelera" in pagina
+    assert f"dialogo-eliminar-{carpeta_a.pk.hex}" not in pagina
+
+    respuesta = cliente_http_admin.post(_de(carpeta_a, "eliminar"), follow=True)
+    assert "la carpeta tiene 2 documentos (2 en la papelera)" in respuesta.content.decode()
+    assert Carpeta.objects.filter(pk=carpeta_a.pk).exists()
+    assert _eventos_de_eliminacion() == 0
+
+
+def test_la_base_protege_la_carpeta_aunque_se_salte_el_servicio(carpeta_a, documento_a):
+    from django.db.models import ProtectedError
+
+    with pytest.raises(ProtectedError):
+        carpeta_a.delete()
+    assert Carpeta.objects.filter(pk=carpeta_a.pk).exists()
+
+
+def test_una_carpeta_se_puede_eliminar_tras_mover_sus_documentos_o_purgar_la_papelera(
+    cliente_http_admin, administrador_activo, carpeta_a, empresa_a, documento_a
+):
+    import datetime
+
+    from django.core.management import call_command
+    from django.utils import timezone
+
+    from conftest import subir_documento
+    from documentos import services as documentos
+    from documentos.models import Documento
+
+    destino = Carpeta.objects.create(empresa=empresa_a, nombre="Destino", orden=2)
+    en_papelera = subir_documento(carpeta_a, administrador_activo)
+    documentos.mover(documento_a, destino, actor=administrador_activo, request=None)
+    documentos.eliminar(en_papelera, actor=administrador_activo, request=None)
+    assert cliente_http_admin.post(_de(carpeta_a, "eliminar")).status_code == 302
+    assert Carpeta.objects.filter(pk=carpeta_a.pk).exists()  # queda el de la papelera
+
+    Documento.objects.filter(pk=en_papelera.pk).update(
+        eliminado_en=timezone.now() - datetime.timedelta(days=31)
+    )
+    call_command("purgar_papelera")
+    pagina = cliente_http_admin.get(_documentos(empresa_a)).content.decode()
+    assert f"dialogo-eliminar-{carpeta_a.pk.hex}" in pagina
+    respuesta = cliente_http_admin.post(_de(carpeta_a, "eliminar"), follow=True)
+    assert "Se eliminó la carpeta Carpeta de A." in respuesta.content.decode()
+    assert not Carpeta.objects.filter(pk=carpeta_a.pk).exists()
+    assert _eventos_de_eliminacion() == 1
+    # La carpeta de destino, con su documento, sigue intacta.
+    assert destino.documentos.count() == 1
+
+
+def test_la_pestana_documentos_cuenta_los_documentos_sin_consultas_por_carpeta(
+    cliente_http_admin, administrador_activo, empresa_a, django_assert_max_num_queries
+):
+    from conftest import subir_documento
+
+    for numero in range(6):
+        carpeta = Carpeta.objects.create(
+            empresa=empresa_a, nombre=f"Carpeta {numero}", orden=numero
+        )
+        subir_documento(carpeta, administrador_activo)
+    with django_assert_max_num_queries(12):
+        pagina = cliente_http_admin.get(_documentos(empresa_a)).content.decode()
+    assert pagina.count("1 documento ·") == 6
+    assert f"/panel/clientes/{empresa_a.pk}/carpetas/{carpeta.pk}/" in pagina

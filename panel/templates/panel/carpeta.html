@@ -1,0 +1,47 @@
+{% extends "base_panel.html" %}
+{% load static %}
+{% block titulo %}{{ carpeta.nombre }} · {{ empresa.razon_social }}{% endblock %}
+{% block scripts %}<script src="{% static 'js/subida.js' %}" defer></script>{% endblock %}
+{% block contenido %}
+{% include "componentes/migas.html" with migas=migas only %}
+
+<div class="mt-4 flex flex-wrap items-center gap-4">
+  <span class="icono icono-grande text-primario" aria-hidden="true">{% include "iconos/folder.svg" %}</span>
+  <div class="min-w-0 flex-1 basis-48">
+    <h1 class="text-2xl break-words">{{ carpeta.nombre }}</h1>
+    <p class="text-sm text-texto-secundario">Cliente: {{ empresa.razon_social }}{% if carpeta.descripcion %} · {{ carpeta.descripcion }}{% endif %}</p>
+  </div>
+  {% url 'panel:carpeta_editar' empresa.pk carpeta.pk as url_editar %}
+  {% include "componentes/boton.html" with texto="Editar carpeta" href=url_editar variante="secundario" icono="pencil" only %}
+</div>
+
+<section class="tarjeta mt-6 p-5" aria-labelledby="subir-titulo">
+  <h2 class="text-lg" id="subir-titulo">Subir documentos</h2>
+  <p class="mt-1 text-sm text-texto-secundario">Cada archivo queda publicado para el cliente apenas se acepta.</p>
+  <div class="mt-4">
+    {% url 'panel:documento_subir' empresa.pk carpeta.pk as url_subir %}
+    {% url 'panel:carpeta' empresa.pk carpeta.pk as url_carpeta %}
+    {% include "componentes/zona_subida.html" with accion=url_subir url_lista=url_carpeta %}
+  </div>
+  <ul class="lista-filas mt-4" id="subida-resultados" aria-live="polite" aria-label="Resultado de la subida"{% if not resultados %} hidden{% endif %}>
+    {% include "panel/_resultados_subida.html" %}
+  </ul>
+</section>
+
+<section class="mt-8" aria-labelledby="documentos-titulo">
+  <h2 class="text-lg" id="documentos-titulo">Documentos</h2>
+  <div class="mt-3">
+    {% if pagina.object_list %}
+    <ul class="lista-filas">
+      {% for documento in pagina %}
+      {% url 'panel:documento' empresa.pk documento.pk as url_documento %}
+      {% include "componentes/fila_documento.html" with titulo=documento.titulo url=url_documento tipo=documento.version_vigente.familia tamano=documento.version_vigente.tamano fecha=documento.version_vigente.subido_en only %}
+      {% endfor %}
+    </ul>
+    <div class="mt-4">{% include "componentes/paginacion.html" %}</div>
+    {% else %}
+    {% include "componentes/estado_vacio.html" with titulo="Esta carpeta aún no tiene documentos" texto="Use «Subir documentos» para publicar los primeros archivos de este cliente." only %}
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

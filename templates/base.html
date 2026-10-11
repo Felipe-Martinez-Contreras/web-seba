@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
   <script src="{% static 'vendor/htmx.min.js' %}" defer></script>
   <script src="{% static 'js/app.js' %}" defer></script>
+  {% block scripts %}{% endblock %}
 </head>
 <body class="min-h-screen bg-fondo text-texto"{% if csrf_token %} hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'{% endif %}>
   <a class="saltar-contenido" href="#contenido">Saltar al contenido</a>

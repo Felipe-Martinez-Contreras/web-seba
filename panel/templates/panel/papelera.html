@@ -1,0 +1,38 @@
+{% extends "base_panel.html" %}
+{% block titulo %}Papelera · {{ empresa.razon_social }}{% endblock %}
+{% block contenido %}
+{% include "componentes/migas.html" with migas=migas only %}
+<h1 class="mt-4 text-2xl">Papelera</h1>
+<p class="mt-1 max-w-lectura text-sm text-texto-secundario">Cliente: {{ empresa.razon_social }}. Los documentos eliminados se pueden restaurar durante {{ dias }} días; después se borran de forma definitiva. El cliente no ve nada de lo que está aquí.</p>
+
+<div class="mt-6">
+  {% if pagina.object_list %}
+  <ul class="lista-filas">
+    {% for documento in pagina %}
+    <li class="fila flex-wrap">
+      {% include "componentes/icono_archivo.html" with tipo=documento.version_vigente.familia only %}
+      <span class="min-w-0 flex-1 basis-48">
+        <span class="fila-titulo block">{{ documento.titulo }}</span>
+        <span class="fila-meta block tabular-nums">{{ documento.carpeta.nombre }} · Eliminado el {{ documento.eliminado_en|date }}{% if documento.eliminado_por %} por {{ documento.eliminado_por.nombre }}{% endif %}</span>
+        <span class="fila-meta block tabular-nums">{% if documento.restaurable %}Se borrará definitivamente a partir del {{ documento.purga_prevista|date }}.{% else %}El plazo para restaurarlo ya venció: se borrará en la próxima limpieza.{% endif %}</span>
+      </span>
+      {% if documento.restaurable %}
+      <form method="post" action="{% url 'panel:documento_restaurar' empresa.pk documento.pk %}">
+        {% csrf_token %}
+        <button class="boton boton-secundario" type="submit">
+          <span class="boton-indicador icono icono-chico" aria-hidden="true">{% include "iconos/loader-circle.svg" %}</span>
+          {% include "componentes/icono.html" with nombre="rotate-ccw" clase="icono-chico" only %}
+          <span>Restaurar<span class="sr-only"> {{ documento.titulo }}</span></span>
+        </button>
+      </form>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  <div class="mt-4">{% include "componentes/paginacion.html" %}</div>
+  {% else %}
+  {% url 'panel:cliente_documentos' empresa.pk as url_documentos %}
+  {% include "componentes/estado_vacio.html" with titulo="La papelera está vacía" texto="Los documentos que elimine de este cliente aparecerán aquí." accion_texto="Volver a los documentos" accion_url=url_documentos only %}
+  {% endif %}
+</div>
+{% endblock %}

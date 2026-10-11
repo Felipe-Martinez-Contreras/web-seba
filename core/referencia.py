@@ -34,6 +34,16 @@ class FormularioDeReferencia(forms.Form):
 
 @require_http_methods(["GET", "POST"])
 def componentes(request):
+    if request.method == "POST" and request.headers.get("X-Subida") == "fragmento":
+        # Destino de la zona de subida de muestra: responde un resultado y no guarda nada.
+        return render(
+            request,
+            "componentes/resultado_subida.html",
+            {
+                "nombre": ", ".join(a.name for a in request.FILES.getlist("archivos"))[:150],
+                "motivo": "Muestra: la página de referencia no guarda archivos.",
+            },
+        )
     if request.method == "POST":
         # Destino de los formularios de muestra (diálogo y cierre de sesión): no modifica nada.
         messages.success(request, "Acción de muestra recibida. No se modificó nada.")

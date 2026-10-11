@@ -4,7 +4,7 @@ import copy
 
 from django.conf import settings
 from django.contrib import messages
-from django.db.models import Count
+from django.db.models import Count, Max, Q
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.http import urlencode
@@ -15,6 +15,7 @@ from auditoria.models import EventoAuditoria
 from core import correo
 from core.mixins import AdministradorMixin
 from cuentas.estados import anotar_estados
+from documentos.models import Documento
 from empresas import services
 from empresas.forms import FormularioEmpresa, FormularioEmpresaNueva
 from empresas.models import Empresa
@@ -134,14 +135,28 @@ class Cliente(VistaDeCliente, View):
 
 
 class ClienteDocumentos(VistaDeCliente, TemplateView):
-    """Pestaña Documentos. En esta etapa muestra las carpetas y su gestión (ADM-07)."""
+    """Pestaña Documentos: las carpetas del cliente, con cuántos documentos tiene cada una,
+    y el acceso a la papelera (ADM-07, ADM-08, ADM-09)."""
 
     template_name = "panel/cliente_documentos.html"
     pestana = "documentos"
 
     def get_context_data(self, **kwargs):
         contexto = super().get_context_data(**kwargs)
-        contexto["carpetas"] = list(self.empresa.carpetas.all())
+        vigente = Q(documentos__eliminado_en__isnull=True)
+        eliminado = Q(documentos__eliminado_en__isnull=False)
+        contexto["carpetas"] = list(
+            self.empresa.carpetas.annotate(
+                cantidad=Count("documentos", filter=vigente),
+                en_papelera=Count("documentos", filter=eliminado),
+                actualizado=Max("documentos__version_vigente__subido_en", filter=vigente),
+            )
+            # Explícito: al agrupar, Django deja de aplicar el orden por defecto del modelo.
+            .order_by("orden", "nombre")
+        )
+        en_papelera = Documento.objects.en_papelera().filter(empresa=self.empresa).count()
+        contexto["en_papelera"] = en_papelera
+        contexto["en_papelera_texto"] = str(en_papelera)
         return contexto
 
 

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block titulo %}No pudimos procesar la solicitud{% endblock %}
+{% block meta %}<meta name="robots" content="noindex">{% endblock %}
+{% block cuerpo %}
+<main id="contenido" class="contenedor py-16" tabindex="-1">
+  <div class="max-w-lectura">
+    <p class="text-sm font-medium text-texto-secundario">Error 400</p>
+    <h1 class="mt-2 text-3xl">No pudimos procesar la solicitud</h1>
+    <p class="mt-4">Lo enviado no es válido o es demasiado grande. Vuelva a la página anterior e intente nuevamente.</p>
+  </div>
+</main>
+{% endblock %}

@@ -1,0 +1,9 @@
+{% comment %}Resultado de cada archivo de una subida: es también la respuesta que recibe subida.js.{% endcomment %}
+{% for resultado in resultados %}
+{% if resultado.documento %}
+{% url 'panel:documento' empresa.pk resultado.documento.pk as url_documento %}
+{% include "componentes/resultado_subida.html" with nombre=resultado.nombre url=url_documento only %}
+{% else %}
+{% include "componentes/resultado_subida.html" with nombre=resultado.nombre motivo=resultado.motivo only %}
+{% endif %}
+{% endfor %}

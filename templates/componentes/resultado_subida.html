@@ -1,0 +1,21 @@
+{% comment %}
+Resultado de un archivo subido, para usar dentro de <ul class="lista-filas">.
+Parámetros: nombre (como lo envió la persona); motivo (si se rechazó); url (del documento
+creado, si se aceptó).
+{% endcomment %}
+<li class="fila">
+  {% if motivo %}
+  <span class="icono text-error" aria-hidden="true">{% include "iconos/circle-alert.svg" %}</span>
+  {% else %}
+  <span class="icono text-exito" aria-hidden="true">{% include "iconos/circle-check.svg" %}</span>
+  {% endif %}
+  <span class="min-w-0 flex-1">
+    <span class="fila-titulo block break-all">{{ nombre }}</span>
+    {% if motivo %}
+    <span class="block text-sm"><strong class="font-semibold text-error">Rechazado.</strong> {{ motivo }}</span>
+    {% else %}
+    <span class="block text-sm"><strong class="font-semibold text-exito">Aceptado.</strong> El cliente ya puede verlo.</span>
+    {% endif %}
+  </span>
+  {% if url %}<a class="enlace text-sm" href="{{ url }}">Abrir<span class="sr-only"> {{ nombre }}</span></a>{% endif %}
+</li>

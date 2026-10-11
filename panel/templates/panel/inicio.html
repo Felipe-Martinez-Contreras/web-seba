@@ -8,6 +8,7 @@
 <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
   {% url 'panel:clientes' as url_clientes %}
   {% include "componentes/tarjeta_indicador.html" with etiqueta="Clientes activos" valor=clientes_activos icono="users" url=url_clientes|add:"?estado=activos" only %}
+  {% include "componentes/tarjeta_indicador.html" with etiqueta="Documentos subidos en los últimos 30 días" valor=documentos_recientes icono="file-text" tono="info" only %}
 </div>
 
 {% if con_cuentas_pendientes %}

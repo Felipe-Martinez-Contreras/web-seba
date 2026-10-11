@@ -5,9 +5,20 @@
 
 <section class="mt-6" aria-labelledby="carpetas-titulo">
   <div class="flex flex-wrap items-center justify-between gap-4">
-    <h2 class="text-lg" id="carpetas-titulo">Carpetas</h2>
-    {% url 'panel:carpeta_nueva' empresa.pk as url_nueva %}
-    {% include "componentes/boton.html" with texto="Nueva carpeta" href=url_nueva variante="secundario" icono="plus" only %}
+    <div>
+      <h2 class="text-lg" id="carpetas-titulo">Carpetas</h2>
+      <p class="text-sm text-texto-secundario">Abra una carpeta para ver y subir sus documentos.</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      {% url 'panel:cliente_papelera' empresa.pk as url_papelera %}
+      {% if en_papelera %}
+      {% include "componentes/boton.html" with texto="Papelera ("|add:en_papelera_texto|add:")" href=url_papelera variante="fantasma" icono="trash-2" only %}
+      {% else %}
+      {% include "componentes/boton.html" with texto="Papelera" href=url_papelera variante="fantasma" icono="trash-2" only %}
+      {% endif %}
+      {% url 'panel:carpeta_nueva' empresa.pk as url_nueva %}
+      {% include "componentes/boton.html" with texto="Nueva carpeta" href=url_nueva variante="secundario" icono="plus" only %}
+    </div>
   </div>
 
   <div class="mt-3">
@@ -18,7 +29,8 @@
       <li class="fila flex-wrap">
         <span class="icono icono-grande text-primario" aria-hidden="true">{% include "iconos/folder.svg" %}</span>
         <span class="min-w-0 flex-1 basis-40">
-          <span class="fila-titulo block">{{ carpeta.nombre }}</span>
+          <a class="fila-titulo enlace block" href="{% url 'panel:carpeta' empresa.pk carpeta.pk %}">{{ carpeta.nombre }}</a>
+          <span class="fila-meta block tabular-nums">{{ carpeta.cantidad }} documento{{ carpeta.cantidad|pluralize }}{% if carpeta.actualizado %} · Actualizado el {{ carpeta.actualizado|date }}{% endif %}{% if carpeta.en_papelera %} · {{ carpeta.en_papelera }} en la papelera{% endif %}</span>
           {% if carpeta.descripcion %}<span class="fila-meta block break-words">{{ carpeta.descripcion }}</span>{% endif %}
         </span>
         <span class="flex flex-wrap items-center gap-1">
@@ -35,17 +47,23 @@
             {% include "componentes/icono.html" with nombre="pencil" clase="icono-chico" only %}
             <span>Editar<span class="sr-only"> {{ carpeta.nombre }}</span></span>
           </a>
+          {# Solo una carpeta sin documentos, tampoco en la papelera, se puede eliminar (ADM-07). #}
+          {% if not carpeta.cantidad and not carpeta.en_papelera %}
           <button class="boton boton-fantasma" type="button" data-abre-dialogo="{{ id_dialogo }}">
             {% include "componentes/icono.html" with nombre="trash-2" clase="icono-chico" only %}
             <span>Eliminar<span class="sr-only"> {{ carpeta.nombre }}</span></span>
           </button>
+          {% endif %}
         </span>
+        {% if not carpeta.cantidad and not carpeta.en_papelera %}
         {% url 'panel:carpeta_eliminar' empresa.pk carpeta.pk as url_eliminar %}
         {% include "componentes/dialogo_confirmacion.html" with id=id_dialogo titulo="¿Eliminar esta carpeta?" mensaje=mensaje_eliminar accion=url_eliminar confirmar_texto="Eliminar carpeta" peligro=True campo_nombre="" %}
+        {% endif %}
       </li>
       {% endwith %}
       {% endfor %}
     </ul>
+    <p class="mt-3 text-xs text-texto-secundario">Una carpeta solo se puede eliminar cuando no tiene documentos, tampoco en la papelera.</p>
     {% else %}
     {% include "componentes/estado_vacio.html" with titulo="Este cliente aún no tiene carpetas" texto="Cree una carpeta para organizar sus documentos." accion_texto="Nueva carpeta" accion_url=url_nueva only %}
     {% endif %}

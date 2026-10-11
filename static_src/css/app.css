@@ -380,6 +380,12 @@
     @apply text-archivo-imagen;
   }
 
+  /* Barra de progreso nativa de la zona de subida: ocupa su propia línea en la fila */
+  .progreso {
+    @apply h-2 w-full basis-full;
+    accent-color: var(--color-primario);
+  }
+
   /* Alertas */
   .alerta {
     @apply flex items-start gap-3 rounded-caja border px-4 py-3 text-sm text-texto;

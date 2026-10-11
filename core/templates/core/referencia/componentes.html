@@ -1,7 +1,8 @@
 {% extends "base.html" %}
-{% load formato %}
+{% load formato static %}
 {% block titulo %}Referencia de componentes{% endblock %}
 {% block meta %}<meta name="robots" content="noindex">{% endblock %}
+{% block scripts %}<script src="{% static 'js/subida.js' %}" defer></script>{% endblock %}
 {% block cuerpo %}
 <main id="contenido" class="contenedor flex flex-col gap-14 py-10" tabindex="-1">
   <header class="max-w-lectura">
@@ -206,6 +207,26 @@
   <section aria-labelledby="ref-paginacion">
     <h2 id="ref-paginacion" class="text-2xl">Paginación</h2>
     <div class="mt-4">{% include "componentes/paginacion.html" %}</div>
+  </section>
+
+  <section aria-labelledby="ref-subida">
+    <h2 id="ref-subida" class="text-2xl">Zona de subida con progreso</h2>
+    <p class="mt-1 text-sm text-texto-secundario">Un archivo por petición, con una barra de progreso por archivo y el resultado de cada uno. Aquí es una muestra: la página de referencia no guarda ningún archivo.</p>
+    <div class="tarjeta mt-4 p-5">
+      {% url 'referencia:componentes' as url_referencia %}
+      {% include "componentes/zona_subida.html" with accion=url_referencia url_lista=url_referencia|add:"#ref-subida" formatos="PDF, DOCX, XLSX, PPTX, JPG y PNG" extensiones=".pdf,.docx,.xlsx,.pptx,.jpg,.jpeg,.png" maximo_mb=25 maximo_bytes=26214400 %}
+      <ul class="lista-filas mt-4" id="subida-resultados" aria-live="polite" aria-label="Resultado de la subida">
+        <li class="fila flex-wrap">
+          <span class="min-w-0 flex-1">
+            <span class="fila-titulo block break-all">Archivo de muestra en curso.pdf</span>
+            <span class="block text-sm">Subiendo: 40 %</span>
+          </span>
+          <progress class="progreso" max="100" value="40" aria-label="Progreso de Archivo de muestra en curso.pdf"></progress>
+        </li>
+        {% include "componentes/resultado_subida.html" with nombre="Archivo de muestra aceptado.pdf" url="#ref-subida" only %}
+        {% include "componentes/resultado_subida.html" with nombre="Archivo de muestra rechazado.pdf" motivo="Motivo del rechazo, en lenguaje claro." only %}
+      </ul>
+    </div>
   </section>
 
   <section aria-labelledby="ref-dialogo">

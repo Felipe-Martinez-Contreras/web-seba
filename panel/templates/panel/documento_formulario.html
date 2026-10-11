@@ -1,0 +1,20 @@
+{% extends "base_panel.html" %}
+{% block titulo %}Editar documento · {{ empresa.razon_social }}{% endblock %}
+{% block contenido %}
+{% include "componentes/migas.html" with migas=migas only %}
+<h1 class="mt-4 text-2xl">Editar documento</h1>
+<p class="mt-1 text-sm text-texto-secundario">Cliente: {{ empresa.razon_social }}</p>
+
+<div class="tarjeta mt-6 max-w-xl p-5">
+  {% include "componentes/resumen_errores.html" with formulario=form %}
+  <form class="flex flex-col gap-5" method="post" novalidate>
+    {% csrf_token %}
+    {% include "componentes/campo.html" with campo=form.titulo %}
+    {% include "componentes/campo.html" with campo=form.descripcion %}
+    <div class="flex flex-wrap gap-3">
+      {% include "componentes/boton.html" with texto="Guardar cambios" only %}
+      {% include "componentes/boton.html" with texto="Cancelar" href=url_cancelar variante="secundario" only %}
+    </div>
+  </form>
+</div>
+{% endblock %}

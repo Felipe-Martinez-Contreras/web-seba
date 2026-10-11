@@ -2,10 +2,30 @@
 
 from django.conf import settings
 from django.db import transaction
-from django.db.models import Max
+from django.db.models import Count, Max, ProtectedError, Q
 
 from auditoria.services import Accion, registrar
 from empresas.models import Carpeta
+
+
+class CarpetaConDocumentos(Exception):
+    """La carpeta tiene documentos, vigentes o en la papelera, y no se puede eliminar (ADM-07)."""
+
+    def __init__(self, vigentes, en_papelera):
+        super().__init__("La carpeta tiene documentos.")
+        self.vigentes = vigentes
+        self.en_papelera = en_papelera
+
+    @property
+    def motivo(self):
+        total = self.vigentes + self.en_papelera
+        documentos = "1 documento" if total == 1 else f"{total} documentos"
+        return (
+            f"No se puede eliminar: la carpeta tiene {documentos} "
+            f"({self.en_papelera} en la papelera). Muévalos a otra carpeta o espere a que "
+            "la papelera se vacíe."
+        )
+
 
 SUBIR = "subir"
 BAJAR = "bajar"
@@ -125,8 +145,26 @@ def mover_carpeta(carpeta, direccion):
     return True
 
 
+def contar_documentos(carpeta):
+    """Documentos de la carpeta: (vigentes, en la papelera)."""
+    conteo = carpeta.documentos.aggregate(
+        vigentes=Count("pk", filter=Q(eliminado_en__isnull=True)),
+        en_papelera=Count("pk", filter=Q(eliminado_en__isnull=False)),
+    )
+    return conteo["vigentes"], conteo["en_papelera"]
+
+
 def eliminar_carpeta(carpeta, *, actor, request):
+    """Elimina la carpeta solo si no tiene documentos, contando los de la papelera (ADM-07).
+
+    El bloqueo de la fila hace esperar a una subida simultánea a esta carpeta; además la
+    base la protege (`PROTECT`): con un documento dentro, la carpeta no se puede borrar.
+    """
     with transaction.atomic():
+        Carpeta.objects.select_for_update().get(pk=carpeta.pk)
+        vigentes, en_papelera = contar_documentos(carpeta)
+        if vigentes or en_papelera:
+            raise CarpetaConDocumentos(vigentes, en_papelera)
         registrar(
             Accion.CARPETA_ELIMINADA,
             request=request,
@@ -135,4 +173,7 @@ def eliminar_carpeta(carpeta, *, actor, request):
             objeto=carpeta,
             detalle=carpeta.nombre,
         )
-        carpeta.delete()
+        try:
+            carpeta.delete()
+        except ProtectedError:
+            raise CarpetaConDocumentos(*contar_documentos(carpeta)) from None

@@ -109,6 +109,11 @@ def test_la_referencia_muestra_los_componentes(client):
         'data-copia="copiable-muestra"',
         'class="casilla"',
         'class="lateral-grupo"',
+        # Zona de subida: formulario real, barra de progreso nativa y los dos resultados.
+        'data-subida="subida-resultados"',
+        '<progress class="progreso" max="100" value="40"',
+        "Aceptado.",
+        "Rechazado.",
     ):
         assert marcador in contenido, marcador
 
@@ -276,3 +281,23 @@ def test_los_logs_no_registran_el_token_de_los_enlaces():
     # Las demás rutas no se alteran.
     otro = logging.LogRecord("x", logging.INFO, __file__, 1, "GET /portal/ y /acceso/", None, None)
     assert json.loads(FormatoJson().format(otro))["mensaje"] == "GET /portal/ y /acceso/"
+
+
+@pytest.mark.django_db
+@pytest.mark.urls("core.tests.urls_prueba")
+def test_la_zona_de_subida_de_la_referencia_responde_una_muestra_y_no_guarda_nada(client):
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    from documentos import almacenamiento
+    from documentos.models import Documento
+
+    respuesta = client.post(
+        "/_referencia/componentes/",
+        {"archivos": SimpleUploadedFile("muestra.pdf", b"%PDF-1.4")},
+        headers={"X-Subida": "fragmento"},
+    )
+    contenido = respuesta.content.decode()
+    assert respuesta.status_code == 200 and "<html" not in contenido
+    assert "muestra.pdf" in contenido
+    assert "Muestra: la página de referencia no guarda archivos." in contenido
+    assert not Documento.objects.exists() and almacenamiento.almacen().claves() == []
