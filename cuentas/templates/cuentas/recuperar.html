@@ -9,5 +9,5 @@
   {% include "componentes/campo.html" with campo=formulario.rut %}
   {% include "componentes/boton.html" with texto="Continuar" ancho=True only %}
 </form>
-<p class="mt-6 text-center text-sm"><a class="enlace" href="{% url 'cuentas:acceso' %}">Volver al acceso</a></p>
+<p class="mt-6 text-center text-sm"><a class="enlace enlace-tactil" href="{% url 'cuentas:acceso' %}">Volver al acceso</a></p>
 {% endblock %}

@@ -31,7 +31,7 @@ Reglas que sostienen el diseño:
 
 - **La lógica vive en servicios** (`*/services.py`). Las vistas solo comprueban el acceso, llaman al servicio y arman la respuesta.
 - **Toda vista privada hereda de un mixin de rol** (`core/mixins.py`). Sin sesión: redirección al acceso. Rol incorrecto: 404. Administrador sin 2FA: a la verificación.
-- **Los datos de un cliente se buscan siempre acotados.** En el portal, con `visibles_para(usuario)`. En el panel, dentro de la empresa de la URL (`panel/views/base.py`).
+- **Los datos de un cliente se buscan siempre acotados.** En el portal, con `visibles_para(usuario)` (sección 6). En el panel, dentro de la empresa de la URL (`panel/views/base.py`).
 - **Cada operación deja su evento de auditoría** en la misma transacción.
 
 ## 2. Modelo de datos
@@ -110,3 +110,21 @@ Toda respuesta de estas vistas lleva `Cache-Control: no-store`.
 - Restaurar borra la marca, dentro de `PAPELERA_DIAS` (30).
 - `purgar_papelera` borra primero los objetos y después las filas, y deja un evento por documento. Si falla a medias, la siguiente ejecución lo termina.
 - Con el versionado del bucket activado, el borrado del objeto no es inmediato: ver `SEGURIDAD.md`.
+
+## 6. Portal del cliente
+
+Solo lectura: todas sus vistas admiten únicamente GET y heredan de `ClienteMixin`.
+
+| Ruta | Qué muestra |
+| --- | --- |
+| `/portal/` | Saludo, tarjeta de la empresa, buscador, carpetas con su contador y fecha, y los 10 documentos más recientes |
+| `/portal/carpetas/` | Las carpetas de la empresa |
+| `/portal/carpetas/<carpeta>/` | Documentos de la carpeta, por fecha o por nombre (`?orden=`), de a 25 |
+| `/portal/buscar/?q=` | Búsqueda por título, sin distinguir mayúsculas ni tildes, de a 25 |
+| `/portal/documentos/<documento>/` | Ficha: datos y botones Descargar y Ver en pantalla |
+
+- **Ninguna vista recibe la empresa.** Carpetas y documentos salen de `visibles_para(request.user)`; lo ajeno y lo que está en la papelera responden 404 como lo inexistente.
+- **Consultas en los querysets:** `Carpeta.objects.con_resumen()` (cantidad y última fecha, sin la papelera; la usa también el panel) y `Documento.objects.con_vigente()`, `recientes()` y `buscar()`.
+- **Búsqueda sin tildes** con la extensión `unaccent` de PostgreSQL, creada por la migración `documentos/0002_unaccent`. El texto se recorta a 100 caracteres.
+- **"Nuevo"** se calcula con la fecha de la versión vigente: 14 días desde la subida o el último reemplazo.
+- **Dos clics (CLI-07):** las filas de carpeta y de búsqueda llevan Ver y Descargar, además del enlace a la ficha.

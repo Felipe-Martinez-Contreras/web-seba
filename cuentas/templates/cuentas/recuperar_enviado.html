@@ -4,5 +4,5 @@
 {% block contenido %}
 {% include "componentes/alerta.html" with tipo="info" mensaje="Si los datos corresponden a una cuenta activa, enviaremos instrucciones al correo registrado." only %}
 <p class="mt-4 text-sm text-texto-secundario">Si no recibe el correo, contacte a quien administra su cuenta.</p>
-<p class="mt-6 text-center text-sm"><a class="enlace" href="{% url 'cuentas:acceso' %}">Volver al acceso</a></p>
+<p class="mt-6 text-center text-sm"><a class="enlace enlace-tactil" href="{% url 'cuentas:acceso' %}">Volver al acceso</a></p>
 {% endblock %}

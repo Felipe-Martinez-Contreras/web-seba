@@ -81,7 +81,8 @@ Pulse un documento para abrir su ficha. Desde ahí puede:
 
 - **Descargar** el archivo, o **Ver en pantalla** si es PDF, JPG o PNG (se abre en una pestaña nueva).
 - **Editar título y descripción.** El cliente ve ambos.
-- **Reemplazar el archivo**: sube una versión nueva, que pasa a ser la que ve el cliente. Las anteriores quedan en el **Historial de versiones**, que solo ven los administradores.
+- **Reemplazar el archivo**: sube una versión nueva, que pasa a ser la que ve el cliente. Mientras sube se ve una barra de progreso y, al terminar, el resultado: aceptado, o rechazado con su motivo. Las anteriores quedan en el **Historial de versiones**, que solo ven los administradores.
+- En el portal, el cliente ve el documento reemplazado como "Nuevo" durante 14 días y primero en "Documentos recientes".
 - **Mover a otra carpeta** del mismo cliente. Un documento no se puede pasar a otro cliente.
 - **Eliminar**: lo envía a la papelera.
 

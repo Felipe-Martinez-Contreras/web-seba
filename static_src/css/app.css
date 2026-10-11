@@ -542,6 +542,11 @@
     @apply text-primario underline underline-offset-2;
   }
 
+  /* Enlace de texto suelto con el alto mínimo de un área táctil (44 px) */
+  .enlace-tactil {
+    @apply inline-flex min-h-11 items-center;
+  }
+
   .enlace:hover {
     @apply text-primario-hover;
   }

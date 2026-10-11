@@ -9,7 +9,7 @@ puede mostrarlo).
 <li class="fila flex-wrap">
   {% include "componentes/icono_archivo.html" with tipo=tipo only %}
   <span class="min-w-0 flex-1 basis-48">
-    <a class="fila-titulo enlace block" href="{{ url }}">{{ titulo }}</a>
+    <a class="fila-titulo enlace enlace-tactil" href="{{ url }}">{{ titulo }}</a>
     <span class="fila-meta block tabular-nums">{{ formato|upper }} · {{ tamano|filesizeformat }} · Actualizado el {{ fecha|date }}{% if carpeta %} · Carpeta: {{ carpeta }}{% endif %}</span>
   </span>
   {% if nuevo %}{% include "componentes/insignia.html" with texto="Nuevo" tono="info" only %}{% endif %}

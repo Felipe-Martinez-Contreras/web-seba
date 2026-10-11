@@ -9,7 +9,7 @@ y se muestra sin enlace.
       {% if forloop.last %}
       <span class="font-medium text-texto" aria-current="page">{{ texto }}</span>
       {% else %}
-      <a class="text-texto-secundario underline-offset-2 hover:text-primario hover:underline" href="{{ url }}">{{ texto }}</a>
+      <a class="enlace-tactil text-texto-secundario underline-offset-2 hover:text-primario hover:underline" href="{{ url }}">{{ texto }}</a>
       {% include "componentes/icono.html" with nombre="chevron-right" clase="icono-chico" only %}
       {% endif %}
     </li>

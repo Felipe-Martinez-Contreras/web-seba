@@ -1,7 +1,7 @@
 """Aislamiento entre empresas y papelera (pruebas 2 y 4 de la sección 12.2; DOC-06, SEG-05).
 
 Aquí se prueban las consultas y los endpoints de ver y descargar. Listar y buscar en las
-pantallas del portal se prueban cuando existan, en la Etapa 5.
+pantallas del portal se prueba en portal/tests/test_aislamiento.py.
 """
 
 import datetime

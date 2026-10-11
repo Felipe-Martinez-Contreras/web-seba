@@ -19,7 +19,7 @@
 <section class="mt-8" aria-labelledby="carpetas-titulo">
   <div class="flex flex-wrap items-baseline justify-between gap-2">
     <h2 class="text-lg" id="carpetas-titulo">Sus carpetas</h2>
-    <a class="enlace text-sm" href="{% url 'portal:carpetas' %}">Ver todas<span class="sr-only"> las carpetas</span></a>
+    <a class="enlace enlace-tactil text-sm" href="{% url 'portal:carpetas' %}">Ver todas<span class="sr-only"> las carpetas</span></a>
   </div>
   <div class="mt-3">{% include "portal/_carpetas.html" with carpetas=carpetas only %}</div>
 </section>

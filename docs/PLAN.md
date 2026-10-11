@@ -12,7 +12,7 @@ Plan de la Etapa 0 (sección 11 de `ESPECIFICACION.md`). Se actualiza al avanzar
 | 2 | Cuentas y acceso | Aprobada por el responsable el 11-10-2026 |
 | 3 | Empresas, usuarios y carpetas | Aprobada por el responsable el 11-10-2026, tras probar el flujo en el navegador |
 | 4 | Documentos | Aprobada por el responsable el 11-10-2026, tras probarla en el navegador |
-| 5 | Portal del cliente | Pendiente |
+| 5 | Portal del cliente | Terminada el 11-10-2026; pendiente de aprobación del responsable |
 | 6 | Sitio público y solicitudes | Pendiente |
 | 7 | Endurecimiento y calidad | Pendiente |
 | 8 | Despliegue y operación | Pendiente |
@@ -108,6 +108,7 @@ Aprobadas por el responsable el 09-10-2026.
 - **El almacenamiento S3 solo se probó contra un emulador** (`moto`), que no valida firmas ni vencimientos. Falta el bucket real, con `comprobar_almacenamiento --firma`, antes de producción (Etapa 8). Se descartó `django-storages`, que no declara soporte para Django 6.x (DEC-96).
 - **Con el versionado del bucket, purgar la papelera no borra el archivo al instante** (ver `SEGURIDAD.md`). Importa para las solicitudes de eliminación de datos.
 - **Contadores de bloqueo en caché de base de datos** no atómicos; aceptable para este volumen. Documentado en `SEGURIDAD.md`, junto con las demás limitaciones de la Etapa 2.
+- **Dos clics con carpetas grandes (CLI-07).** En una carpeta con más de 25 documentos, los de la segunda página quedan a dos clics solo por el buscador (DEC-122).
 - **Un RUT = una cuenta = una empresa.** Una persona que trabaje para dos empresas cliente no puede tener dos cuentas (multiempresa está fuera de alcance, sección 16).
 - **Django 6.1 no es LTS.** Hay que migrar a 6.2 LTS cuando se publique.
 - **Datos de salud de trabajadores** y Ley 21.719: la región del hosting y del almacenamiento queda pendiente de asesoría legal.
@@ -141,8 +142,10 @@ Aprobadas por el responsable el 09-10-2026.
 - Etapa 8: programar `depurar_auditoria` una vez al mes y `purgar_papelera` a diario.
 - Etapa 8: comprobar el almacenamiento contra un bucket de prueba real con `comprobar_almacenamiento --firma`, incluido que el objeto no se lea sin firma (prueba 11); credenciales con permisos mínimos; versionado del bucket con expiración de versiones antiguas, y el procedimiento para una solicitud de eliminación de datos.
 - Etapa 8: límite de tamaño de subida en el servidor web y el proxy (SEG-07) y tiempos de espera para 25 MB (RNF-02).
-- Etapa 5, al inicio: barra de progreso también al reemplazar el archivo de un documento (pedido por el responsable).
-- Etapa 5: pantallas del portal que listan, buscan y enlazan los documentos; con ellas se cierran las pruebas 2 y 4 y los escenarios E3 y E5.
+- Etapa 6: contacto del profesional en el estado vacío del portal, desde `DatosNegocio` (CLI-06, DEC-118).
+- Etapa 8: la base de producción debe permitir crear la extensión `unaccent`, o traerla creada (DEC-116).
+- Revisión del responsable: recorrer el portal en un teléfono real (pasos en el README).
+- Etapa 7: la barra de pestañas muestra una barra de desplazamiento fina en pantallas angostas (portal y panel); es solo de aspecto.
 - Etapa 7: "Ver en pantalla" con `Content-Security-Policy: sandbox` en Firefox y Safari (en Edge ya se comprobó).
 - Revisión del responsable: recorrer E2 y E6 en el navegador con un administrador real y su 2FA, y probar el botón "Copiar enlace".
 - Etapa 6: fotografía con velo en el bloque inferior de la pantalla de acceso; marca en esa pantalla cuando exista el nombre comercial; `noindex` del admin de Django (SEG-13).
@@ -251,3 +254,25 @@ Lo que todavía no existe: las pantallas del portal (Etapa 5), solicitudes y con
 - Se corrigió un error detectado por una prueba de la Etapa 3: al contar documentos por carpeta, la lista perdía su orden.
 
 Respuestas del responsable al cierre (11-10-2026): autorizado el `push` y la verificación de la CI; la publicación inmediata queda aprobada, con el aviso del cliente en la zona de subida y en cada resultado (DEC-114); la barra de progreso al reemplazar se agrega al inicio de la Etapa 5. El responsable probó la etapa en el navegador y la aprobó el 11-10-2026.
+
+## 14. Etapa 5: qué quedó construido
+
+Requisitos CLI-01 a CLI-08 (CLI-06 parcial), el cierre de DOC-09 y de ADM-08, las pruebas 2, 3 y 4 de la sección 12.2 y los escenarios E3, E4, E5 y E7 del lado del cliente. Decisiones DEC-115 a DEC-126.
+
+- **Reemplazo con barra de progreso** en la ficha del documento del panel, con el mismo `subida.js`.
+- **Inicio del portal:** saludo, tarjeta de la empresa, buscador, "Sus carpetas" con contador y fecha, y los 10 documentos más recientes, con "Nuevo" durante 14 días.
+- **Carpetas y carpeta:** documentos con tipo, tamaño y fecha, Ver y Descargar en cada fila, orden por fecha o por nombre, de a 25.
+- **Buscador** por título, sin distinguir mayúsculas ni tildes (`unaccent`), con el texto limitado a 100 caracteres.
+- **Ficha del documento:** migas, datos, Descargar y Ver en pantalla en una pestaña nueva. Sin visor incrustado.
+- **Solo lectura:** todas las rutas del portal admiten solo GET y parten de `visibles_para`.
+- **Menú del portal:** Inicio, Carpetas y Mi cuenta, con el buscador en la barra superior.
+- **Áreas táctiles:** los enlaces de texto sueltos pasan a 44 px de alto, también en el acceso y la recuperación.
+
+Lo que todavía no existe: el contacto del profesional en el estado vacío (Etapa 6), el sitio público y las solicitudes (Etapa 6).
+
+### Diferencias con el plan aprobado de la etapa
+
+- Agregado pedido por el responsable al aprobar el plan: tope de 100 caracteres en la búsqueda y prueba de que un texto con `<script>` se muestra escapado.
+- Se agregó la clase `enlace-tactil` (DEC-125): la medición a 360 px mostró enlaces de 17 a 20 px de alto, dos de ellos en pantallas de la Etapa 2 (acceso y recuperación).
+- El resultado del reemplazo reutiliza `resultado_subida.html`, con un parámetro nuevo para el número de versión.
+- La revisión en el navegador fue con Edge sin interfaz emulando un teléfono (360 px, táctil), no con un teléfono real. La sesión del administrador se creó por script, sin código 2FA real, y el enlace de E7 se leyó de la consola del contenedor.

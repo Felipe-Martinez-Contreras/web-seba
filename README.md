@@ -47,7 +47,7 @@ Con el administrador ya dentro del panel:
 
 1. **Clientes → Nuevo cliente.** Ingrese RUT y razón social, deje marcada "Crear las carpetas base" y guarde. La ficha se abre en la pestaña Usuarios.
 2. **Crear usuario.** Ingrese el RUT y el nombre de la persona. La página siguiente muestra el enlace de activación: cópielo con "Copiar enlace". Se muestra una sola vez.
-3. Abra el enlace en una ventana privada, defina la contraseña y verá el portal del cliente, todavía sin documentos.
+3. Abra el enlace en una ventana privada, defina la contraseña y verá el portal del cliente, todavía sin documentos (después de subirlos, siga con "Recorrer el portal del cliente").
 4. Para probar el corte de acceso: con esa ventana abierta, pulse "Desactivar" en la ficha del cliente y recargue el portal. Vuelve a la pantalla de acceso.
 5. Para probar el desbloqueo: falle la contraseña 5 veces con el RUT del usuario. En la pestaña Usuarios aparece "Bloqueado" con el botón "Desbloquear".
 
@@ -57,7 +57,7 @@ Con un cliente y sus carpetas ya creados:
 
 1. En la ficha del cliente, pestaña **Documentos**, abra una carpeta.
 2. Elija varios archivos y pulse **Subir documentos**: cada uno muestra su barra de progreso y su resultado. Pruebe también con un archivo inválido (por ejemplo, un `.exe` renombrado a `.pdf`) para ver el motivo del rechazo.
-3. Abra un documento: descargue, use "Ver en pantalla", reemplace el archivo y revise el historial de versiones.
+3. Abra un documento: descargue, use "Ver en pantalla", reemplace el archivo (también muestra su barra de progreso) y revise el historial de versiones.
 4. Elimine el documento y restáurelo desde la **Papelera** del cliente.
 
 Los archivos se guardan en el volumen `documentos_datos` de Docker (`/var/app/media` en el contenedor), fuera del código y sin ninguna URL que los sirva: solo se entregan por las vistas de ver y descargar, que exigen sesión y dejan un evento de auditoría.
@@ -101,6 +101,18 @@ Sin el perfil `css`, el CSS se compila una vez al arrancar `web`; después de ca
 
 El PostgreSQL del contenedor no publica ningún puerto en el equipo. Para consultarlo: `docker compose exec db psql -U webseba webseba`.
 
+### Recorrer el portal del cliente
+
+Con un cliente activo y documentos subidos, entre como ese cliente en `http://localhost:8000/acceso/` (conviene una ventana privada, para no mezclar la sesión con la del administrador):
+
+1. **Inicio:** saludo, tarjeta de la empresa, buscador, "Sus carpetas" y "Documentos recientes", con la etiqueta "Nuevo" durante 14 días.
+2. Abra una carpeta: cada documento tiene **Ver** (solo PDF, JPG y PNG) y **Descargar**. Cambie el orden entre "Más recientes" y "Por nombre".
+3. Busque un título sin tildes (por ejemplo, `inspeccion`): encuentra "Inspección".
+4. Abra la ficha de un documento, descárguelo y use "Ver en pantalla" (se abre en una pestaña nueva).
+5. En el panel, reemplace o elimine ese documento y recargue el portal: el cliente ve el archivo nuevo, o deja de verlo.
+
+**En un teléfono real.** La revisión de la etapa se hizo con el modo móvil del navegador, no con un teléfono. Para probarlo en uno, conectado a la misma red Wi-Fi que el equipo: publique el puerto en la red cambiando en `compose.yaml` `127.0.0.1:8000:8000` por `8000:8000`, agregue la IP del equipo a `ALLOWED_HOSTS` en `.env` (por ejemplo `localhost,127.0.0.1,192.168.1.20`), ejecute `docker compose up -d` y abra `http://<IP del equipo>:8000/acceso/` en el teléfono. Use solo datos de prueba y deshaga ambos cambios al terminar.
+
 ## Pruebas y calidad
 
 ```powershell
@@ -133,7 +145,7 @@ cuentas/       Usuario, acceso, bloqueo, enlaces de un solo uso, recuperación y
 empresas/      Empresas (clientes) y sus carpetas
 auditoria/     Registro de eventos (solo se agregan), filtros y retención
 documentos/    Documentos y versiones, validación de archivos, almacenamiento (local y S3) y papelera
-portal/        Vistas del cliente (por ahora, el inicio y los endpoints de ver y descargar)
+portal/        Vistas del cliente: inicio, carpetas, buscador, ficha del documento, ver y descargar
 panel/         Vistas del administrador: inicio, clientes, usuarios, carpetas, documentos y auditoría
 templates/     Plantillas base, componentes, íconos y páginas 404 y 500
 static/        HTMX, fuentes y JavaScript propios (sin CDN), incluida la subida con progreso
