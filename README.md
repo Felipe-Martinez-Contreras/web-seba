@@ -23,6 +23,7 @@ docker compose up -d --build --wait
 Al arrancar, el contenedor `web` compila el CSS, aplica las migraciones y levanta el servidor. Cuando el comando termina, ambos servicios están listos:
 
 - Acceso: <http://localhost:8000/acceso/>
+- Panel de administración: <http://localhost:8000/panel/> (requiere un administrador con 2FA; ver abajo)
 - Comprobación de salud: <http://localhost:8000/salud/>
 - Referencia de componentes (solo en desarrollo): <http://localhost:8000/_referencia/componentes/>
 
@@ -40,6 +41,18 @@ docker compose run --rm web python manage.py crear_administrador
 
 Al abrir el enlace, la persona define su contraseña y, en esa misma sesión, configura la verificación en dos pasos con una aplicación de autenticación. Los correos de recuperación se imprimen en la consola del contenedor (`docker compose logs -f web`) mientras no haya un servidor SMTP configurado.
 
+### Crear un cliente y probar el flujo completo
+
+Con el administrador ya dentro del panel:
+
+1. **Clientes → Nuevo cliente.** Ingrese RUT y razón social, deje marcada "Crear las carpetas base" y guarde. La ficha se abre en la pestaña Usuarios.
+2. **Crear usuario.** Ingrese el RUT y el nombre de la persona. La página siguiente muestra el enlace de activación: cópielo con "Copiar enlace". Se muestra una sola vez.
+3. Abra el enlace en una ventana privada, defina la contraseña y verá el portal del cliente, todavía sin documentos.
+4. Para probar el corte de acceso: con esa ventana abierta, pulse "Desactivar" en la ficha del cliente y recargue el portal. Vuelve a la pantalla de acceso.
+5. Para probar el desbloqueo: falle la contraseña 5 veces con el RUT del usuario. En la pestaña Usuarios aparece "Bloqueado" con el botón "Desbloquear".
+
+La guía de uso para el profesional está en [`docs/MANUAL_ADMIN.md`](docs/MANUAL_ADMIN.md).
+
 ## Comandos
 
 | Para | Comando |
@@ -55,6 +68,7 @@ Al abrir el enlace, la persona define su contraseña y, en esa misma sesión, co
 | Crear el superusuario técnico (admin de Django) | `docker compose run --rm web python manage.py crear_administrador --tecnico` |
 | Restablecer el 2FA de un administrador | `docker compose run --rm web python manage.py restablecer_2fa <rut>` |
 | Desbloquear un RUT o una IP | `docker compose run --rm web python manage.py desbloquear_acceso --rut <rut>` (o `--ip <ip>`) |
+| Borrar la auditoría más antigua que la retención | `docker compose run --rm web python manage.py depurar_auditoria` |
 | Recompilar el CSS al guardar | `docker compose --profile css up -d` |
 
 Sin el perfil `css`, el CSS se compila una vez al arrancar `web`; después de cambiar plantillas o estilos, `docker compose restart web` lo vuelve a compilar.
@@ -88,15 +102,15 @@ Cada dependencia y archivo de terceros está justificado en [`docs/DECISIONES.md
 config/        Configuración por entorno (base, dev, test, prod), URL y formatos es-CL
 core/          RUT, validadores, IP de confianza, mixins de rol, correo, logs y /salud/
 cuentas/       Usuario, acceso, bloqueo, enlaces de un solo uso, recuperación y 2FA
-empresas/      Modelo de empresa
-auditoria/     Registro de eventos (solo se agregan)
+empresas/      Empresas (clientes) y sus carpetas
+auditoria/     Registro de eventos (solo se agregan), filtros y retención
 portal/        Vistas del cliente (por ahora, el inicio)
-panel/         Vistas del administrador (por ahora, el inicio y el desbloqueo)
+panel/         Vistas del administrador: inicio, clientes, usuarios, carpetas y auditoría
 templates/     Plantillas base, componentes, íconos y páginas 404 y 500
 static/        HTMX, fuentes y JavaScript propios (sin CDN)
 static_src/    Entrada de Tailwind con los tokens de diseño
 docker/        Script de arranque de desarrollo
-docs/          Especificación, plan, decisiones, trazabilidad y seguridad
+docs/          Especificación, plan, decisiones, trazabilidad, seguridad y manual del administrador
 ```
 
 ## Configuración

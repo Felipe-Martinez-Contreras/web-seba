@@ -84,6 +84,22 @@ Decisiones técnicas y dependencias, con su motivo. Cada dependencia indica para
 | DEC-76 | 09-10-2026 | Sesiones con `SESSION_SAVE_EVERY_REQUEST` y `SESSION_EXPIRE_AT_BROWSER_CLOSE` | AUT-09: el plazo cuenta desde el último uso y no hay sesión persistente (sin "Recordarme") |
 | DEC-77 | 09-10-2026 | En la verificación, el formato del código decide el dispositivo: 6 dígitos es TOTP; otro, código de recuperación | Un código de recuperación no suma fallos, ni espera, al TOTP |
 | DEC-78 | 09-10-2026 | La pantalla de acceso no se replica en la página de referencia de componentes | Existe la pantalla real en `/acceso/`; duplicarla sería mantener dos copias |
+| DEC-79 | 11-10-2026 | El inicio del panel muestra solo lo que existe: clientes activos, cuentas pendientes de activación y clientes recientes. El menú no lista Solicitudes ni Contenido del sitio | R1 y R2: los indicadores de solicitudes y de documentos entran con sus modelos (Etapas 4 y 6). Aprobada por el responsable con el plan de la Etapa 3 |
+| DEC-80 | 11-10-2026 | El enlace de activación se muestra una sola vez, en la respuesta del POST que lo genera, y no se guarda en la sesión ni en la base | El token solo existe en memoria (DEC-54). Guardarlo para sobrevivir a una redirección lo dejaría en claro en la tabla de sesiones. Recargar la página genera otro enlace y revoca el anterior |
+| DEC-81 | 11-10-2026 | El correo con el enlace que genera el administrador se envía dentro de la petición, con 10 segundos de espera máxima | AUT-06: el panel debe informar si falló. A diferencia de la recuperación (DEC-64), aquí no hay nada que ocultar con el tiempo de respuesta |
+| DEC-82 | 11-10-2026 | "Generar enlace" decide el tipo en el servidor: activación (72 h) si la cuenta nunca definió su contraseña; restablecimiento (1 h) si ya lo hizo | El administrador no tiene que elegir, y no puede dar 72 horas a un enlace de restablecimiento |
+| DEC-83 | 11-10-2026 | El RUT de un usuario solo se puede corregir mientras la cuenta está pendiente | Una vez activada, el RUT es su identificador de acceso y el que aparece en la auditoría. Para cambiarlo después: desactivar la cuenta y crear otra |
+| DEC-84 | 11-10-2026 | Estados de usuario, en orden de precedencia: Inactivo (neutro), Bloqueado (error), Pendiente (advertencia), Activo (éxito). Se calculan en `cuentas/estados.py` | Ajusta DEC-46: el rojo de "Pendiente" es de las solicitudes; en usuarios el rojo queda para el bloqueo. El estado siempre lleva texto |
+| DEC-85 | 11-10-2026 | El desbloqueo pasa a `/panel/clientes/<empresa>/usuarios/<usuario>/desbloquear/` y solo alcanza a usuarios de esa empresa. A un administrador se le desbloquea con el comando `desbloquear_acceso` | Todo lo de un cliente cuelga de su UUID y se busca dentro de él. Cierra DEC-56 |
+| DEC-86 | 11-10-2026 | `Carpeta` usa UUID como clave primaria, `PROTECT` hacia la empresa y nombre único por empresa sin distinguir mayúsculas, como restricción de la base | Sección 6. La restricción vale aunque se salte el formulario |
+| DEC-87 | 11-10-2026 | Las carpetas se ordenan con botones "subir" y "bajar", cada uno un POST | Funciona con teclado y sin JavaScript; arrastrar exigiría una librería o código propio |
+| DEC-88 | 11-10-2026 | "Eliminar carpeta solo si no tiene documentos" (ADM-07) se completa en la Etapa 4 | `Documento` aún no existe: hoy toda carpeta está vacía. En la Etapa 4 la relación será `PROTECT` y el servicio lo comprobará, papelera incluida |
+| DEC-89 | 11-10-2026 | Desactivar una cuenta revoca sus enlaces sin usar | Un enlace entregado antes no debe revivir al reactivar la cuenta |
+| DEC-90 | 11-10-2026 | La retención borra eventos con `EventoAuditoria.objects.depurar()`, que solo usa el comando `depurar_auditoria`, y deja un evento "Depuración de la auditoría". Los meses son de calendario | AUD-03: único borrado permitido, con acceso al servidor y con su propio rastro |
+| DEC-91 | 11-10-2026 | Un filtro inválido en la auditoría no muestra ningún evento | Mostrar todo sugeriría que el filtro se aplicó |
+| DEC-92 | 11-10-2026 | Las tablas con muchas columnas (usuarios y eventos) siguen como lista hasta los 1.280 px | Entre 768 y 1.279 px el contenido mide unos 720 px: la tabla de usuarios desbordaba 24 px a 768 px. Detectado en la revisión visual |
+| DEC-93 | 11-10-2026 | "Configuración" es un grupo de la barra lateral, sin enlace propio, con "Mi cuenta" dentro | ADM-01. "Contenido del sitio" se suma al grupo en la Etapa 6 |
+| DEC-94 | 11-10-2026 | La revisión visual de pantallas privadas se hace contra una base de datos temporal, que se borra al terminar | Los datos de muestra y sus eventos de auditoría no quedan en la base de desarrollo |
 
 ## Dependencias de ejecución
 
@@ -165,7 +181,17 @@ El paquete de Inter coincide además con el `shasum` SHA-1 que publica el regist
 | `templates/iconos/shield-check.svg` | lucide-static: `package/icons/shield-check.svg` | `f70a1b1b967cd6b587592a2df1254aa7eebc8c2477aa405de7c988ca5f92d299` |
 | `templates/iconos/triangle-alert.svg` | lucide-static: `package/icons/triangle-alert.svg` | `b94124235a81cdf4f8e2bb813e955049e0d501cd30793e495b2d62c584a7a8af` |
 | `templates/iconos/users.svg` | lucide-static: `package/icons/users.svg` | `7ecdabd5f6d168aa28f45a22569743c4bd7e036f0672cb7882810f8373859477` |
+| `templates/iconos/arrow-down.svg` | lucide-static: `package/icons/arrow-down.svg` | `3b11c97f4321f6185be03fb0d14dcc3145706f5efbe61349fda5c36b02439ddc` |
+| `templates/iconos/arrow-up.svg` | lucide-static: `package/icons/arrow-up.svg` | `2082b52f3880aaf55b20465f7b799ebc7e64812918916e35c19e289f74ce3011` |
+| `templates/iconos/copy.svg` | lucide-static: `package/icons/copy.svg` | `f3ec65a85c2cb061e8112c907f7b3af731ccb3fc58808f41a45f6b46e92abec1` |
+| `templates/iconos/history.svg` | lucide-static: `package/icons/history.svg` | `b43ba5de5518b8a990ce4a6569d691ec60483c93f89723274f7d89f89d2114b6` |
+| `templates/iconos/lock-open.svg` | lucide-static: `package/icons/lock-open.svg` | `4f1c25e08c0c527e890eafc38eeaf01cd2b830ebfb8c1e2c76f54230717f666f` |
+| `templates/iconos/pencil.svg` | lucide-static: `package/icons/pencil.svg` | `f8acff8aeb59ae50ce8de4a9151e595774463d1e362d8b1f9eec26d9fe7cee37` |
+| `templates/iconos/plus.svg` | lucide-static: `package/icons/plus.svg` | `88616829bc4eaeb711fea7564f7db19871de5cce4cd832ad261caa926df289de` |
+| `templates/iconos/trash-2.svg` | lucide-static: `package/icons/trash-2.svg` | `39a05b8b1e6631650ffb22077e27c12748b22dc17d3121d7e448e921d3ee99ef` |
 | `templates/iconos/LICENCIA-lucide.txt` | lucide-static: `package/LICENSE` | `b495047bd93a9b06913511076f504daba17d5bbeb3e0650f3bb53a4220329c57` |
+
+Los ocho íconos de la Etapa 3 (flechas, copiar, historial, candado abierto, lápiz, más y papelera) se extrajeron el 11-10-2026 del mismo paquete, descargado de nuevo y con el mismo sha256.
 
 Los archivos se copiaron sin modificar; todos tienen fin de línea LF, que es como el repositorio guarda el texto (`.gitattributes`).
 

@@ -9,8 +9,8 @@ Plan de la Etapa 0 (sección 11 de `ESPECIFICACION.md`). Se actualiza al avanzar
 | 0 | Reconocimiento y plan | Aprobada por el responsable el 09-10-2026 |
 | 1 | Base del proyecto | Terminada el 09-10-2026 |
 | — | Ajuste visual (tokens azul marino, Inter y componentes del mockup) | Terminado el 09-10-2026; pendiente de aprobación del responsable |
-| 2 | Cuentas y acceso | Terminada el 09-10-2026; pendiente de revisión del responsable |
-| 3 | Empresas, usuarios y carpetas | Pendiente |
+| 2 | Cuentas y acceso | Aprobada por el responsable el 11-10-2026 |
+| 3 | Empresas, usuarios y carpetas | Terminada el 11-10-2026; pendiente de revisión del responsable |
 | 4 | Documentos | Pendiente |
 | 5 | Portal del cliente | Pendiente |
 | 6 | Sitio público y solicitudes | Pendiente |
@@ -137,7 +137,10 @@ Aprobadas por el responsable el 09-10-2026.
 - Migración a Django 6.2 LTS cuando se publique.
 - Reevaluar HTMX 4.x antes de la Etapa 4 (DEC-21).
 - Etapa 6: agregar a la página 404 el enlace al inicio, cuando exista (DEC-25).
-- Etapa 3: botón de desbloqueo y enlaces de activación en la lista de usuarios (la lógica ya existe); listado de auditoría; comando `depurar_auditoria`.
+- Etapa 4: comprobar que una carpeta no tenga documentos, papelera incluida, antes de eliminarla (DEC-88); indicador de documentos en el inicio del panel; documentos dentro de la pestaña Documentos de cada cliente.
+- Etapa 6: Solicitudes y Contenido del sitio en el menú del panel; indicadores y tabla de solicitudes y avisos de notificaciones y de contenido en el inicio (ADM-02).
+- Etapa 8: programar `depurar_auditoria` una vez al mes.
+- Revisión del responsable: recorrer E2 y E6 en el navegador con un administrador real y su 2FA, y probar el botón "Copiar enlace".
 - Etapa 6: fotografía con velo en el bloque inferior de la pantalla de acceso; marca en esa pantalla cuando exista el nombre comercial; `noindex` del admin de Django (SEG-13).
 - Etapa 7: repetir en staging la medición de tiempos de `SEGURIDAD.md`.
 - Etapa 8: valor de `PROXY_CONFIANZA_REDES` según el hosting; formato de los logs de Gunicorn y del proxy sin el token de los enlaces; proveedor SMTP.
@@ -191,4 +194,29 @@ Lo que todavía no existe: crear empresas y usuarios desde el panel, y entregarl
 - El hilo de envío de correo parte entre 2 y 4 segundos después de la petición, no de inmediato: la medición de tiempos mostró que, si partía de inmediato, la respuesta tardaba más cuando la cuenta existía (DEC-64).
 - Se agregó el ocultamiento del token de los enlaces en los logs, detectado al revisar la aplicación en el navegador (DEC-71).
 - Se agregó el cierre de sesión tras 5 fallos al cambiar la contraseña (DEC-68).
+
+Respuestas del responsable al cierre (11-10-2026): la pantalla de acceso mantiene el título "Acceso clientes" y la espera de 2 a 4 segundos del correo de recuperación queda aprobada.
+
+## 12. Etapa 3: qué quedó construido
+
+Requisitos ADM-01 a ADM-07, ADM-11 y AUD-03, con sus eventos de auditoría. Decisiones DEC-79 a DEC-94.
+
+- **Panel** con Inicio, Clientes, Auditoría y Configuración (Mi cuenta). El buscador superior busca clientes por RUT o razón social.
+- **Inicio** con datos reales: clientes activos, cuentas pendientes de activación por cliente y clientes recientes.
+- **Clientes**: listado con búsqueda, filtro por estado y paginación de a 25; alta con las cinco carpetas base (opción marcada por defecto); edición; desactivar y reactivar con confirmación. Sin borrado.
+- **Ficha del cliente** con tres pestañas: Documentos (por ahora, sus carpetas), Usuarios y Actividad.
+- **Carpetas**: crear, editar, ordenar con subir y bajar, y eliminar con confirmación.
+- **Usuarios**: crear, editar, desactivar y reactivar; estado (pendiente, activo, bloqueado, inactivo) y último acceso; enlace de activación o de restablecimiento que se copia y, si el correo está configurado, también se envía; botón de desbloqueo en la fila de la cuenta bloqueada.
+- **Auditoría**: listado de solo lectura con filtros por cliente, RUT, acción y fechas; comando `depurar_auditoria` con `AUDITORIA_RETENCION_MESES`.
+- **E2 completo**: crear empresa y usuario, copiar el enlace, definir la contraseña y entrar al portal vacío.
+
+Lo que todavía no existe: documentos (Etapa 4), portal completo (Etapa 5), solicitudes y contenido del sitio (Etapa 6).
+
+### Diferencias con el plan aprobado de la etapa
+
+- La cabecera de la ficha no usa `tarjeta_empresa.html`: lleva el mismo aspecto, pero necesita la insignia de estado y los botones Editar y Desactivar, que ese componente no tiene.
+- Las acciones de cada usuario van en un menú "Acciones"; solo "Desbloquear" queda como botón visible en la fila.
+- Las tablas de usuarios y de eventos pasan a lista hasta los 1.280 px (DEC-92): a 768 px la de usuarios desbordaba.
+- Se agregó el evento "Correo con enlace de acceso", con el resultado del envío, y el evento "Depuración de la auditoría".
+- La revisión visual se hizo con Edge sin interfaz sobre una base de datos temporal (DEC-94), con una sesión de administrador creada para ese fin. No se recorrió el ingreso con un código 2FA real: queda para la revisión del responsable.
 

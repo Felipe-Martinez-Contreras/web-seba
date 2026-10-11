@@ -1,6 +1,6 @@
 # Seguridad
 
-Amenazas principales, el control que mitiga cada una y las limitaciones conocidas. Se completa etapa a etapa; la revisión general es de la Etapa 7. Este documento cubre lo construido hasta la Etapa 2 (cuentas y acceso).
+Amenazas principales, el control que mitiga cada una y las limitaciones conocidas. Se completa etapa a etapa; la revisión general es de la Etapa 7. Este documento cubre lo construido hasta la Etapa 3 (cuentas, acceso y gestión de clientes en el panel).
 
 ## 1. Amenazas y controles
 
@@ -24,9 +24,18 @@ Amenazas principales, el control que mitiga cada una y las limitaciones conocida
 | Fijación de sesión | El identificador rota al iniciar sesión; cierre solo por POST | Django (`login`), `cuentas/views.py` | `test_el_cliente_entra_al_portal_y_queda_registrado`, `test_el_cierre_de_sesion_es_solo_por_post` |
 | Peticiones falsificadas desde otro sitio (CSRF) | Token en todos los formularios y en el encabezado de HTMX; ninguna vista exenta | `templates/base.html`, `core/views.py` (`csrf_fallido`) | `test_un_formulario_sin_token_csrf_responde_403`, `test_ninguna_vista_esta_exenta_de_csrf` |
 | Vista privada publicada sin control de acceso | Mixins de rol únicos; una prueba recorre todo el URLconf | `core/mixins.py` | `config/tests/test_urls_privadas.py` |
-| Enumerar usuarios por ID en las URL | Las URL usan `Usuario.uuid`; el ID entero no sale de la aplicación | `cuentas/models.py`, `panel/urls.py` | `test_el_desbloqueo_exige_post_y_un_uuid_existente` |
+| Enumerar usuarios por ID en las URL | Las URL usan `Usuario.uuid`; el ID entero no sale de la aplicación | `cuentas/models.py`, `panel/urls.py` | `test_el_desbloqueo_exige_post_y_un_usuario_de_esa_empresa` |
+| Un cliente usa las rutas del panel, con UUID reales o con POST hechos a mano | Todas las vistas del panel heredan de `AdministradorMixin`: responden 404 antes de ejecutar nada | `core/mixins.py`, `panel/views/` | `test_un_cliente_recibe_404_en_el_panel_con_identificadores_reales_y_nada_cambia` |
+| Actuar sobre un usuario o una carpeta desde la URL de otra empresa | Usuarios y carpetas se buscan siempre dentro de la empresa de la URL; si no calzan, 404 | `panel/views/base.py` | `test_un_usuario_solo_se_alcanza_bajo_su_propia_empresa`, `test_una_carpeta_solo_se_alcanza_bajo_su_propia_empresa` |
+| Que el administrador conozca o fije la contraseña de un cliente | La cuenta se crea sin contraseña utilizable; el administrador solo entrega un enlace de un solo uso | `cuentas/services.py` (`crear_cliente`, `entregar_enlace`) | `test_e2_crear_cliente_con_carpetas_usuario_y_enlace_hasta_el_portal_vacio` |
+| Recuperar un enlace ya generado desde la base, la sesión o la auditoría | El enlace se muestra una sola vez, en la respuesta que lo genera, con `no-store`; se guarda solo el SHA-256 del token | `panel/views/usuarios.py`, `cuentas/services.py` | `test_e2_*`, `test_generar_un_enlace_nuevo_revoca_el_anterior_y_es_de_un_solo_uso` |
+| Un enlace entregado antes revive al reactivar la cuenta | Desactivar una cuenta revoca sus enlaces sin usar; con la empresa inactiva ningún enlace vale | `cuentas/services.py` (`cambiar_estado_cliente`), `cuentas/models.py` (`esta_vigente`) | `test_desactivar_al_usuario_desde_el_panel_*`, `test_e6_*` |
+| El panel afirma que envió un correo que no salió | El resultado del envío se muestra tal cual: enviado, fallido o no configurado | `core/correo.py`, `panel/templates/panel/usuario_enlace.html` | `test_si_el_correo_falla_el_panel_lo_informa_y_el_enlace_igual_sirve` |
+| HTML o scripts en los datos de un cliente | Autoescape en todas las plantillas; las notas internas se muestran con saltos de línea y sin HTML | Plantillas de `panel/` | `test_un_nombre_con_script_se_muestra_escapado` |
+| Las notas internas llegan al cliente | Solo se muestran en la ficha del panel | `panel/templates/panel/_cliente_cabecera.html` | `test_las_notas_internas_solo_aparecen_en_el_panel` |
 | Secretos en los logs o en la auditoría | El log oculta el token de las rutas de enlace; la auditoría guarda textos fijos y solo RUT válidos | `core/logs.py`, `auditoria/services.py` | `test_los_logs_no_registran_el_token_de_los_enlaces`, `test_ni_el_token_ni_la_contrasena_quedan_en_la_auditoria`, `test_la_contrasena_escrita_en_el_campo_del_rut_no_queda_en_la_auditoria` |
-| Alterar o borrar la auditoría | El modelo rechaza editar y borrar; en el admin de Django es de solo lectura | `auditoria/models.py`, `auditoria/admin.py` | `test_los_eventos_no_se_editan_ni_se_borran` |
+| Alterar o borrar la auditoría | El modelo rechaza editar y borrar; en el admin de Django es de solo lectura | `auditoria/models.py`, `auditoria/admin.py` | `test_los_eventos_no_se_editan_ni_se_borran`, `test_el_listado_es_de_solo_lectura_y_pagina_sin_consultas_por_fila` |
+| Acortar la auditoría sin dejar rastro | El único borrado es el de la retención, por comando en el servidor, y deja un evento propio | `auditoria/management/commands/depurar_auditoria.py` | `test_depurar_auditoria_borra_solo_lo_anterior_a_la_retencion` |
 | Contraseñas débiles o filtradas de la base | Argon2id; mínimo 12 caracteres y validadores de Django | `config/settings/base.py` | `test_contrasenas_con_argon2_y_minimo_de_12_caracteres`, `test_la_contrasena_nueva_pasa_por_los_validadores` |
 
 ## 2. Cómo se obtiene la IP del cliente
@@ -76,7 +85,14 @@ La medición es local y sobre un equipo de desarrollo. Debe repetirse en staging
 - **Una red compartida puede bloquearse entera.** Varias personas de una misma empresa salen con la misma IP: 30 fallos entre todas, en 15 minutos, bloquean esa IP. Se desbloquea con `desbloquear_acceso --ip`.
 - **Los logs del servidor web y del proxy.** La aplicación oculta el token de las rutas de enlace en sus propios logs. Gunicorn y el proxy de producción escriben los suyos: su formato se configura en la Etapa 8 para que no registren esa ruta completa.
 - **El admin de Django no deja eventos de auditoría propios.** Lo que el superusuario técnico cambie ahí (por ejemplo, el correo o el estado de un usuario) queda en el historial del admin de Django, no en `EventoAuditoria`. Es una herramienta de soporte, no la interfaz de trabajo (ADM-12).
-- **El corte de sesión no deja evento.** Cuando una sesión se elimina porque la cuenta o la empresa se desactivó, no se registra un evento aparte; la desactivación misma se auditará en la Etapa 3.
+- **El corte de sesión no deja evento.** Cuando una sesión se elimina porque la cuenta o la empresa se desactivó, no se registra un evento aparte; lo que queda en la auditoría es la desactivación misma, con quién la hizo.
+- **El enlace de activación pasa por la pantalla del administrador.** Quien vea esa pantalla, o reciba el enlace por un canal inseguro, puede definir la contraseña de la cuenta antes que su dueño. Lo acotan el uso único, el vencimiento (72 horas, o 1 hora si es de restablecimiento) y que generar otro enlace revoca el anterior. Si la persona avisa que su enlace "ya fue usado" sin haberlo usado ella, hay que desactivar la cuenta y revisar su actividad.
+- **El enlace también queda en el portapapeles y en el historial del canal por donde se envíe.** La aplicación no lo puede controlar; el manual del administrador lo advierte.
+- **El correo de activación se envía dentro de la petición.** Si el servidor de correo no responde, la pantalla tarda hasta 10 segundos y luego informa el fallo. El enlace se muestra igual.
+- **Todos los administradores tienen permisos completos** (sección 0). Cualquiera de ellos puede desactivar clientes, generar enlaces y leer la auditoría completa. No hay segregación entre administradores.
+- **Un administrador bloqueado no se desbloquea desde el panel.** Se usa `desbloquear_acceso`, en el servidor, o se espera a que venza el bloqueo (15 minutos).
+- **La retención borra de verdad.** `depurar_auditoria` elimina los eventos más antiguos que `AUDITORIA_RETENCION_MESES`. Un valor mal puesto (por ejemplo, 1) borra casi todo en la siguiente ejecución; los respaldos de la base (Etapa 8) son la única vuelta atrás.
+- **"Eliminar carpeta solo si está vacía" aún no se comprueba.** Hoy ninguna carpeta puede tener documentos. La regla entra con los documentos, en la Etapa 4 (DEC-88).
 
 ## 5. Excepciones justificadas
 
@@ -92,5 +108,8 @@ Estos procedimientos se detallarán en `docs/DESPLIEGUE.md` (Etapa 8). Todos se 
 | Crear el superusuario técnico | `python manage.py crear_administrador --tecnico` |
 | Restablecer el 2FA de un administrador | `python manage.py restablecer_2fa <rut>` |
 | Desbloquear un RUT o una IP | `python manage.py desbloquear_acceso --rut <rut>` o `--ip <ip>` |
+| Borrar la auditoría más antigua que la retención | `python manage.py depurar_auditoria` (una vez al mes) |
+
+El desbloqueo de un usuario cliente se hace desde el panel, en la pestaña Usuarios de su cliente; el comando queda para administradores, RUT sin cuenta e IP.
 
 Los dos primeros y `restablecer_2fa` imprimen un enlace de un solo uso. Quien lo use define su contraseña y, en esa misma sesión, configura su 2FA. El enlace no debe pegarse en canales que guarden historial.
