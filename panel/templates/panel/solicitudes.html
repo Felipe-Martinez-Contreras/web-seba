@@ -1,0 +1,73 @@
+{% extends "base_panel.html" %}
+{% block titulo %}Solicitudes{% endblock %}
+{% block contenido %}
+<h1 class="text-2xl">Solicitudes</h1>
+<p class="mt-1 text-sm text-texto-secundario">Consultas y solicitudes de cotización enviadas desde el sitio. Se responden por correo o teléfono, fuera de la plataforma.</p>
+
+<div class="mt-6">{% include "componentes/pestanas.html" with pestanas=pestanas pestanas_etiqueta="Tipo de solicitud" only %}</div>
+
+<form class="tarjeta mt-6 p-5" method="get" novalidate aria-label="Filtros">
+  <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    {% include "componentes/campo.html" with campo=form.q %}
+    {% include "componentes/campo.html" with campo=form.estado %}
+    {% include "componentes/campo.html" with campo=form.desde %}
+    {% include "componentes/campo.html" with campo=form.hasta %}
+  </div>
+  <div class="mt-4 flex flex-wrap gap-3">
+    {% include "componentes/boton.html" with texto="Filtrar" only %}
+    {% if con_filtros %}
+    {% include "componentes/boton.html" with texto="Quitar filtros" href=url_sin_filtros variante="secundario" only %}
+    {% endif %}
+  </div>
+</form>
+
+<div class="mt-6">
+  {% if pagina.object_list %}
+  <p class="mb-3 text-sm">
+    <a class="enlace enlace-tactil" href="{% querystring orden=orden_siguiente page=None %}">{% if antiguas_primero %}Ver primero las más recientes{% else %}Ver primero las más antiguas{% endif %}</a>
+  </p>
+  <div class="tarjeta">
+    <table class="tabla tabla-ancha">
+      <thead>
+        <tr>
+          <th scope="col">Nombre</th>
+          {% if es_cotizacion %}<th scope="col">Servicio</th>{% endif %}
+          <th scope="col">Mensaje</th>
+          <th scope="col">Fecha</th>
+          <th scope="col">Estado</th>
+          <th scope="col">Notificación</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for solicitud in pagina %}
+        <tr>
+          <td data-etiqueta="Nombre">
+            <span class="min-w-0 text-right xl:text-left">
+              <a class="enlace enlace-tactil font-medium break-words" href="{% url 'panel:solicitud' solicitud.pk %}">{{ solicitud.nombre }}</a>
+              {% if solicitud.empresa %}<span class="block text-xs break-words text-texto-secundario">{{ solicitud.empresa }}</span>{% endif %}
+            </span>
+          </td>
+          {% if es_cotizacion %}
+          <td data-etiqueta="Servicio"><span class="min-w-0 text-right break-words xl:text-left">{{ solicitud.servicio_texto }}</span></td>
+          {% endif %}
+          <td data-etiqueta="Mensaje"><span class="min-w-0 text-right break-words xl:text-left">{{ solicitud.mensaje|truncatechars:90 }}</span></td>
+          <td data-etiqueta="Fecha" class="whitespace-nowrap">{{ solicitud.creado_en|date:"d-m-Y H:i" }}</td>
+          <td data-etiqueta="Estado">{% include "componentes/insignia.html" with texto=solicitud.get_estado_display tono=solicitud.tono_del_estado only %}</td>
+          <td data-etiqueta="Notificación">{% include "componentes/insignia.html" with texto=solicitud.get_notificacion_display tono=solicitud.tono_de_la_notificacion only %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="mt-4">{% include "componentes/paginacion.html" %}</div>
+  {% elif form.errors %}
+  {% include "componentes/estado_vacio.html" with titulo="Revise los filtros" texto="Hay un filtro con un valor que no es válido. Corríjalo e intente nuevamente." only %}
+  {% elif con_filtros %}
+  {% include "componentes/estado_vacio.html" with titulo="Sin resultados" texto="Ninguna solicitud coincide con los filtros. Amplíe las fechas o quite algún filtro." only %}
+  {% elif es_cotizacion %}
+  {% include "componentes/estado_vacio.html" with titulo="Aún no hay solicitudes de cotización" texto="Aquí aparecerán las que se envíen desde el formulario de cotización del sitio." only %}
+  {% else %}
+  {% include "componentes/estado_vacio.html" with titulo="Aún no hay consultas" texto="Aquí aparecerán las que se envíen desde la página de contacto del sitio." only %}
+  {% endif %}
+</div>
+{% endblock %}

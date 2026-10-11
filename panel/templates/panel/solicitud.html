@@ -1,0 +1,106 @@
+{% extends "base_panel.html" %}
+{% block titulo %}{{ solicitud.get_tipo_display }} de {{ solicitud.nombre }}{% endblock %}
+{% block contenido %}
+{% include "componentes/migas.html" with migas=migas only %}
+<div class="mt-4 flex flex-wrap items-center gap-3">
+  <h1 class="min-w-0 text-2xl break-words">{{ solicitud.get_tipo_display }} de {{ solicitud.nombre }}</h1>
+  {% include "componentes/insignia.html" with texto=solicitud.get_estado_display tono=solicitud.tono_del_estado only %}
+</div>
+<p class="mt-1 text-sm text-texto-secundario">Recibida el {{ solicitud.creado_en|date:"d-m-Y" }} a las {{ solicitud.creado_en|date:"H:i" }}.</p>
+
+<div class="mt-6 grid gap-6 xl:grid-cols-[1.6fr_1fr]">
+  <section class="tarjeta p-5" aria-labelledby="datos-titulo">
+    <h2 class="text-lg" id="datos-titulo">Datos de la solicitud</h2>
+    <dl class="mt-4 grid gap-x-6 gap-y-4 text-sm sm:grid-cols-2">
+      <div>
+        <dt class="text-xs text-texto-secundario">Nombre</dt>
+        <dd class="break-words">{{ solicitud.nombre }}</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-texto-secundario">Correo</dt>
+        <dd><a class="enlace enlace-tactil break-all" href="mailto:{{ solicitud.email }}">{{ solicitud.email }}</a></dd>
+      </div>
+      {% if solicitud.telefono %}
+      <div>
+        <dt class="text-xs text-texto-secundario">Teléfono</dt>
+        <dd class="tabular-nums">{{ solicitud.telefono }}</dd>
+      </div>
+      {% endif %}
+      {% if solicitud.empresa %}
+      <div>
+        <dt class="text-xs text-texto-secundario">Empresa</dt>
+        <dd class="break-words">{{ solicitud.empresa }}</dd>
+      </div>
+      {% endif %}
+      {% if solicitud.servicio_texto %}
+      <div>
+        <dt class="text-xs text-texto-secundario">Servicio de interés</dt>
+        <dd class="break-words">{{ solicitud.servicio_texto }}</dd>
+      </div>
+      {% endif %}
+      {% if solicitud.trabajadores %}
+      <div>
+        <dt class="text-xs text-texto-secundario">Cantidad de trabajadores</dt>
+        <dd>{{ solicitud.get_trabajadores_display }}</dd>
+      </div>
+      {% endif %}
+      {% if solicitud.comuna %}
+      <div>
+        <dt class="text-xs text-texto-secundario">Comuna o región</dt>
+        <dd class="break-words">{{ solicitud.comuna }}</dd>
+      </div>
+      {% endif %}
+      <div>
+        <dt class="text-xs text-texto-secundario">Política de privacidad</dt>
+        <dd>Aceptada el {{ solicitud.consentimiento_en|date:"d-m-Y" }} a las {{ solicitud.consentimiento_en|date:"H:i" }}</dd>
+      </div>
+      <div class="sm:col-span-2">
+        <dt class="text-xs text-texto-secundario">Mensaje</dt>
+        <dd class="mt-1 max-w-lectura break-words">{{ solicitud.mensaje|linebreaksbr }}</dd>
+      </div>
+    </dl>
+    <p class="mt-5 border-t border-divisor pt-4 text-xs text-texto-secundario">Para responder, escriba al correo o llame al teléfono de la solicitud. La plataforma no envía mensajes al visitante.</p>
+  </section>
+
+  <div class="flex flex-col gap-6">
+    <section class="tarjeta p-5" aria-labelledby="estado-titulo">
+      <h2 class="text-lg" id="estado-titulo">Seguimiento</h2>
+      <form class="mt-4 flex flex-col gap-4" method="post" action="{% url 'panel:solicitud_estado' solicitud.pk %}">
+        {% csrf_token %}
+        {% include "componentes/campo.html" with campo=form_estado.estado %}
+        <div>{% include "componentes/boton.html" with texto="Cambiar estado" only %}</div>
+      </form>
+    </section>
+
+    <section class="tarjeta p-5" aria-labelledby="notificacion-titulo">
+      <div class="flex flex-wrap items-center gap-3">
+        <h2 class="text-lg" id="notificacion-titulo">Notificación por correo</h2>
+        {% include "componentes/insignia.html" with texto=solicitud.get_notificacion_display tono=solicitud.tono_de_la_notificacion only %}
+      </div>
+      <p class="mt-2 text-sm text-texto-secundario">
+        {% if solicitud.notificacion == "enviada" %}Se envió el {{ solicitud.notificada_en|date:"d-m-Y" }} a las {{ solicitud.notificada_en|date:"H:i" }}.
+        {% elif solicitud.notificacion == "fallida" %}El correo de aviso no se pudo enviar. La solicitud está guardada completa.
+        {% elif solicitud.notificacion == "no_configurada" %}No se envió correo de aviso: falta configurar el correo saliente o sus destinatarios. La solicitud está guardada completa.
+        {% else %}El correo de aviso aún no se envía.{% endif %}
+      </p>
+      {% if solicitud.notificacion_error %}<p class="mt-2 text-sm break-words">Error: {{ solicitud.notificacion_error }}</p>{% endif %}
+      {% if solicitud.notificacion_intentos %}<p class="mt-1 text-xs text-texto-secundario tabular-nums">Intentos: {{ solicitud.notificacion_intentos }}</p>{% endif %}
+      {% if puede_reintentar %}
+      <form class="mt-4" method="post" action="{% url 'panel:solicitud_reintentar' solicitud.pk %}">
+        {% csrf_token %}
+        {% include "componentes/boton.html" with texto="Reintentar notificación" variante="secundario" icono="rotate-ccw" only %}
+      </form>
+      {% endif %}
+    </section>
+
+    <section class="tarjeta p-5" aria-labelledby="notas-titulo">
+      <h2 class="sr-only" id="notas-titulo">Notas internas</h2>
+      <form class="flex flex-col gap-4" method="post" action="{% url 'panel:solicitud_notas' solicitud.pk %}">
+        {% csrf_token %}
+        {% include "componentes/campo.html" with campo=form_notas.notas_internas %}
+        <div>{% include "componentes/boton.html" with texto="Guardar notas" variante="secundario" only %}</div>
+      </form>
+    </section>
+  </div>
+</div>
+{% endblock %}

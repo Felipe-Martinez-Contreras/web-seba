@@ -1,6 +1,7 @@
 from django.urls import include, path
 
 from panel import views
+from solicitudes.models import Solicitud
 
 app_name = "panel"
 
@@ -71,10 +72,38 @@ _de_cliente = [
     ),
 ]
 
+_de_solicitud = [
+    path("", views.SolicitudDetalle.as_view(), name="solicitud"),
+    path("estado/", views.SolicitudEstado.as_view(), name="solicitud_estado"),
+    path("notas/", views.SolicitudNotas.as_view(), name="solicitud_notas"),
+    path("reintentar/", views.SolicitudReintentar.as_view(), name="solicitud_reintentar"),
+]
+
+_de_servicio = [
+    path("editar/", views.ServicioEditar.as_view(), name="servicio_editar"),
+    path("mover/", views.ServicioMover.as_view(), name="servicio_mover"),
+    path("estado/", views.ServicioEstado.as_view(), name="servicio_estado"),
+]
+
 urlpatterns = [
     path("", views.Inicio.as_view(), name="inicio"),
     path("clientes/", views.Clientes.as_view(), name="clientes"),
     path("clientes/nuevo/", views.ClienteNuevo.as_view(), name="cliente_nuevo"),
     path("clientes/<uuid:empresa>/", include(_de_cliente)),
     path("auditoria/", views.Auditoria.as_view(), name="auditoria"),
+    path(
+        "solicitudes/consultas/",
+        views.Solicitudes.as_view(tipo=Solicitud.Tipo.CONSULTA),
+        name="solicitudes_consultas",
+    ),
+    path(
+        "solicitudes/cotizaciones/",
+        views.Solicitudes.as_view(tipo=Solicitud.Tipo.COTIZACION),
+        name="solicitudes_cotizaciones",
+    ),
+    path("solicitudes/<uuid:solicitud>/", include(_de_solicitud)),
+    path("contenido/", views.Contenido.as_view(), name="contenido"),
+    path("contenido/servicios/", views.Servicios.as_view(), name="servicios"),
+    path("contenido/servicios/nuevo/", views.ServicioNuevo.as_view(), name="servicio_nuevo"),
+    path("contenido/servicios/<int:servicio>/", include(_de_servicio)),
 ]

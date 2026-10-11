@@ -351,8 +351,8 @@ def test_un_nombre_con_script_se_muestra_escapado(cliente_http_admin):
 
 
 def test_el_inicio_muestra_solo_datos_reales(cliente_http_admin, cliente_a, cliente_b_activo):
-    """ADM-02: clientes activos, cuentas pendientes y clientes recientes; nada de solicitudes
-    ni de documentos mientras esos datos no existan."""
+    """ADM-02: clientes activos, cuentas pendientes y clientes recientes, con los datos que
+    existen. Las solicitudes tienen sus pruebas en test_solicitudes.py."""
     cliente_b_activo.empresa.activa = False
     cliente_b_activo.empresa.save()
     contenido = cliente_http_admin.get("/panel/").content.decode()
@@ -364,8 +364,11 @@ def test_el_inicio_muestra_solo_datos_reales(cliente_http_admin, cliente_a, clie
     assert "1 cuenta pendiente" in contenido
     assert f'href="/panel/clientes/{cliente_a.empresa_id}/usuarios/"' in contenido
     assert "Clientes recientes" in contenido and "76.111.111-6" in contenido
-    for ausente in ("Solicitudes", "Cotizaciones", "Consultas", "Contenido del sitio"):
-        assert ausente not in contenido, ausente
+    # Sin solicitudes, sus indicadores están en cero y la tabla lo dice.
+    for etiqueta in ("Consultas pendientes", "Cotizaciones pendientes"):
+        cifra = re.search(rf"{etiqueta}</p>\s*<p[^>]*>(\d+)</p>", contenido)
+        assert cifra and cifra.group(1) == "0", etiqueta
+    assert "Aún no hay solicitudes" in contenido
 
     # Sin pendientes, el aviso desaparece.
     cliente_a.set_password(NUEVA)
@@ -387,8 +390,10 @@ def test_el_menu_del_panel_lista_solo_las_secciones_que_existen(cliente_http_adm
     assert textos == [
         "Inicio",
         "Clientes",
+        "Solicitudes",
         "Auditoría",
         "Configuración",
+        "Contenido del sitio",
         "Mi cuenta",
         "Cerrar sesión",
     ]

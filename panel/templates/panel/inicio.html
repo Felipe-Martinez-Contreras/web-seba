@@ -5,11 +5,38 @@
 <h1 class="text-2xl">Panel de administración</h1>
 <p class="mt-1 text-sm text-texto-secundario">Resumen de la actividad de la plataforma.</p>
 
-<div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+<div class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
   {% url 'panel:clientes' as url_clientes %}
+  {% url 'panel:solicitudes_consultas' as url_consultas %}
+  {% url 'panel:solicitudes_cotizaciones' as url_cotizaciones %}
   {% include "componentes/tarjeta_indicador.html" with etiqueta="Clientes activos" valor=clientes_activos icono="users" url=url_clientes|add:"?estado=activos" only %}
+  {% include "componentes/tarjeta_indicador.html" with etiqueta="Consultas pendientes" valor=consultas_pendientes icono="message-square" tono="info" url=url_consultas|add:"?estado=pendiente" only %}
+  {% include "componentes/tarjeta_indicador.html" with etiqueta="Cotizaciones pendientes" valor=cotizaciones_pendientes icono="clipboard-list" tono="exito" url=url_cotizaciones|add:"?estado=pendiente" only %}
   {% include "componentes/tarjeta_indicador.html" with etiqueta="Documentos subidos en los últimos 30 días" valor=documentos_recientes icono="file-text" tono="info" only %}
 </div>
+
+{% if notificaciones_fallidas or contenido_pendiente %}
+<div class="mt-6 flex flex-col gap-3">
+  {% if notificaciones_fallidas %}
+  <div class="alerta alerta-error" role="status">
+    <span class="icono mt-0.5" aria-hidden="true">{% include "iconos/circle-alert.svg" %}</span>
+    <div>
+      <p class="font-semibold">Notificaciones por correo fallidas: {{ notificaciones_fallidas }}</p>
+      <p>Las solicitudes están guardadas, pero su correo de aviso no se pudo enviar. Revíselas en <a class="enlace" href="{{ url_consultas }}">Solicitudes</a> y reintente desde el detalle de cada una.</p>
+    </div>
+  </div>
+  {% endif %}
+  {% if contenido_pendiente %}
+  <div class="alerta alerta-advertencia" role="status">
+    <span class="icono mt-0.5" aria-hidden="true">{% include "iconos/triangle-alert.svg" %}</span>
+    <div>
+      <p class="font-semibold">Contenido pendiente [COMPLETAR]: {{ contenido_pendiente }}</p>
+      <p>Lo que falta no se muestra en el sitio público. Complételo en <a class="enlace" href="{% url 'panel:contenido' %}">Contenido del sitio</a>.</p>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
 
 {% if con_cuentas_pendientes %}
 <section class="tarjeta mt-6" aria-labelledby="pendientes-titulo">
@@ -39,10 +66,45 @@
 </section>
 {% endif %}
 
+<section class="mt-8" aria-labelledby="solicitudes-titulo">
+  <div class="flex items-center justify-between gap-4">
+    <h2 class="text-lg" id="solicitudes-titulo">Solicitudes recientes</h2>
+    {% if solicitudes_recientes %}<a class="enlace enlace-tactil text-sm" href="{{ url_consultas }}">Ver todas<span class="sr-only"> las solicitudes</span></a>{% endif %}
+  </div>
+  <div class="mt-3">
+    {% if solicitudes_recientes %}
+    <div class="tarjeta">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th scope="col">Nombre</th>
+            <th scope="col">Tipo</th>
+            <th scope="col">Fecha</th>
+            <th scope="col">Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for solicitud in solicitudes_recientes %}
+          <tr>
+            <td data-etiqueta="Nombre"><a class="enlace enlace-tactil min-w-0 text-right font-medium break-words md:text-left" href="{% url 'panel:solicitud' solicitud.pk %}">{{ solicitud.nombre }}</a></td>
+            <td data-etiqueta="Tipo">{{ solicitud.get_tipo_display }}</td>
+            <td data-etiqueta="Fecha" class="whitespace-nowrap">{{ solicitud.creado_en|date:"d-m-Y" }}</td>
+            <td data-etiqueta="Estado">{% include "componentes/insignia.html" with texto=solicitud.get_estado_display tono=solicitud.tono_del_estado only %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    {% include "componentes/estado_vacio.html" with titulo="Aún no hay solicitudes" texto="Aquí aparecerán las consultas y las solicitudes de cotización que lleguen desde el sitio." only %}
+    {% endif %}
+  </div>
+</section>
+
 <section class="mt-8" aria-labelledby="recientes-titulo">
   <div class="flex items-center justify-between gap-4">
     <h2 class="text-lg" id="recientes-titulo">Clientes recientes</h2>
-    {% if clientes_recientes %}<a class="enlace text-sm" href="{% url 'panel:clientes' %}">Ver todos</a>{% endif %}
+    {% if clientes_recientes %}<a class="enlace enlace-tactil text-sm" href="{% url 'panel:clientes' %}">Ver todos<span class="sr-only"> los clientes</span></a>{% endif %}
   </div>
   <div class="mt-3">
     {% if clientes_recientes %}

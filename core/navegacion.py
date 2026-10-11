@@ -16,11 +16,15 @@ _SECCIONES = {
     "administrador": [
         ("inicio", "Inicio", "panel:inicio", "house"),
         ("clientes", "Clientes", "panel:clientes", "users"),
+        ("solicitudes", "Solicitudes", "panel:solicitudes_consultas", "inbox"),
         ("auditoria", "Auditoría", "panel:auditoria", "history"),
         (
             "configuracion",
             "Configuración",
-            [("cuenta", "Mi cuenta", "cuentas:mi_cuenta", "circle-user")],
+            [
+                ("contenido", "Contenido del sitio", "panel:contenido", "globe"),
+                ("cuenta", "Mi cuenta", "cuentas:mi_cuenta", "circle-user"),
+            ],
             "settings",
         ),
     ],

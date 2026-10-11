@@ -1,0 +1,28 @@
+{% extends "base_panel.html" %}
+{% block titulo %}{% if edicion %}Editar servicio{% else %}Nuevo servicio{% endif %}{% endblock %}
+{% block contenido %}
+{% include "componentes/migas.html" with migas=migas only %}
+<h1 class="mt-4 text-2xl">{% if edicion %}Editar servicio{% else %}Nuevo servicio{% endif %}</h1>
+
+<div class="tarjeta mt-6 max-w-2xl p-5">
+  {% include "componentes/resumen_errores.html" with formulario=form %}
+  <form class="flex flex-col gap-5" method="post" novalidate>
+    {% csrf_token %}
+    <div class="grid gap-5 sm:grid-cols-2">
+      {% include "componentes/campo.html" with campo=form.nombre %}
+      {% include "componentes/campo.html" with campo=form.icono %}
+    </div>
+    {% include "componentes/campo.html" with campo=form.resumen %}
+    {% include "componentes/campo.html" with campo=form.descripcion %}
+    <div class="flex flex-wrap gap-3">
+      {% if edicion %}
+      {% include "componentes/boton.html" with texto="Guardar cambios" only %}
+      {% else %}
+      {% include "componentes/boton.html" with texto="Crear servicio" only %}
+      {% endif %}
+      {% url 'panel:servicios' as url_cancelar %}
+      {% include "componentes/boton.html" with texto="Cancelar" href=url_cancelar variante="secundario" only %}
+    </div>
+  </form>
+</div>
+{% endblock %}

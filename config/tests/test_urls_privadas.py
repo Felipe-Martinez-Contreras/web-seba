@@ -4,6 +4,7 @@ Solo lo que está en la lista pública explícita puede responder sin sesión. U
 que no herede de un mixin de rol hace fallar esta prueba sin que nadie la agregue aquí.
 """
 
+import datetime
 import hashlib
 import re
 import uuid
@@ -21,12 +22,24 @@ from documentos import almacenamiento, services
 from documentos.models import Documento, VersionDocumento
 from documentos.tests import archivos
 from empresas.models import Carpeta, Empresa
+from sitio.models import DatosNegocio, Servicio
+from solicitudes.models import Solicitud
 
 pytestmark = pytest.mark.django_db
 
 # Nombres completos de las únicas vistas que responden a un visitante sin sesión.
 PUBLICAS = {
     "core:salud",
+    # Sitio público (PUB-01): páginas, sitemap y robots.
+    "sitio:inicio",
+    "sitio:servicios",
+    "sitio:privacidad",
+    "sitio:sitemap",
+    "sitio:robots",
+    "solicitudes:contacto",
+    "solicitudes:cotizacion",
+    # Solo se muestra a quien acaba de enviar un formulario; a los demás los lleva al inicio.
+    "solicitudes:recibida",
     "cuentas:acceso",
     "cuentas:recuperar",
     "cuentas:recuperar_enviado",
@@ -115,6 +128,18 @@ PANEL = {
     "panel:usuario_enlace",
     "panel:usuario_desbloquear",
     "panel:auditoria",
+    "panel:solicitudes_consultas",
+    "panel:solicitudes_cotizaciones",
+    "panel:solicitud",
+    "panel:solicitud_estado",
+    "panel:solicitud_notas",
+    "panel:solicitud_reintentar",
+    "panel:contenido",
+    "panel:servicios",
+    "panel:servicio_nuevo",
+    "panel:servicio_editar",
+    "panel:servicio_mover",
+    "panel:servicio_estado",
 }
 
 # Rutas del portal: todas de solo lectura. Una ruta nueva debe sumarse aquí o la prueba falla.
@@ -146,6 +171,12 @@ def _datos_post(carpeta=None):
         "descripcion": "Descripción puesta por un intruso",
         "archivos": archivos.pdf("intruso.pdf"),
         "archivo": archivos.pdf("reemplazo-del-intruso.pdf"),
+        "estado": "descartada",
+        "notas_internas": "Notas puestas por un intruso",
+        "icono": "flame",
+        "resumen": "Resumen puesto por un intruso",
+        "nombre_comercial": "Nombre comercial puesto por un intruso",
+        "politica_privacidad": "Política puesta por un intruso",
     }
     if carpeta is not None:
         datos["carpeta"] = str(carpeta.pk)
@@ -163,8 +194,30 @@ def urls():
     return encontradas
 
 
+def _contenido_y_solicitud():
+    """Un servicio y una solicitud reales, para las rutas del panel que los identifican."""
+    servicio, _ = Servicio.objects.get_or_create(
+        slug="servicio-de-prueba", defaults={"nombre": "Servicio de prueba", "orden": 1}
+    )
+    solicitud = Solicitud.objects.first() or Solicitud.objects.create(
+        tipo=Solicitud.Tipo.COTIZACION,
+        nombre="Visitante de Prueba",
+        email="visitante@ejemplo.test",
+        telefono="+56 9 1234 5678",
+        servicio=servicio,
+        mensaje="Mensaje de prueba.",
+        consentimiento=True,
+        consentimiento_en=datetime.datetime(2026, 1, 15, tzinfo=datetime.UTC),
+        notificacion=Solicitud.Notificacion.FALLIDA,
+    )
+    return servicio, solicitud
+
+
 def _reales(empresa, usuario, carpeta, documento):
+    servicio, solicitud = _contenido_y_solicitud()
     return {
+        "servicio": servicio.pk,
+        "solicitud": solicitud.pk,
         "empresa": empresa.pk,
         "usuario": usuario.uuid,
         "carpeta": carpeta.pk,
@@ -209,12 +262,16 @@ def _objetos_guardados():
 
 def _foto_de_la_base():
     """Todo lo que el panel puede modificar, para comprobar que un rechazo no cambió nada."""
+    _contenido_y_solicitud()
     return {
         "empresas": list(Empresa.objects.order_by("rut").values()),
         "usuarios": list(Usuario.objects.order_by("rut").values()),
         "carpetas": list(Carpeta.objects.order_by("empresa", "orden", "nombre").values()),
         "documentos": list(Documento.objects.order_by("pk").values()),
         "versiones": list(VersionDocumento.objects.order_by("pk").values()),
+        "servicios": list(Servicio.objects.order_by("pk").values()),
+        "solicitudes": list(Solicitud.objects.order_by("pk").values()),
+        "datos_del_negocio": list(DatosNegocio.objects.values()),
         "almacenamiento": _objetos_guardados(),
         "enlaces": EnlaceAcceso.objects.count(),
         "eventos": EventoAuditoria.objects.count(),
@@ -239,7 +296,12 @@ def test_un_anonimo_solo_accede_a_la_lista_publica(urls):
 
 def test_las_urls_publicas_responden_sin_sesion(urls):
     cliente = Client()
-    esperado = {"cuentas:activar": 404, "cuentas:restablecer": 404, "cuentas:salir": 405}
+    esperado = {
+        "cuentas:activar": 404,
+        "cuentas:restablecer": 404,
+        "cuentas:salir": 405,
+        "solicitudes:recibida": 302,
+    }
     for nombre, ruta, _ in urls:
         if nombre in PUBLICAS:
             assert cliente.get(ruta).status_code == esperado.get(nombre, 200), nombre

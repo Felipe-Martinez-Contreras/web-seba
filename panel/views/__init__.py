@@ -10,6 +10,14 @@ from panel.views.clientes import (
     Clientes,
     ClienteUsuarios,
 )
+from panel.views.contenido import (
+    Contenido,
+    ServicioEditar,
+    ServicioEstado,
+    ServicioMover,
+    ServicioNuevo,
+    Servicios,
+)
 from panel.views.documentos import (
     CarpetaDetalle,
     ClientePapelera,
@@ -24,6 +32,13 @@ from panel.views.documentos import (
     VersionVer,
 )
 from panel.views.inicio import Inicio
+from panel.views.solicitudes import (
+    SolicitudDetalle,
+    Solicitudes,
+    SolicitudEstado,
+    SolicitudNotas,
+    SolicitudReintentar,
+)
 from panel.views.usuarios import (
     UsuarioDesbloquear,
     UsuarioEditar,
@@ -48,6 +63,7 @@ __all__ = [
     "ClientePapelera",
     "ClienteUsuarios",
     "Clientes",
+    "Contenido",
     "DocumentoDetalle",
     "DocumentoEditar",
     "DocumentoEliminar",
@@ -56,6 +72,16 @@ __all__ = [
     "DocumentoRestaurar",
     "DocumentoSubir",
     "Inicio",
+    "ServicioEditar",
+    "ServicioEstado",
+    "ServicioMover",
+    "ServicioNuevo",
+    "Servicios",
+    "SolicitudDetalle",
+    "SolicitudEstado",
+    "SolicitudNotas",
+    "SolicitudReintentar",
+    "Solicitudes",
     "UsuarioDesbloquear",
     "UsuarioEditar",
     "UsuarioEnlace",
