@@ -1,0 +1,10 @@
+#!/bin/sh
+# Docker Compose con la configuración de producción. Uso: dc <argumentos de docker compose>
+# Ejemplos: dc ps · dc logs --tail 50 web · dc exec web python manage.py crear_administrador
+set -eu
+
+raiz="$(cd "$(dirname "$0")/../.." && pwd)"
+exec docker compose \
+    --file "$raiz/despliegue/compose.prod.yaml" \
+    --env-file "${WEB_SEBA_COMPOSE_ENV:-/etc/web-seba/compose.env}" \
+    "$@"

@@ -1,0 +1,11 @@
+[Unit]
+Description=web-seba: respaldo diario de la base de datos (SEG-11)
+
+[Timer]
+OnCalendar=*-*-* 02:30:00
+Unit=webseba-respaldo.service
+Persistent=true
+RandomizedDelaySec=60
+
+[Install]
+WantedBy=timers.target

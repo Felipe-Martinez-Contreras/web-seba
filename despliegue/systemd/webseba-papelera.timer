@@ -1,0 +1,11 @@
+[Unit]
+Description=web-seba: purgar la papelera a diario (ADM-09)
+
+[Timer]
+OnCalendar=*-*-* 03:20:00
+Unit=webseba-tarea@purgar_papelera.service
+Persistent=true
+RandomizedDelaySec=60
+
+[Install]
+WantedBy=timers.target

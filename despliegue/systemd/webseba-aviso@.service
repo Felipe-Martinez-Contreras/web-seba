@@ -1,0 +1,9 @@
+# Avisa por correo que una tarea terminó con error (comando avisar_fallo).
+[Unit]
+Description=web-seba: aviso de fallo de %i
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/web-seba/despliegue/vm/dc exec -T web python manage.py avisar_fallo %i

@@ -1,0 +1,11 @@
+[Unit]
+Description=web-seba: reintentar notificaciones cada 15 minutos (SOL-11)
+
+[Timer]
+OnCalendar=*:0/15
+Unit=webseba-tarea@reintentar_notificaciones.service
+Persistent=false
+RandomizedDelaySec=60
+
+[Install]
+WantedBy=timers.target

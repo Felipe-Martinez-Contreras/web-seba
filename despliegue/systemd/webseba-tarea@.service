@@ -1,0 +1,10 @@
+# Una tarea programada de la aplicación: webseba-tarea@<comando>.service
+[Unit]
+Description=web-seba: tarea %i
+Requires=docker.service
+After=docker.service
+OnFailure=webseba-aviso@%i.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/web-seba/despliegue/vm/tarea.sh %i

@@ -1,0 +1,10 @@
+# Respaldo diario de PostgreSQL hacia el bucket de respaldos (SEG-11).
+[Unit]
+Description=web-seba: respaldo de la base de datos
+Requires=docker.service
+After=docker.service
+OnFailure=webseba-aviso@respaldo.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/web-seba/despliegue/vm/respaldar.sh

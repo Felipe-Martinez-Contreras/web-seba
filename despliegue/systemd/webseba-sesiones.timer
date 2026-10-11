@@ -1,0 +1,11 @@
+[Unit]
+Description=web-seba: borrar sesiones vencidas a diario
+
+[Timer]
+OnCalendar=*-*-* 03:40:00
+Unit=webseba-tarea@clearsessions.service
+Persistent=true
+RandomizedDelaySec=60
+
+[Install]
+WantedBy=timers.target

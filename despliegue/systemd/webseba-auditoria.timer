@@ -1,0 +1,11 @@
+[Unit]
+Description=web-seba: depurar la auditoría una vez al mes (AUD-03)
+
+[Timer]
+OnCalendar=*-*-01 04:10:00
+Unit=webseba-tarea@depurar_auditoria.service
+Persistent=true
+RandomizedDelaySec=60
+
+[Install]
+WantedBy=timers.target
