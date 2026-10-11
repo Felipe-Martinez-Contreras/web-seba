@@ -262,9 +262,16 @@ def test_pub_07_cada_pagina_lleva_titulo_descripcion_canonica_y_open_graph(
     esperado = {
         "/": ("Prevención de Prueba", "Bajada de prueba para la portada."),
         "/servicios/": ("Servicios · Prevención de Prueba", "Presentación de prueba."),
-        "/contacto/": ("Contacto · Prevención de Prueba", None),
-        "/cotizacion/": ("Solicitar cotización · Prevención de Prueba", None),
-        "/privacidad/": ("Política de privacidad · Prevención de Prueba", None),
+        # Sin texto propio, la descripción solo dice qué página es y de quién.
+        "/contacto/": ("Contacto · Prevención de Prueba", "Contacto de Prevención de Prueba."),
+        "/cotizacion/": (
+            "Solicitar cotización · Prevención de Prueba",
+            "Solicite una cotización a Prevención de Prueba.",
+        ),
+        "/privacidad/": (
+            "Política de privacidad · Prevención de Prueba",
+            "Política de privacidad de Prevención de Prueba.",
+        ),
     }
     for ruta, (titulo, descripcion) in esperado.items():
         respuesta = client.get(ruta)
@@ -392,7 +399,28 @@ def test_las_fotos_llevan_texto_alternativo_y_dimensiones(client, negocio, servi
         assert f'width="{foto.ancho}" height="{foto.alto}"' in contenido
     assert 'srcset="/static/img/portada-960.webp 960w, /static/img/portada.webp 1920w"' in contenido
     # La portada es la primera imagen: no se difiere. La de contacto, sí.
-    assert contenido.count('fetchpriority="high"') == 1 and contenido.count('loading="lazy"') == 1
+    imagenes = re.findall(r"<img [^>]+>", contenido)
+    assert len(imagenes) == 2
+    assert 'fetchpriority="high"' in imagenes[0] and 'loading="lazy"' in imagenes[1]
+    assert contenido.count('loading="lazy"') == 1
+    # La portada además se pide desde el <head>, antes de que el navegador llegue a ella.
+    cabeza = contenido.split("</head>")[0]
+    assert (
+        '<link rel="preload" as="image" href="/static/img/portada.webp" '
+        'imagesrcset="/static/img/portada-960.webp 960w, /static/img/portada.webp 1920w" '
+        'imagesizes="100vw" fetchpriority="high">' in cabeza
+    )
+    assert contenido.count('fetchpriority="high"') == 2
+
+
+def test_las_paginas_publicas_y_de_acceso_no_cargan_htmx(client, negocio, cliente_a_activo):
+    """No lo usan, y pesa en la medición de rendimiento del sitio público (RNF-06). El portal
+    y el panel lo conservan."""
+    for ruta in ("/", "/servicios/", "/contacto/", "/cotizacion/", "/acceso/", "/recuperar/"):
+        assert "htmx" not in client.get(ruta).content.decode(), ruta
+    client.force_login(cliente_a_activo)
+    portal = client.get("/portal/").content.decode()
+    assert 'src="/static/vendor/htmx.min.js"' in portal and 'name="htmx-config"' in portal
     acceso = client.get("/acceso/").content.decode()
     assert 'src="/static/img/acceso.webp"' in acceso and f'alt="{fotos.ACCESO.alt}"' in acceso
 

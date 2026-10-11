@@ -35,6 +35,17 @@
   src: url("../fonts/inter-latin-700-normal.woff2") format("woff2");
 }
 
+/* Respaldo con las medidas de Inter: mientras la fuente carga, el texto ocupa casi el mismo
+   espacio y la página no salta al cambiar (Lighthouse midió un CLS de 0,119 en el inicio). */
+@font-face {
+  font-family: "Inter respaldo";
+  src: local("Arial");
+  size-adjust: 107.4%;
+  ascent-override: 90.2%;
+  descent-override: 22.48%;
+  line-gap-override: 0%;
+}
+
 @theme {
   /* Solo existe la paleta del proyecto. */
   --color-*: initial;
@@ -73,7 +84,7 @@
   --color-archivo-powerpoint: #ea580c;
   --color-archivo-imagen: #7c3aed;
 
-  --font-sans: "Inter", system-ui, sans-serif;
+  --font-sans: "Inter", "Inter respaldo", system-ui, sans-serif;
 
   /* Escala 13/14/16/18/20/24/30/40 */
   --text-xs: 0.8125rem;

@@ -42,9 +42,11 @@ def url_absoluta(ruta):
 
 class PaginaPublica:
     """Mixin de las vistas públicas. `nombre_de_pagina` es su título; la descripción sale
-    del contenido registrado o no se publica."""
+    del contenido registrado. Una página sin texto propio usa `descripcion_generica`, que solo
+    dice qué página es y de quién: sin nombre comercial no se publica."""
 
     nombre_de_pagina = ""
+    descripcion_generica = ""
     http_method_names = ["get"]
 
     @cached_property
@@ -65,6 +67,9 @@ class PaginaPublica:
 
     def descripcion(self):
         """Texto de `meta description`. Vacío: la etiqueta no se publica."""
+        nombre = self.contacto.nombre
+        if self.descripcion_generica and nombre:
+            return self.descripcion_generica.format(nombre=nombre)
         return ""
 
     def render_to_response(self, context, **kwargs):

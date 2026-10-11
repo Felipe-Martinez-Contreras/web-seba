@@ -5,6 +5,8 @@ un bloque con fotografía y velo azul marino (PUB-08; origen en docs/FOTOS.md).
 Bloques: titulo, encabezado, bajada y contenido.
 {% endcomment %}
 {% block meta %}<meta name="robots" content="noindex">{% endblock %}
+{# Las pantallas de acceso no usan HTMX: no lo cargan (RNF-06). #}
+{% block htmx %}{% endblock %}
 {% block cuerpo %}
 <div class="flex min-h-screen flex-col bg-superficie">
   <main id="contenido" class="flex flex-1 flex-col" tabindex="-1">

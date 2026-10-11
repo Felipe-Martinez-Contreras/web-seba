@@ -5,6 +5,8 @@ Sitio público: encabezado azul marino, contenido y pie. El inicio reemplaza el 
 {% endcomment %}
 {% block titulo %}{{ seo_titulo|default:"Inicio" }}{% endblock %}
 {% block meta %}{% include "componentes/meta_publica.html" %}{% endblock %}
+{# Las páginas públicas no usan HTMX: no lo cargan (RNF-06). #}
+{% block htmx %}{% endblock %}
 {% block cuerpo %}
 <div class="flex min-h-screen flex-col bg-superficie">
   {% block cabecera %}{% include "componentes/encabezado_publico.html" %}{% endblock %}

@@ -109,7 +109,10 @@ def test_contraste_de_bordes_e_iconos(frente, fondo):
 
 
 def test_la_tipografia_es_inter_autoalojada():
-    assert '--font-sans: "Inter", system-ui, sans-serif;' in CSS
+    # "Inter respaldo" es una fuente del sistema con las medidas de Inter, para que la página
+    # no salte cuando termina de cargar la fuente.
+    assert '--font-sans: "Inter", "Inter respaldo", system-ui, sans-serif;' in CSS
+    assert 'font-family: "Inter respaldo";\n  src: local("Arial");' in CSS
     assert "IBM Plex" not in CSS
     fuentes = re.findall(r'url\("\.\./fonts/([^"]+)"\)', CSS)
     assert fuentes == [f"inter-latin-{peso}-normal.woff2" for peso in (400, 500, 600, 700)]

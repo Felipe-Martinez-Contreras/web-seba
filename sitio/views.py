@@ -63,6 +63,7 @@ class Privacidad(PaginaPublica, TemplateView):
 
     template_name = "sitio/privacidad.html"
     nombre_de_pagina = "Política de privacidad"
+    descripcion_generica = "Política de privacidad de {nombre}."
 
     def get_context_data(self, **kwargs):
         contexto = super().get_context_data(**kwargs)

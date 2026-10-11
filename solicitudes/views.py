@@ -71,12 +71,14 @@ class Contacto(_Formulario):
     template_name = "solicitudes/contacto.html"
     form_class = FormularioConsulta
     nombre_de_pagina = "Contacto"
+    descripcion_generica = "Contacto de {nombre}."
 
 
 class Cotizacion(_Formulario):
     template_name = "solicitudes/cotizacion.html"
     form_class = FormularioCotizacion
     nombre_de_pagina = "Solicitar cotización"
+    descripcion_generica = "Solicite una cotización a {nombre}."
 
     def get_initial(self):
         """Servicio preseleccionado desde su botón (PUB-03). El formulario ignora un
