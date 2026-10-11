@@ -1,8 +1,8 @@
-// Estado "cargando" en los formularios que se envían sin HTMX: marca el botón de envío
-// como ocupado y evita el doble envío. Los formularios con HTMX usan la clase htmx-request.
+// Estado "cargando" al enviar un formulario: marca el botón de envío como ocupado y evita
+// el doble envío.
 document.addEventListener("submit", function (evento) {
   var formulario = evento.target;
-  if (!(formulario instanceof HTMLFormElement) || formulario.hasAttribute("hx-post")) {
+  if (!(formulario instanceof HTMLFormElement)) {
     return;
   }
   if (formulario.dataset.enviando === "si") {

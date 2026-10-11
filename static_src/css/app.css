@@ -248,20 +248,8 @@
     @apply hidden;
   }
 
-  .boton[aria-busy="true"] .boton-indicador,
-  .htmx-request.boton .boton-indicador,
-  .htmx-request .boton .boton-indicador {
+  .boton[aria-busy="true"] .boton-indicador {
     @apply inline-flex animate-spin;
-  }
-
-  /* Indicador de peticiones HTMX (HTMX no inyecta sus estilos: lo impide la CSP) */
-  .htmx-indicator {
-    @apply hidden;
-  }
-
-  .htmx-request .htmx-indicator,
-  .htmx-request.htmx-indicator {
-    @apply inline-flex;
   }
 
   /* Campos de formulario */

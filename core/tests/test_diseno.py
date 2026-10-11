@@ -124,7 +124,7 @@ def test_la_tipografia_es_inter_autoalojada():
 
 
 def test_ninguna_plantilla_carga_recursos_de_terceros():
-    """HTMX, fuentes e íconos son propios: nada de CDN (sección 5)."""
+    """Fuentes, íconos y JavaScript son propios: nada de CDN (sección 5)."""
     for carpeta in ("templates", "core/templates", "static_src", "static/js"):
         for ruta in (settings.BASE_DIR / carpeta).rglob("*"):
             if ruta.suffix not in {".html", ".css", ".js"}:

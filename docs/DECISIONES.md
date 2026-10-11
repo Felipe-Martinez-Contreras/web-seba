@@ -168,6 +168,7 @@ Decisiones técnicas y dependencias, con su motivo. Cada dependencia indica para
 | DEC-160 | 11-10-2026 | El servicio de errores opcional (RNF-05) se decide en la Etapa 8, con el hosting. Firefox se revisa con el navegador real, manejado por WebDriver BiDi. El lector de pantalla se revisa por el árbol de accesibilidad, más una pasada del responsable con el Narrador | Decisiones del responsable al aprobar el plan de la etapa |
 | DEC-161 | 11-10-2026 | Herramientas de la revisión, usadas una vez con `npx` y fuera del repositorio: axe-core 4.10.3 y Lighthouse 12.8.2 | No son dependencias del proyecto (mismo criterio que DEC-141) |
 | DEC-162 | 11-10-2026 | Ningún índice nuevo tras medir con el volumen de diseño | RNF-01: la consulta más lenta tardó 8 ms y el peor p95 fue de 130 ms |
+| DEC-163 | 11-10-2026 | HTMX se retira del proyecto: el archivo, su configuración, el atributo `hx-headers` y sus estilos. **Desviación de la sección 5**, que lo pide para filtros, subida con progreso y cambios de estado | Decidido por el responsable; cierra DEC-157. Ninguna plantilla lo usaba: los filtros y los cambios de estado son formularios y enlaces que recargan la página, y la subida con progreso usa `XMLHttpRequest` (DEC-95). Código sin uso es peso y superficie de ataque sin beneficio. La sección 5 se sigue cumpliendo en lo demás: interfaz renderizada en el servidor, JavaScript mínimo y sin frameworks. Si más adelante hace falta una interacción parcial, se reevalúa con una decisión nueva |
 
 ## Dependencias de ejecución
 
@@ -206,7 +207,6 @@ Descargados el 09-10-2026 desde el registro npm y servidos desde la propia aplic
 
 | Paquete | Versión | Licencia | Origen | sha256 del paquete |
 | --- | --- | --- | --- | --- |
-| htmx.org | 2.0.10 | 0BSD | `https://registry.npmjs.org/htmx.org/-/htmx.org-2.0.10.tgz` | `577ad40c1c94c9de47edb89e0aec78a8353d36024c50017eb53e02992a55e889` |
 | @fontsource/inter | 5.3.0 (Inter v20 de Google Fonts, modificada el 10-09-2025) | OFL-1.1 | `https://registry.npmjs.org/@fontsource/inter/-/inter-5.3.0.tgz` | `02034af8d41dcc67ac8eab88f642e129bb8a2e8922abf30229c32725f54d8fd6` |
 | lucide-static | 1.54.0 | ISC | `https://registry.npmjs.org/lucide-static/-/lucide-static-1.54.0.tgz` | `e902c38c3b0b132c90c26cd24e7021068e278a53c4c72fc3e49ef53dfe9d35fa` |
 
@@ -214,8 +214,6 @@ El paquete de Inter coincide además con el `shasum` SHA-1 que publica el regist
 
 | Archivo en el repositorio | Paquete y ruta de origen | sha256 del archivo |
 | --- | --- | --- |
-| `static/vendor/htmx.min.js` | htmx.org: `package/dist/htmx.min.js` | `71ea67185bfa8c98c39d31717c6fce5d852370fcdfd129db4543774d3145c0de` |
-| `static/vendor/LICENCIA-htmx.txt` | htmx.org: `package/LICENSE` | `d3d2456f76414f2456104660ebd65aff1c04cd7966b942bdabd63f3cdb316a38` |
 | `static/fonts/inter-latin-400-normal.woff2` | @fontsource/inter: `package/files/inter-latin-400-normal.woff2` | `8909904ab6c872eb994093482a88a28eca2cd95912d7b6fecd72103b0dc07edc` |
 | `static/fonts/inter-latin-500-normal.woff2` | @fontsource/inter: `package/files/inter-latin-500-normal.woff2` | `f3779f1efccc4bdcdf9c0a02ab95bf6bd092ed09c48c08cedc725889edd1d19f` |
 | `static/fonts/inter-latin-600-normal.woff2` | @fontsource/inter: `package/files/inter-latin-600-normal.woff2` | `f9a06e79cd3a2a20951c0f0e28f66dd0e6d3fda73911d640a2125c8fcb78f21a` |
@@ -289,6 +287,8 @@ Las fotografías del sitio tienen su propio registro en `docs/FOTOS.md`.
 Los archivos se copiaron sin modificar; todos tienen fin de línea LF, que es como el repositorio guarda el texto (`.gitattributes`).
 
 Retirado el 09-10-2026: IBM Plex Sans (`@ibm/plex-sans` 1.1.0), reemplazada por Inter (DEC-37).
+
+Retirado el 11-10-2026: HTMX (`htmx.org` 2.0.10, `static/vendor/htmx.min.js` y su licencia), que ninguna plantilla usaba (DEC-163).
 
 ## Dependencias descartadas
 

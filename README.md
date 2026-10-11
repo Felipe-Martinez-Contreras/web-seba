@@ -207,7 +207,7 @@ panel/         Vistas del administrador: inicio, clientes, usuarios, carpetas, d
 sitio/         Páginas públicas, servicios, datos del negocio, fotografías y contenido pendiente
 solicitudes/   Formularios de consulta y cotización, antispam y notificación al profesional
 templates/     Plantillas base, componentes, íconos y páginas 404 y 500
-static/        HTMX, fuentes, fotografías y JavaScript propios (sin CDN), incluida la subida con progreso
+static/        Fuentes, fotografías y JavaScript propios (sin CDN), incluida la subida con progreso
 static_src/    Entrada de Tailwind con los tokens de diseño
 docker/        Script de arranque de desarrollo
 docs/          Especificación, plan, arquitectura, decisiones, trazabilidad, seguridad y manual del administrador

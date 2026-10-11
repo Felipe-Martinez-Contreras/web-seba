@@ -60,7 +60,7 @@ web-seba/
 ├─ portal/  panel/  sitio/  solicitudes/  auditoria/
 ├─ templates/   # base.html, base_publica.html, base_aplicacion.html (portal y panel), componentes/, iconos/, 404.html, 500.html
 ├─ static_src/css/app.css     # entrada de Tailwind con los tokens de la sección 9
-├─ static/{vendor,fonts,js}/   # HTMX, Inter woff2 y JavaScript propio (sin CDN)
+├─ static/{fonts,img,js}/      # Inter woff2, fotografías y JavaScript propio (sin CDN)
 ├─ docs/
 └─ .github/workflows/ci.yml
 ```
@@ -79,7 +79,7 @@ El detalle y el motivo de cada una están en `DECISIONES.md`.
 - **Ejecución, instaladas:** Django 6.1.2, psycopg 3.3.6, argon2-cffi 25.1.0, WhiteNoise 6.12.0, django-otp 1.7.4, segno 1.6.6 y boto3 1.43.111.
 - **Ejecución, por agregar:** Gunicorn (Etapa 8).
 - **Desarrollo y CI:** pytest, pytest-django, pytest-cov, ruff, pip-audit, y moto (con flask y flask-cors) como emulador de S3.
-- **Estáticos propios:** Tailwind CLI standalone, HTMX, Inter, Lucide.
+- **Estáticos propios:** Tailwind CLI standalone, Inter, Lucide. HTMX se retiró en la Etapa 7 (DEC-163).
 
 ## 4. Supuestos
 
@@ -101,6 +101,7 @@ Aprobadas por el responsable el 09-10-2026.
 - **D2. `Empresa` y utilidades de RUT se adelantan a la Etapa 1.** El usuario personalizado debe existir antes de la primera migración, lleva RUT validado y una relación con `Empresa`; además la Etapa 2 prueba que una empresa desactivada pierde el acceso. En la Etapa 1 solo entran los modelos y `core/rut.py` con sus pruebas; las pantallas siguen en las Etapas 2 y 3.
 - **D3. PostgreSQL de Compose sin publicar el puerto 5432**, por el servicio local. Si se necesita acceso desde el host, se publica en 5433.
 - **D4. Barra de progreso de subida con `<progress>` nativo** y HTMX con `includeIndicatorStyles` desactivado, para cumplir la CSP sin estilos en línea (SEG-02).
+- **D5. Sin HTMX** (aprobada por el responsable el 11-10-2026, DEC-163). La sección 5 lo pide para interacciones parciales; ninguna pantalla llegó a usarlo y se retiró. La subida con progreso usa `XMLHttpRequest`.
 
 ## 6. Riesgos conocidos
 
@@ -153,7 +154,6 @@ Aprobadas por el responsable el 09-10-2026.
 - Logo real: hasta tenerlo se usan la marca y el favicon provisionales (DEC-48, DEC-154).
 - Responsable: pasada con el Narrador de Windows y mirada al visor de PDF en una ventana de Firefox (listas en el README).
 - Responsable: Safari y Safari en iOS, con un dispositivo Apple (RNF-03).
-- Responsable: decidir si HTMX se quita del todo; hoy ninguna plantilla lo usa (DEC-157).
 - Responsable: agregar `DEMO_PERMITIDO=true` a su `.env` de desarrollo para seguir usando `cargar_demo` (DEC-149).
 - Etapa 8: repetir en staging Lighthouse y las mediciones de tiempos (RNF-06, RNF-02, `SEGURIDAD.md` §3).
 - Etapa 8: `PROXY_HTTPS_ENCABEZADO`, Gunicorn escuchando en TCP, `DJANGO_SETTINGS_MODULE` fijo en la imagen y la aplicación sin exposición directa (`SEGURIDAD.md` §4); activar HSTS para subdominios y precarga cuando corresponda.
@@ -326,6 +326,7 @@ Endurecimiento y calidad: no agrega funciones. Decisiones DEC-143 a DEC-162. El 
 - `check --deploy` quedó como prueba automática en vez de un paso propio de la CI (DEC-147).
 - El favicon se generó sin Pillow (DEC-154).
 - Lighthouse no se adelantó mientras se esperaba la aprobación de los hallazgos: necesitaba la configuración de producción, que era parte de H-03.
+- Tras el reporte, el responsable decidió retirar HTMX del todo (DEC-163, desviación D5).
 - No previsto en el plan: HTMX deja de cargarse en las páginas públicas, la fuente de respaldo, la precarga de la portada y las descripciones genéricas (DEC-157 a DEC-159), que salieron de la medición de Lighthouse.
 - Tres pruebas anteriores cambiaron porque cambió, por decisión aprobada, lo que afirmaban: los eventos sobre el límite de recuperación (de uno por petición a uno), los códigos de recuperación (ya no desaparecen al recargar) y las descripciones de tres páginas. Otras tres se ajustaron por el marcado nuevo (orden de la fotografía en la portada, precarga y nombre de la fuente).
 - La revisión con lector de pantalla fue sobre el árbol de accesibilidad, no escuchándolo. Firefox se manejó sin interfaz. Safari no se probó. No hay staging: todas las mediciones son locales.

@@ -415,14 +415,21 @@ def test_las_fotos_llevan_texto_alternativo_y_dimensiones(client, negocio, servi
     assert 'src="/static/img/acceso.webp"' in acceso and f'alt="{fotos.ACCESO.alt}"' in acceso
 
 
-def test_las_paginas_publicas_y_de_acceso_no_cargan_htmx(client, negocio, cliente_a_activo):
-    """No lo usan, y pesa en la medición de rendimiento del sitio público (RNF-06). El portal
-    y el panel lo conservan."""
+def test_htmx_no_esta_en_el_proyecto(client, negocio, cliente_a_activo):
+    """Se retiró en la Etapa 7 (DEC-163): ninguna plantilla lo usaba. Si alguna vez vuelve,
+    que sea con una decisión registrada y no por una plantilla suelta."""
     for ruta in ("/", "/servicios/", "/contacto/", "/cotizacion/", "/acceso/", "/recuperar/"):
-        assert "htmx" not in client.get(ruta).content.decode(), ruta
+        assert "htmx" not in client.get(ruta).content.decode().lower(), ruta
     client.force_login(cliente_a_activo)
-    portal = client.get("/portal/").content.decode()
-    assert 'src="/static/vendor/htmx.min.js"' in portal and 'name="htmx-config"' in portal
+    assert "htmx" not in client.get("/portal/").content.decode().lower()
+    assert not (settings.BASE_DIR / "static" / "vendor").exists()
+    for carpeta in ("templates", "static", "static_src", "core", "cuentas", "panel", "portal"):
+        for archivo in (settings.BASE_DIR / carpeta).rglob("*"):
+            if archivo.suffix not in {".html", ".js", ".css"}:
+                continue
+            texto = archivo.read_text(encoding="utf-8")
+            assert "htmx" not in texto.lower(), archivo
+            assert not re.search(r"\shx-[a-z]+=", texto), archivo
 
 
 # --- Marca en el acceso y página 404 ---------------------------------------------------

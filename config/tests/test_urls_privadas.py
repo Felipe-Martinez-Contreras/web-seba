@@ -10,6 +10,7 @@ import re
 import uuid
 
 import pytest
+from django.conf import settings
 from django.core import mail
 from django.test import Client
 from django.urls import URLPattern, URLResolver, get_resolver
@@ -518,11 +519,14 @@ def test_un_formulario_sin_token_csrf_responde_403(cliente_a_activo, administrad
         "/desbloquear/"
     )
     assert admin.post(url).status_code == 403
-    # Con el token en el encabezado, como lo envía HTMX, la petición pasa.
+    # Con el token en el encabezado, como lo envía la subida con progreso, la petición pasa.
     token = admin.get("/panel/").cookies["csrftoken"].value
     assert admin.post(url, HTTP_X_CSRFTOKEN=token).status_code == 302
 
 
-def test_las_plantillas_envian_el_token_csrf_en_el_encabezado_para_htmx(client):
-    contenido = client.get("/acceso/").content.decode()
-    assert 'hx-headers=\'{"X-CSRFToken": "' in contenido
+def test_la_subida_con_progreso_envia_el_token_csrf_del_formulario():
+    """Es el único envío por JavaScript: toma el token del propio formulario y lo manda en
+    el encabezado. Ninguna página lo publica en otro atributo."""
+    guion = (settings.BASE_DIR / "static" / "js" / "subida.js").read_text(encoding="utf-8")
+    assert "formulario.querySelector('input[name=\"csrfmiddlewaretoken\"]')" in guion
+    assert 'peticion.setRequestHeader("X-CSRFToken", token.value)' in guion
