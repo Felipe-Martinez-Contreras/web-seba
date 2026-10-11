@@ -14,7 +14,7 @@ Plan de la Etapa 0 (sección 11 de `ESPECIFICACION.md`). Se actualiza al avanzar
 | 4 | Documentos | Aprobada por el responsable el 11-10-2026, tras probarla en el navegador |
 | 5 | Portal del cliente | Terminada el 11-10-2026; pendiente de aprobación del responsable |
 | 6 | Sitio público y solicitudes | Terminada el 11-10-2026, con las fotografías aprobadas; pendiente de aprobación del responsable |
-| 7 | Endurecimiento y calidad | Terminada el 11-10-2026; pendiente de aprobación del responsable |
+| 7 | Endurecimiento y calidad | Aprobada por el responsable el 11-10-2026, tras su revisión en Firefox |
 | 8 | Despliegue y operación | Pendiente |
 
 ## 1. Entorno revisado (09-10-2026)
@@ -152,7 +152,7 @@ Aprobadas por el responsable el 09-10-2026.
 - Etapa 8: definir `NOTIFICACIONES_DESTINATARIOS` y el proveedor SMTP; programar `reintentar_notificaciones` cada 15 minutos; ejecutar `contenido_pendiente --estricto` antes de publicar.
 - Etapa 8: `cargar_demo` en staging con `DEMO_PERMITIDO=true`; producción no define esa variable.
 - Logo real: hasta tenerlo se usan la marca y el favicon provisionales (DEC-48, DEC-154).
-- Responsable: pasada con el Narrador de Windows y mirada al visor de PDF en una ventana de Firefox (listas en el README).
+- Lector de pantalla real: el responsable decidió el 11-10-2026 no hacer la pasada con el Narrador (E8 queda con ese pendiente; la lista sigue en el README).
 - Responsable: Safari y Safari en iOS, con un dispositivo Apple (RNF-03).
 - Responsable: agregar `DEMO_PERMITIDO=true` a su `.env` de desarrollo para seguir usando `cargar_demo` (DEC-149).
 - Etapa 8: repetir en staging Lighthouse y las mediciones de tiempos (RNF-06, RNF-02, `SEGURIDAD.md` §3).
