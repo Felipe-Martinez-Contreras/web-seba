@@ -1,5 +1,6 @@
 import datetime
 import os
+import re
 import subprocess
 import sys
 
@@ -16,6 +17,7 @@ ENTORNO_VALIDO = {
     "ALLOWED_HOSTS": "ejemplo.cl",
     "DATABASE_URL": "postgres://usuario:clave@db.ejemplo.cl:5432/base",
     "PROXY_CONFIANZA_REDES": "10.0.0.0/8",
+    "PROXY_HTTPS_ENCABEZADO": "X-Forwarded-Proto",
     "SITIO_URL": "https://ejemplo.cl",
     "DOCUMENTOS_ALMACENAMIENTO": "local",
 }
@@ -64,7 +66,9 @@ def test_prod_exige_declarar_los_proxies_de_confianza_aunque_sea_vacio():
     resultado = _importar_prod(sin_variable)
     assert resultado.returncode != 0
     assert "PROXY_CONFIANZA_REDES" in resultado.stderr
-    assert _importar_prod({**ENTORNO_VALIDO, "PROXY_CONFIANZA_REDES": ""}).returncode == 0
+    # Vacía es válida: sin proxy, tampoco se lee su encabezado de HTTPS.
+    directo = {**ENTORNO_VALIDO, "PROXY_CONFIANZA_REDES": "", "PROXY_HTTPS_ENCABEZADO": ""}
+    assert _importar_prod(directo).returncode == 0
 
 
 def test_prod_exige_la_url_del_sitio_con_https():
@@ -141,6 +145,24 @@ def test_encabezados_de_seguridad(client):
     assert respuesta["Referrer-Policy"] == "same-origin"
 
 
+@pytest.mark.django_db
+@pytest.mark.parametrize("ruta", ["/esta-pagina-no-existe/", "/acceso/", "/salud/", "/portal/"])
+def test_todas_las_respuestas_llevan_una_permissions_policy_restrictiva(client, ruta):
+    politica = client.get(ruta)["Permissions-Policy"]
+    for funcion in ("camera", "microphone", "geolocation", "payment", "usb", "display-capture"):
+        assert f"{funcion}=()" in politica, funcion
+    # Ninguna función queda delegada, ni al propio origen.
+    assert "self" not in politica and "*" not in politica
+
+
+@pytest.mark.django_db
+def test_sin_una_ip_valida_en_la_conexion_queda_un_error_en_el_log(client, caplog):
+    """Tras un socket Unix no hay REMOTE_ADDR: todos compartirían los mismos contadores."""
+    with caplog.at_level("ERROR", logger="core.middleware"):
+        assert client.get("/salud/", REMOTE_ADDR="").status_code == 200
+    assert "No se pudo determinar la IP del cliente" in caplog.text
+
+
 def test_env_booleano_entero_y_lista(monkeypatch):
     monkeypatch.setenv("PRUEBA_BOOLEANO", "Sí")
     monkeypatch.setenv("PRUEBA_ENTERO", "42")
@@ -195,3 +217,87 @@ def test_prod_exige_declarar_el_almacenamiento_de_documentos():
     resultado = _importar_prod(sin_variable)
     assert resultado.returncode != 0
     assert "DOCUMENTOS_ALMACENAMIENTO" in resultado.stderr
+
+
+_VER_HTTPS = (
+    "import config.settings.prod as p; "
+    "print(getattr(p, 'SECURE_PROXY_SSL_HEADER', None), p.CSRF_TRUSTED_ORIGINS, "
+    "p.SECURE_HSTS_INCLUDE_SUBDOMAINS, p.SECURE_HSTS_PRELOAD)"
+)
+
+
+def test_prod_reconoce_https_detras_del_proxy_declarado():
+    """Sin esto, con el proxy terminando TLS, la redirección a HTTPS no termina nunca."""
+    resultado = _importar_prod(ENTORNO_VALIDO, _VER_HTTPS)
+    assert resultado.returncode == 0, resultado.stderr
+    assert resultado.stdout.strip() == (
+        "('HTTP_X_FORWARDED_PROTO', 'https') ['https://ejemplo.cl'] False False"
+    )
+
+
+def test_prod_exige_el_encabezado_de_https_si_hay_proxy_y_no_lo_lee_si_no_lo_hay():
+    sin_encabezado = {k: v for k, v in ENTORNO_VALIDO.items() if k != "PROXY_HTTPS_ENCABEZADO"}
+    resultado = _importar_prod(sin_encabezado)
+    assert resultado.returncode != 0 and "PROXY_HTTPS_ENCABEZADO" in resultado.stderr
+
+    directo = {**sin_encabezado, "PROXY_CONFIANZA_REDES": ""}
+    resultado = _importar_prod(directo, _VER_HTTPS)
+    assert resultado.returncode == 0, resultado.stderr
+    assert resultado.stdout.startswith("None ")
+
+    # Sin proxy de confianza, cualquiera podría enviar el encabezado.
+    resultado = _importar_prod({**directo, "PROXY_HTTPS_ENCABEZADO": "X-Forwarded-Proto"})
+    assert resultado.returncode != 0 and "PROXY_HTTPS_ENCABEZADO" in resultado.stderr
+
+
+def test_prod_admite_origenes_csrf_y_hsts_ampliado_por_variables():
+    entorno = {
+        **ENTORNO_VALIDO,
+        "CSRF_TRUSTED_ORIGINS": "https://ejemplo.cl,https://www.ejemplo.cl",
+        "SECURE_HSTS_INCLUDE_SUBDOMAINS": "true",
+        "SECURE_HSTS_PRELOAD": "true",
+    }
+    resultado = _importar_prod(entorno, _VER_HTTPS)
+    assert resultado.stdout.strip().endswith(
+        "['https://ejemplo.cl', 'https://www.ejemplo.cl'] True True"
+    )
+
+
+_CHECK_DEPLOY = (
+    "import os, django; os.environ['DJANGO_SETTINGS_MODULE'] = 'config.settings.prod'; "
+    "django.setup(); from django.core.management import call_command; "
+    "call_command('check', deploy=True, fail_level='WARNING')"
+)
+
+
+def test_check_deploy_con_la_configuracion_de_produccion():
+    """SEG-01. Las dos únicas advertencias admitidas están justificadas en SEGURIDAD.md: HSTS
+    para subdominios y `preload` se activan por variable al confirmar el dominio."""
+
+    def advertencias(entorno):
+        resultado = _importar_prod(entorno, _CHECK_DEPLOY)
+        assert "SystemCheckError" in resultado.stderr, resultado.stderr
+        return set(re.findall(r"[(](\w+[.][WE]\d+)[)]", resultado.stdout + resultado.stderr))
+
+    # Una clave como la que se genera para producción, y el servidor de correo configurado.
+    produccion = {
+        **ENTORNO_VALIDO,
+        "SECRET_KEY": "k7#Qm2xLw9!Tz4pVb6@Hn8rYc1$Fd3sGj5%Ae0uXo7&Ni2Rt-Wq8Zs",
+        "CORREO_HOST": "smtp.ejemplo.cl",
+        "CORREO_REMITENTE": "no-responder@ejemplo.cl",
+    }
+    assert advertencias(produccion) == {"security.W005", "security.W021"}
+
+    completo = {
+        **produccion,
+        "SECURE_HSTS_INCLUDE_SUBDOMAINS": "true",
+        "SECURE_HSTS_PRELOAD": "true",
+    }
+    resultado = _importar_prod(completo, _CHECK_DEPLOY)
+    assert resultado.returncode == 0, resultado.stderr
+    assert "no issues" in resultado.stdout
+
+    # Sin servidor de correo la aplicación arranca, y Django lo advierte: los envíos quedan
+    # registrados como "correo no configurado".
+    sin_correo = {k: v for k, v in completo.items() if not k.startswith("CORREO_")}
+    assert advertencias(sin_correo) == {"mail.W001"}

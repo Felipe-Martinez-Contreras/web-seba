@@ -95,3 +95,20 @@ def test_la_ventana_no_se_alarga_con_cada_fallo(monkeypatch):
     # Pasaron 15 minutos desde el primer evento: la cuenta parte de nuevo.
     reloj[0] += 301
     assert limites.contar("prueba:ventana", 900) == 1
+
+
+def test_el_bloqueo_no_se_pierde_aunque_la_cache_reciba_cientos_de_entradas(settings):
+    """Con el tope por defecto de la caché (300 entradas), al llenarla se borraban primero
+    las claves de acceso: bastaban unos cientos de solicitudes de recuperación."""
+    settings.ACCESO_INTENTOS_MAXIMOS = 5
+    settings.ACCESO_INTENTOS_MAXIMOS_IP = 5
+    _fallar(5)
+    bloqueo.desbloquear_rut("222222222")
+    assert bloqueo.esta_bloqueado(RUT, IP) and bloqueo.rut_bloqueado(RUT)
+
+    for numero in range(400):
+        cache.set(f"recuperar:rut:{numero}", {"n": 1, "desde": 0}, timeout=3600)
+
+    assert bloqueo.esta_bloqueado(RUT, IP) and bloqueo.rut_bloqueado(RUT)
+    assert cache.get(f"acceso:bloqueo-ip:{IP}") is True
+    assert cache.get("acceso:gen:222222222") == 1

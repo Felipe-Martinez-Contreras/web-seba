@@ -40,6 +40,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "core.middleware.PoliticaDePermisosMiddleware",
     "core.middleware.IpClienteMiddleware",
     "django.middleware.csp.ContentSecurityPolicyMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
@@ -76,11 +77,14 @@ TEMPLATES = [
 DATABASES = {"default": env.base_de_datos("DATABASE_URL")}
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Caché en base de datos (sección 5): la tabla se crea con `createcachetable`.
+# Caché en base de datos (sección 5): la tabla se crea con `createcachetable`. Guarda los
+# contadores y bloqueos de acceso, así que el tope no puede ser el de Django (300 entradas):
+# al superarlo se borran primero las claves alfabéticamente menores, que son las de acceso.
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.db.DatabaseCache",
         "LOCATION": "cache",
+        "OPTIONS": {"MAX_ENTRIES": 100_000},
     }
 }
 
@@ -152,7 +156,7 @@ SOLICITUDES_TIEMPO_MINIMO_SEGUNDOS = env.entero("SOLICITUDES_TIEMPO_MINIMO_SEGUN
 # Punto de extensión para un captcha, desactivado: ruta de una función que recibe la
 # petición y devuelve si el captcha fue resuelto.
 SOLICITUDES_CAPTCHA = env.texto("SOLICITUDES_CAPTCHA", "")
-# `cargar_demo` solo corre en desarrollo o con esta variable; producción nunca la define.
+# `cargar_demo` solo corre con esta variable; producción nunca la define.
 DEMO_PERMITIDO = env.booleano("DEMO_PERMITIDO", False)
 
 # Retención de la auditoría (AUD-03): el comando `depurar_auditoria` borra lo anterior.
