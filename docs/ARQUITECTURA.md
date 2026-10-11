@@ -166,3 +166,20 @@ Visitante ── POST /contacto/ o /cotizacion/
 - `reintentar_notificaciones` (cron, cada 15 minutos) vuelve a intentar las fallidas, hasta `NOTIFICACIONES_INTENTOS_MAXIMOS`, y envía las que quedaron sin intentar.
 - El correo va solo a `NOTIFICACIONES_DESTINATARIOS`, con `Reply-To` del visitante. El visitante no recibe ningún correo automático.
 - La solicitud no guarda la IP. El seguimiento (Pendiente, En proceso, Resuelta, Descartada) y las notas internas se llevan en el panel; cada cambio de estado deja un evento de auditoría.
+
+## 9. Producción
+
+Detalle en `DESPLIEGUE.md`. En una frase: una máquina sin puertos de entrada, con tres contenedores, publicada por un túnel saliente.
+
+```
+Visitante ──HTTPS──> Cloudflare ══túnel══> cloudflared ──http──> web (Gunicorn) ──> db (PostgreSQL)
+                                                                  │
+                                                                  ├──API S3──> bucket de documentos
+                                                                  └──SMTP───> Resend
+Navegador ──URL firmada, 120 s──> bucket de documentos
+```
+
+- **IP del visitante:** `web` solo acepta `CF-Connecting-IP` de la dirección fija de `cloudflared` (`SEGURIDAD.md` §2).
+- **Estáticos:** recolectados en la imagen con hash en el nombre, servidos por WhiteNoise y cacheados por Cloudflare.
+- **Descargas:** el flujo de la sección 4 no cambia; la redirección lleva al navegador directo al bucket, sin pasar por la máquina ni por Cloudflare.
+- **Fuera de la petición:** las tareas programadas son temporizadores de systemd que ejecutan comandos dentro de `web`.

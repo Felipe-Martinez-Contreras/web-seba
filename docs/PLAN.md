@@ -15,7 +15,7 @@ Plan de la Etapa 0 (sección 11 de `ESPECIFICACION.md`). Se actualiza al avanzar
 | 5 | Portal del cliente | Terminada el 11-10-2026; pendiente de aprobación del responsable |
 | 6 | Sitio público y solicitudes | Terminada el 11-10-2026, con las fotografías aprobadas; pendiente de aprobación del responsable |
 | 7 | Endurecimiento y calidad | Aprobada por el responsable el 11-10-2026, tras su revisión en Firefox |
-| 8 | Despliegue y operación | Pendiente |
+| 8 | Despliegue y operación | En curso. Fase A (repositorio) terminada el 11-10-2026; Fase B (staging real) pendiente de los pasos del responsable en las consolas |
 
 ## 1. Entorno revisado (09-10-2026)
 
@@ -39,7 +39,7 @@ Versiones verificadas en fuentes oficiales el 09-10-2026:
 - Django: series con soporte 5.2 LTS (5.2.18, hasta abril 2028), 6.0 (6.0.9, solo seguridad hasta abril 2027) y 6.1 (6.1.2, la más reciente). La serie 6 trae CSP nativo (`ContentSecurityPolicyMiddleware`, `SECURE_CSP`).
 - `django-otp` 1.7.4 (requiere Django ≥ 4.2). `django-storages` 1.14.6 (abril 2025; sus clasificadores llegan a Django 5.1).
 
-Las versiones que quedaron sin verificar en la Etapa 0 se confirmaron al iniciar la Etapa 1 y están en `DECISIONES.md`: Python 3.13.16, psycopg 3.3.6, WhiteNoise 6.12.0, Tailwind CLI 4.3.3, HTMX 2.0.10 y uv 0.12.24. Gunicorn (26.2.0 verificada) se agrega en la Etapa 8.
+Las versiones que quedaron sin verificar en la Etapa 0 se confirmaron al iniciar la Etapa 1 y están en `DECISIONES.md`: Python 3.13.16, psycopg 3.3.6, WhiteNoise 6.12.0, Tailwind CLI 4.3.3, HTMX 2.0.10 y uv 0.12.24. Gunicorn 26.2.0 se agregó en la Etapa 8.
 
 ## 2. Estructura del proyecto
 
@@ -47,7 +47,8 @@ Las versiones que quedaron sin verificar en la Etapa 0 se confirmaron al iniciar
 web-seba/
 ├─ CLAUDE.md  README.md  .env.example  .gitignore  .gitattributes  .dockerignore
 ├─ pyproject.toml  uv.lock
-├─ Dockerfile  compose.yaml  docker/arrancar-dev.sh
+├─ Dockerfile  compose.yaml  docker/{arrancar-dev.sh,salud.py}
+├─ despliegue/{compose.prod.yaml,*.env.example,vm/,systemd/}   # producción (docs/DESPLIEGUE.md)
 ├─ manage.py
 ├─ config/
 │  ├─ settings/{base,dev,test,prod}.py
@@ -76,8 +77,7 @@ web-seba/
 
 El detalle y el motivo de cada una están en `DECISIONES.md`.
 
-- **Ejecución, instaladas:** Django 6.1.2, psycopg 3.3.6, argon2-cffi 25.1.0, WhiteNoise 6.12.0, django-otp 1.7.4, segno 1.6.6 y boto3 1.43.111.
-- **Ejecución, por agregar:** Gunicorn (Etapa 8).
+- **Ejecución:** Django 6.1.2, psycopg 3.3.6, argon2-cffi 25.1.0, WhiteNoise 6.12.0, django-otp 1.7.4, segno 1.6.6, boto3 1.43.111 y Gunicorn 26.2.0.
 - **Desarrollo y CI:** pytest, pytest-django, pytest-cov, ruff, pip-audit, y moto (con flask y flask-cors) como emulador de S3.
 - **Estáticos propios:** Tailwind CLI standalone, Inter, Lucide. HTMX se retiró en la Etapa 7 (DEC-163).
 
@@ -102,6 +102,7 @@ Aprobadas por el responsable el 09-10-2026.
 - **D3. PostgreSQL de Compose sin publicar el puerto 5432**, por el servicio local. Si se necesita acceso desde el host, se publica en 5433.
 - **D4. Barra de progreso de subida con `<progress>` nativo** y HTMX con `includeIndicatorStyles` desactivado, para cumplir la CSP sin estilos en línea (SEG-02).
 - **D5. Sin HTMX** (aprobada por el responsable el 11-10-2026, DEC-163). La sección 5 lo pide para interacciones parciales; ninguna pantalla llegó a usarlo y se retiró. La subida con progreso usa `XMLHttpRequest`.
+- **D6. Producción en una VM única, no en un PaaS** (decidida por el responsable el 11-10-2026, DEC-164 y DEC-165). La sección 0 supone un PaaS con PostgreSQL administrado; la sección 11 pide no atarse a un proveedor. Con presupuesto cero, la aplicación, PostgreSQL y el túnel corren en una e2-micro de Google Cloud. Lo que cambia: los respaldos, los parches del sistema y la restauración son nuestros (`DESPLIEGUE.md`), no hay recuperación a un punto en el tiempo y staging y producción comparten máquina. Lo que no cambia: la aplicación sigue configurándose solo por variables de entorno y su imagen corre en cualquier hosting de contenedores.
 
 ## 6. Riesgos conocidos
 
@@ -115,7 +116,9 @@ Aprobadas por el responsable el 09-10-2026.
 - **Un RUT = una cuenta = una empresa.** Una persona que trabaje para dos empresas cliente no puede tener dos cuentas (multiempresa está fuera de alcance, sección 16).
 - **Django 6.1 no es LTS.** Hay que migrar a 6.2 LTS cuando se publique.
 - **Datos de salud de trabajadores** y Ley 21.719: la región del hosting y del almacenamiento queda pendiente de asesoría legal.
-- **VM única en producción** (ver respuesta 5): se aparta de los supuestos de la sección 0.
+- **VM única en producción** (D6): sin redundancia, con 1 GB de memoria y con planes gratuitos que pueden cambiar. Detalle en `SEGURIDAD.md` §8.
+- **Cloudflare ve el tráfico descifrado**, incluidos los documentos mientras se suben: tensión con R7, aceptada por el responsable (DEC-166).
+- **El almacenamiento contra Google Cloud Storage sigue sin probar**: el bucket aún no existe. Hay dos ajustes probables previstos (`DESPLIEGUE.md` §12).
 
 ## 7. Preguntas y respuestas del responsable (09-10-2026)
 
@@ -136,28 +139,35 @@ Aprobadas por el responsable el 09-10-2026.
 
 ## 8. Pendientes abiertos
 
-- Datos comerciales de la sección 0 (responsable).
-- Texto de la política de privacidad y revisión legal de la Ley 19.628 y la Ley 21.719 (responsable del negocio).
-- Hosting, correo y almacenamiento: propuesta comparada en la Etapa 8, incluida la VM única.
+Del responsable, para la Fase B de la Etapa 8:
+
+- **Nombre del subdominio** de `fmartinez.xyz` y **correo** que recibe las solicitudes y los avisos de error. El 11-10-2026 llegaron sin completar.
+- Pasos en las consolas de Google Cloud, Cloudflare, Resend y GitHub (`DESPLIEGUE.md` §3) y primera instalación en la VM (§4).
+- Confirmar en las páginas oficiales que la IP externa de la VM gratuita no se cobra y el cupo gratuito de Cloud Storage.
+
+De la Fase B, una vez que exista staging (`DESPLIEGUE.md` §12):
+
+- `comprobar_almacenamiento --firma` contra el bucket real (prueba 11, DOC-03, DOC-04) y los dos ajustes previstos si hacen falta (DEC-183).
+- HTTPS, encabezados y `check --deploy` en la VM; la IP real en la auditoría; subida de 24,9 MB.
+- Correo real con SPF, DKIM y DMARC; aviso de error 500 y de tarea fallida.
+- Temporizadores en marcha y simulacro de restauración anotado.
+- Lighthouse y tiempos de respuesta contra staging (RNF-06, RNF-02); memoria y swap bajo uso.
+- Monitor de disponibilidad y alerta de presupuesto funcionando.
+
+Del responsable, antes de pasar a producción (lista del README):
+
+- Datos comerciales de la sección 0 y contenido del sitio en Panel › Configuración › Contenido del sitio; `contenido_pendiente --estricto` sin pendientes.
+- Texto real de la política de privacidad, que mencione el almacenamiento en EE. UU. (responsable del negocio).
+- Aprobación explícita del paso a producción.
+
+Sin etapa:
+
+- Revisión legal de la Ley 19.628 y la Ley 21.719 (`DESPLIEGUE.md` §14): recomendación, no bloqueo (DEC-172).
 - Migración a Django 6.2 LTS cuando se publique.
-- Etapa 8: programar `depurar_auditoria` una vez al mes y `purgar_papelera` a diario.
-- Etapa 8: comprobar el almacenamiento contra un bucket de prueba real con `comprobar_almacenamiento --firma`, incluido que el objeto no se lea sin firma (prueba 11); credenciales con permisos mínimos; versionado del bucket con expiración de versiones antiguas, y el procedimiento para una solicitud de eliminación de datos.
-- Etapa 8: límite de tamaño de subida en el servidor web y el proxy (SEG-07) y tiempos de espera para 25 MB (RNF-02).
-- Etapa 8: la base de producción debe permitir crear la extensión `unaccent`, o traerla creada (DEC-116).
-- Revisión del responsable: recorrer el portal en un teléfono real (pasos en el README).
-- Revisión del responsable: recorrer E2 y E6 en el navegador con un administrador real y su 2FA, y probar el botón "Copiar enlace".
-- Etapa 8: valor de `PROXY_CONFIANZA_REDES` según el hosting; formato de los logs de Gunicorn y del proxy sin el token de los enlaces; proveedor SMTP.
-- Fotos reales del profesional: cuando existan, reemplazan a las de banco (`docs/FOTOS.md`).
-- Responsable: cargar los datos del negocio y los servicios en Panel › Configuración › Contenido del sitio; hasta entonces el sitio público muestra solo navegación y pie.
-- Etapa 8: definir `NOTIFICACIONES_DESTINATARIOS` y el proveedor SMTP; programar `reintentar_notificaciones` cada 15 minutos; ejecutar `contenido_pendiente --estricto` antes de publicar.
-- Etapa 8: `cargar_demo` en staging con `DEMO_PERMITIDO=true`; producción no define esa variable.
-- Logo real: hasta tenerlo se usan la marca y el favicon provisionales (DEC-48, DEC-154).
+- Logo real y fotos propias del profesional (DEC-48, DEC-154, `docs/FOTOS.md`).
+- Safari y Safari en iOS, con un dispositivo Apple (RNF-03); recorrido de E2 y E6 con un administrador real y su 2FA; el portal en un teléfono real.
 - Lector de pantalla real: el responsable decidió el 11-10-2026 no hacer la pasada con el Narrador (E8 queda con ese pendiente; la lista sigue en el README).
-- Responsable: Safari y Safari en iOS, con un dispositivo Apple (RNF-03).
-- Responsable: agregar `DEMO_PERMITIDO=true` a su `.env` de desarrollo para seguir usando `cargar_demo` (DEC-149).
-- Etapa 8: repetir en staging Lighthouse y las mediciones de tiempos (RNF-06, RNF-02, `SEGURIDAD.md` §3).
-- Etapa 8: `PROXY_HTTPS_ENCABEZADO`, Gunicorn escuchando en TCP, `DJANGO_SETTINGS_MODULE` fijo en la imagen y la aplicación sin exposición directa (`SEGURIDAD.md` §4); activar HSTS para subdominios y precarga cuando corresponda.
-- Etapa 8: servicio de errores opcional (RNF-05).
+- HSTS a un año, para subdominios y precarga, cuando el dominio definitivo esté estable.
 
 ## 9. Etapa 1: qué quedó construido
 
@@ -331,3 +341,28 @@ Endurecimiento y calidad: no agrega funciones. Decisiones DEC-143 a DEC-162. El 
 - Tres pruebas anteriores cambiaron porque cambió, por decisión aprobada, lo que afirmaban: los eventos sobre el límite de recuperación (de uno por petición a uno), los códigos de recuperación (ya no desaparecen al recargar) y las descripciones de tres páginas. Otras tres se ajustaron por el marcado nuevo (orden de la fotografía en la portada, precarga y nombre de la fuente).
 - La revisión con lector de pantalla fue sobre el árbol de accesibilidad, no escuchándolo. Firefox se manejó sin interfaz. Safari no se probó. No hay staging: todas las mediciones son locales.
 
+## 17. Etapa 8: qué quedó construido (Fase A)
+
+Despliegue y operación. Decisiones DEC-164 a DEC-183. Guía completa en `DESPLIEGUE.md`.
+
+**La etapa no está terminada.** Su criterio de cierre es que la aplicación corra en staging con HTTPS, `check --deploy` limpio y la restauración probada; eso depende de los pasos del responsable en las consolas y está pendiente. Lo construido hasta aquí:
+
+- **Imagen de producción** (`Dockerfile`, target `prod`): dos etapas, sin dependencias de desarrollo, estáticos recolectados, usuario sin privilegios y configuración de producción fija. 343 MB.
+- **Gunicorn** con hilos, en TCP y con logs en JSON que ocultan el token de los enlaces.
+- **Compose de producción** con `db`, `web` y `cloudflared`, sin puertos publicados, y el túnel como único proxy de confianza.
+- **Guiones de la VM:** preparar (swap, Docker, parches automáticos), desplegar, respaldar y restaurar.
+- **Tareas programadas** con systemd: notificaciones, papelera, sesiones, auditoría y respaldo diario, con aviso por correo si fallan.
+- **Avisos de error 500** por correo, sin datos de formularios, y comando `avisar_fallo`.
+- **CI:** trabajo `imagen`, que construye, levanta, comprueba y publica la imagen en GitHub Container Registry.
+- **Documentación:** `DESPLIEGUE.md` con los pasos de consola, operación, rotación de secretos, cambio de dominio, paso a producción y pendientes legales.
+
+Comprobado en local con la imagen de producción el 11-10-2026: `/salud/`, redirección a HTTPS, encabezados, estáticos con hash y un año de caché, IP del visitante aceptada solo desde la dirección del túnel, las cuatro tareas, y `pg_dump` con `pg_restore` sobre una base recreada.
+
+### Diferencias con el plan aprobado de la etapa
+
+- Dos archivos de variables en vez de uno (DEC-175).
+- Los ajustes de Cloudflare van en reglas acotadas al nombre del sitio, no en la zona entera (DEC-182): `fmartinez.xyz` tiene otros usos.
+- "Usar siempre HTTPS" de Cloudflare no se pide: la redirección la hace la aplicación.
+- La rotación de logs queda en el Compose de producción, no en la configuración del servicio Docker.
+- Correcciones del responsable al aprobar: Resend admite hasta 3 dominios (el del cliente se agrega sin reemplazar el provisional) y la vigencia de la Ley 21.719 queda sujeta al proyecto que la posterga (DEC-169, DEC-172).
+- El guion `dc` no funciona desde Git Bash en Windows (rutas); en el equipo de desarrollo se llama a `docker compose` directamente. En Linux, que es donde se usa, corre en la CI.

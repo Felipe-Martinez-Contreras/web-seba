@@ -1,6 +1,6 @@
 # Seguridad
 
-Amenazas principales, el control que mitiga cada una y las limitaciones conocidas. Cubre lo construido hasta la Etapa 7. La revisión general de esa etapa, hecha por un revisor independiente, está en la sección 7.
+Amenazas principales, el control que mitiga cada una y las limitaciones conocidas. Cubre lo construido hasta la Etapa 8. La revisión general de la Etapa 7, hecha por un revisor independiente, está en la sección 7; la plataforma de producción y sus riesgos, en la sección 8.
 
 ## 1. Amenazas y controles
 
@@ -69,6 +69,12 @@ Amenazas principales, el control que mitiga cada una y las limitaciones conocida
 | HTML o scripts en los textos editables y en los datos del visitante | Autoescape en todas las plantillas; saltos de línea con `linebreaksbr`; sin `safe` | Plantillas de `sitio`, `solicitudes` y `panel` | `test_prueba_14_*`, `test_seg_06_*` |
 | Enlace del sitio o del correo que apunta al dominio de un atacante | Canónica, sitemap, Open Graph y enlace al panel se arman con `SITIO_URL` | `sitio/paginas.py`, `solicitudes/services.py` | `test_la_canonica_usa_sitio_url_y_no_el_encabezado_host` |
 | Buscadores indexando pantallas privadas | `X-Robots-Tag: noindex` en todo lo que no es una página pública con contenido; `robots.txt` no enumera rutas | `sitio/middleware.py` | `test_pub_07_solo_las_paginas_publicas_quedan_sin_noindex` |
+| Otro contenedor de la máquina se hace pasar por el proxy y declara una IP falsa | El único proxy de confianza es la dirección fija del contenedor del túnel (`/32`), y el encabezado que se lee es `CF-Connecting-IP`, que escribe Cloudflare | `despliegue/compose.prod.yaml`, `despliegue/web.env.example`, `core/ip.py` | `test_detras_de_cloudflared_la_ip_sale_de_cf_connecting_ip`; comprobado con la imagen de producción el 11-10-2026 |
+| El aviso de un error lleva por correo una contraseña, un token o datos de un formulario | Manejador propio: método, ruta con el token oculto, tipo de excepción y marcos. Sin datos de la petición ni el mensaje de la excepción | `core/avisos.py` | `core/tests/test_avisos.py` (`test_el_aviso_no_lleva_datos_del_formulario_ni_el_mensaje_de_la_excepcion`, `test_el_aviso_oculta_el_token_de_los_enlaces`) |
+| Un error repetido agota el cupo de correo y deja sin notificaciones al negocio | Tope de avisos por hora, en memoria | `core/avisos.py` | `test_los_avisos_tienen_un_tope_por_hora` |
+| El servidor web escribe en su log el token de un enlace, lo que la persona buscó o su IP | Gunicorn usa el formateador de la aplicación; el log de acceso anota la ruta sin la cadena de consulta y sin IP | `config/gunicorn.py`, `core/logs.py` | `config/tests/test_gunicorn.py` |
+| Un comando en el servidor corre con la configuración de desarrollo | La imagen de producción fija `DJANGO_SETTINGS_MODULE` | `Dockerfile` (target `prod`) | Trabajo `imagen` de la CI (`check --deploy` dentro del contenedor) |
+| La aplicación comprometida modifica su propio código | En la imagen el código es de `root` y el proceso corre sin privilegios ni capacidades | `Dockerfile`, `despliegue/compose.prod.yaml` | Trabajo `imagen` de la CI (usuario 1000) |
 | Datos de demostración en producción | `cargar_demo` solo corre con `DEMO_PERMITIDO=true`; `DEBUG` no cuenta, porque `manage.py` usa la configuración de desarrollo si falta la variable de entorno. Sus datos quedan listados en `contenido_pendiente --estricto` | `sitio/management/commands/cargar_demo.py` | `test_cargar_demo_se_niega_a_correr_en_produccion`, `test_cargar_demo_no_acepta_debug_como_permiso` |
 
 ## 2. Cómo se obtiene la IP del cliente
@@ -78,7 +84,9 @@ Amenazas principales, el control que mitiga cada una y las limitaciones conocida
 3. La lista se recorre de derecha a izquierda, saltando los proxies de confianza. La primera dirección que no lo es, es el cliente. Lo que esté más a la izquierda lo pudo escribir el cliente y no se usa.
 4. Un valor que no es una IP hace volver a la dirección de la conexión.
 
-Producción no arranca si `PROXY_CONFIANZA_REDES` no está declarada, aunque sea vacía. El valor concreto depende del hosting y se fija en la Etapa 8.
+Producción no arranca si `PROXY_CONFIANZA_REDES` no está declarada, aunque sea vacía.
+
+En producción (Etapa 8) el único proxy es el contenedor `cloudflared`, con dirección fija en la red de Docker: `PROXY_CONFIANZA_REDES=172.30.57.2/32` y `PROXY_CONFIANZA_ENCABEZADO=CF-Connecting-IP`. Cloudflare escribe en ese encabezado una sola dirección, la del visitante, y reemplaza lo que este haya enviado con ese nombre. Los demás contenedores reciben direcciones de otro rango de la misma red, así que no pueden declarar una IP. Comprobado el 11-10-2026 con la imagen de producción: un acceso fallido desde `172.30.57.2` dejó en la auditoría la dirección declarada (IPv4 e IPv6); desde otro contenedor, la del contenedor.
 
 ## 3. Medición de tiempos de respuesta
 
@@ -103,7 +111,7 @@ Recuperación, 10 solicitudes por caso, alternadas y con 5 segundos entre una y 
 
 Una primera versión lanzaba el hilo de envío de inmediato y esta misma medición lo delató: 27,7 ms contra 16,8 ms, porque el hilo competía por la CPU con la petición. Por eso el hilo ahora parte entre 2 y 4 segundos después.
 
-La medición es local y sobre un equipo de desarrollo. Debe repetirse en staging en la Etapa 7.
+La medición es local y sobre un equipo de desarrollo. Repetirla en staging está pendiente (`DESPLIEGUE.md` §12).
 
 ## 4. Limitaciones conocidas
 
@@ -116,7 +124,7 @@ La medición es local y sobre un equipo de desarrollo. Debe repetirse en staging
 - **Los contadores de intentos no son atómicos.** Viven en la caché de base de datos. Con peticiones simultáneas pueden colarse uno o dos intentos de más antes del bloqueo.
 - **El límite por IP no agrupa IPv6.** Un atacante con un bloque IPv6 puede rotar direcciones. El límite por RUT e IP sigue aplicando a cada dirección; el límite por IP sola pierde eficacia.
 - **Una red compartida puede bloquearse entera.** Varias personas de una misma empresa salen con la misma IP: 30 fallos entre todas, en 15 minutos, bloquean esa IP. Se desbloquea con `desbloquear_acceso --ip`.
-- **Los logs del servidor web y del proxy.** La aplicación oculta el token de las rutas de enlace en sus propios logs. Gunicorn y el proxy de producción escriben los suyos: su formato se configura en la Etapa 8 para que no registren esa ruta completa.
+- **Los logs del servidor web y del proxy.** Gunicorn escribe con el formateador de la aplicación, que oculta el token (`config/gunicorn.py`). `cloudflared` no anota las rutas en su nivel normal de log. Cloudflare sí ve la URL completa de cada petición, token incluido: lo acotan el uso único y el vencimiento del enlace (sección 8).
 - **El admin de Django deja eventos solo para los usuarios.** Editar el nombre, el correo o el estado de un usuario queda en `EventoAuditoria`; la empresa y los privilegios no se pueden cambiar ahí. Lo que el superusuario técnico cambie en una empresa queda solo en el historial propio del admin de Django. Es una herramienta de soporte, no la interfaz de trabajo (ADM-12).
 - **El corte de sesión no deja evento.** Cuando una sesión se elimina porque la cuenta o la empresa se desactivó, no se registra un evento aparte; lo que queda en la auditoría es la desactivación misma, con quién la hizo.
 - **El enlace de activación pasa por la pantalla del administrador.** Quien vea esa pantalla, o reciba el enlace por un canal inseguro, puede definir la contraseña de la cuenta antes que su dueño. Lo acotan el uso único, el vencimiento (72 horas, o 1 hora si es de restablecimiento) y que generar otro enlace revoca el anterior. Si la persona avisa que su enlace "ya fue usado" sin haberlo usado ella, hay que desactivar la cuenta y revisar su actividad.
@@ -124,14 +132,14 @@ La medición es local y sobre un equipo de desarrollo. Debe repetirse en staging
 - **El correo de activación se envía dentro de la petición.** Si el servidor de correo no responde, la pantalla tarda hasta 10 segundos y luego informa el fallo. El enlace se muestra igual.
 - **Todos los administradores tienen permisos completos** (sección 0). Cualquiera de ellos puede desactivar clientes, generar enlaces y leer la auditoría completa. No hay segregación entre administradores.
 - **Un administrador bloqueado no se desbloquea desde el panel.** Se usa `desbloquear_acceso`, en el servidor, o se espera a que venza el bloqueo (15 minutos).
-- **La retención borra de verdad.** `depurar_auditoria` elimina los eventos más antiguos que `AUDITORIA_RETENCION_MESES`. Un valor mal puesto (por ejemplo, 1) borra casi todo en la siguiente ejecución; los respaldos de la base (Etapa 8) son la única vuelta atrás.
+- **La retención borra de verdad.** `depurar_auditoria` elimina los eventos más antiguos que `AUDITORIA_RETENCION_MESES`. Un valor mal puesto (por ejemplo, 1) borra casi todo en la siguiente ejecución; los respaldos de la base (14 días, `DESPLIEGUE.md` §7) son la única vuelta atrás.
 - **Purgar la papelera no borra el archivo al instante si el bucket tiene versionado.** SEG-11 pide activar el versionado del bucket, como respaldo. Con él, cuando `purgar_papelera` borra un objeto, el proveedor solo le pone una marca de borrado: el contenido queda como versión antigua hasta que la regla de expiración del bucket lo elimina, entre 30 y 90 días después según se configure. Consecuencias:
     - Para la aplicación el documento ya no existe (ni filas ni objeto visible), pero quien tenga acceso de administración al bucket todavía puede recuperarlo durante ese plazo.
     - El plazo real de eliminación de un documento es: hasta 30 días en la papelera, más la espera hasta la siguiente ejecución de `purgar_papelera`, más la expiración de versiones antiguas del bucket.
-    - **Solicitudes de eliminación de datos** (Ley 19.628 y Ley 21.719): ese es el plazo que hay que informar. Si una solicitud exige borrar antes, hay que eliminar a mano las versiones antiguas de esos objetos en el bucket, además de purgar; las claves están en la tabla de versiones hasta el momento de la purga, así que deben anotarse antes. El procedimiento queda para `DESPLIEGUE.md` (Etapa 8), cuando exista el bucket.
+    - **Solicitudes de eliminación de datos** (Ley 19.628 y Ley 21.719): ese es el plazo que hay que informar. Si una solicitud exige borrar antes, hay que eliminar a mano las versiones antiguas de esos objetos en el bucket, además de purgar; las claves están en la tabla de versiones hasta el momento de la purga, así que deben anotarse antes. El procedimiento está en `DESPLIEGUE.md` §13.
     - Lo mismo vale para los respaldos de la base de datos: las filas borradas siguen en los respaldos hasta que vencen (SEG-11).
     - Con el almacenamiento local no hay versionado: el archivo se borra del disco en la purga.
-- **El almacenamiento S3 solo se probó contra un emulador.** Las pruebas automáticas usan `moto` dentro del proceso, y la descarga por URL firmada se revisó además por HTTP contra `moto_server`. El emulador rechaza una petición sin firma, pero **no valida la firma ni el vencimiento**: el 11-10-2026 se comprobó que sigue sirviendo el archivo con la firma alterada y 125 segundos después de emitida la URL. Por eso el vencimiento de 2 minutos está verificado solo como parámetro de la URL (`X-Amz-Expires=120`); que el proveedor lo haga cumplir se comprueba contra el bucket real con `comprobar_almacenamiento --firma`, antes de cargar documentos (Etapa 8). Ese comando verifica que el objeto no se lea sin firma (prueba 11), que una firma alterada se rechace y que la URL vencida deje de servir.
+- **El almacenamiento S3 solo se probó contra un emulador.** Las pruebas automáticas usan `moto` dentro del proceso, y la descarga por URL firmada se revisó además por HTTP contra `moto_server`. El emulador rechaza una petición sin firma, pero **no valida la firma ni el vencimiento**: el 11-10-2026 se comprobó que sigue sirviendo el archivo con la firma alterada y 125 segundos después de emitida la URL. Por eso el vencimiento de 2 minutos está verificado solo como parámetro de la URL (`X-Amz-Expires=120`); que el proveedor lo haga cumplir se comprueba contra el bucket real con `comprobar_almacenamiento --firma`, antes de cargar documentos. **Sigue pendiente al 11-10-2026: el bucket aún no existe** (`DESPLIEGUE.md` §12). Ese comando verifica que el objeto no se lea sin firma (prueba 11), que una firma alterada se rechace y que la URL vencida deje de servir.
 - **Con S3, el evento de auditoría registra la emisión de la URL firmada.** La aplicación no sabe si la descarga terminó, ni cuántas veces se usó la URL dentro de sus 120 segundos.
 - **La URL firmada es un permiso al portador durante 120 segundos.** En "Ver" queda en la barra de direcciones y en el historial de esa pestaña. Quien la copie dentro de ese plazo puede descargar el archivo sin sesión. La respuesta que la entrega lleva `no-store`.
 - **`Content-Security-Policy: sandbox` solo cubre la entrega local.** En la entrega por S3 los encabezados los pone el bucket, que vive en otro dominio: un archivo abierto ahí no comparte origen con la aplicación ni recibe sus cookies. En Edge se comprobó que el visor de PDF funciona con `sandbox`; en Firefox y Safari queda para la revisión de navegadores de la Etapa 7 (RNF-03).
@@ -141,30 +149,30 @@ La medición es local y sobre un equipo de desarrollo. Debe repetirse en staging
 - **El título de un documento queda en el detalle de los eventos de auditoría.** Sirve para saber qué se descargó aunque el documento ya no exista. Los títulos no deben llevar datos sensibles; el manual del administrador no lo exige todavía y conviene decidirlo con la asesoría legal.
 - **Un archivo aceptado queda publicado de inmediato.** No hay borradores: lo que el administrador sube a la carpeta de un cliente, ese cliente lo ve. Para evitar subirlo al cliente equivocado, la zona de subida muestra destacados la razón social y el RUT del cliente, y cada resultado dice para quién quedó publicado (DEC-114). Es una ayuda visual, no un control: si igual ocurre, se corrige eliminando el documento, y la descarga que haya habido queda en la auditoría.
 - **Subida sin JavaScript limitada a unos 100 MB por envío.** El tope por petición equivale a 4 archivos del tamaño máximo. Con JavaScript va un archivo por petición y no hay tope en la cantidad.
-- **El límite de tamaño en el servidor web y el proxy** (SEG-07) se configura en la Etapa 8. Hoy lo aplica solo la aplicación.
+- **El límite de tamaño en el proxy** (SEG-07) es el del plan gratuito de Cloudflare, 100 MB por petición, que no se puede bajar. Coincide con el tope de la aplicación, que corta antes de leer el cuerpo. No hay un servidor web intermedio que lo repita (DEC-180).
 - **El portal muestra a todas las cuentas de una empresa todos sus documentos.** No hay permisos por carpeta ni por persona (fuera de alcance, sección 16).
-- **La búsqueda del portal necesita la extensión `unaccent` en la base.** La crea una migración; en producción el usuario de la base debe poder crearla o debe existir de antemano (Etapa 8).
+- **La búsqueda del portal necesita la extensión `unaccent` en la base.** La crea una migración; en producción el usuario de la base es el del contenedor de PostgreSQL, que puede crearla (comprobado con la imagen de producción el 11-10-2026, también tras restaurar un respaldo).
 - **Si el proceso muere entre guardar el objeto y confirmar la base,** puede quedar un objeto sin registro. No es accesible por ninguna vista y su clave no revela nada. No hay todavía un comando que los detecte.
 - **La marca de tiempo del antispam se puede reutilizar.** Quien pide el formulario una vez puede reenviar la misma marca firmada durante 24 horas, y el control de los 3 segundos deja de actuar para él. Siguen el campo trampa y el límite por IP. Hacerla de un solo uso exigiría guardar cada marca (H-07, sin cambio).
 - **El bloqueo por IP no se ve ni se levanta desde el panel.** Una oficina bloqueada por 30 fallos aparece con sus cuentas "Activo" y sin botón de desbloqueo: se usa `desbloquear_acceso --ip` o se esperan 15 minutos (H-05, sin cambio).
-- **Sin una IP en la conexión, los límites se comparten.** Si el servidor de aplicación recibe las conexiones por un socket Unix, `REMOTE_ADDR` viene vacío y todos los clientes usan los mismos contadores. La aplicación lo deja en el log como error en cada petición. Gunicorn debe escuchar en TCP detrás del proxy (Etapa 8).
-- **`manage.py` usa la configuración de desarrollo si falta `DJANGO_SETTINGS_MODULE`.** En el servidor, un comando lanzado sin esa variable correría con `DEBUG=True` y el correo de consola. `cargar_demo` ya no depende de eso; fijar la variable en la imagen de producción es de la Etapa 8.
-- **El encabezado de HTTPS se acepta de cualquier conexión.** Django no comprueba que `PROXY_HTTPS_ENCABEZADO` venga del proxy de confianza. Si la aplicación fuera alcanzable sin pasar por el proxy, un cliente podría enviarlo y evitar la redirección a HTTPS en su propia conexión. El proxy debe sobrescribirlo siempre y la aplicación no debe quedar expuesta directamente (Etapa 8).
+- **Sin una IP en la conexión, los límites se comparten.** Si el servidor de aplicación recibe las conexiones por un socket Unix, `REMOTE_ADDR` viene vacío y todos los clientes usan los mismos contadores. La aplicación lo deja en el log como error en cada petición. Por eso Gunicorn escucha en TCP (`config/gunicorn.py`, con prueba).
+- **`manage.py` usa la configuración de desarrollo si falta `DJANGO_SETTINGS_MODULE`.** En el servidor, un comando lanzado sin esa variable correría con `DEBUG=True` y el correo de consola. `cargar_demo` ya no depende de eso, y la imagen de producción fija la variable (DEC-174). El riesgo queda solo para quien ejecute el código fuera de esa imagen.
+- **El encabezado de HTTPS se acepta de cualquier conexión.** Django no comprueba que `PROXY_HTTPS_ENCABEZADO` venga del proxy de confianza. Si la aplicación fuera alcanzable sin pasar por el proxy, un cliente podría enviarlo y evitar la redirección a HTTPS en su propia conexión. En producción la aplicación no publica ningún puerto: solo la alcanzan los contenedores de su red de Docker, y la VM no acepta conexiones de entrada (sección 8).
 - **El antispam no detiene a un atacante dedicado.** Frena a los robots genéricos. Quien lea el formulario puede dejar vacío el campo trampa, esperar 3 segundos y repartir los envíos entre muchas IP. Para ese caso queda el punto de extensión del captcha (`SOLICITUDES_CAPTCHA`), desactivado.
 - **El límite de envíos es por IP.** Varias personas detrás de una misma IP comparten los 5 envíos por hora. El contador, como los del acceso, no es atómico.
 - **La IP del visitante no se guarda,** pero vive hasta una hora en la clave del contador, en la tabla de caché.
-- **Una notificación puede demorarse.** Si el proceso se reinicia antes de enviar, la solicitud queda "por enviar" hasta la siguiente corrida de `reintentar_notificaciones`. Mientras ese comando no esté programado (Etapa 8), hay que reintentar desde el panel.
+- **Una notificación puede demorarse.** Si el proceso se reinicia antes de enviar, la solicitud queda "por enviar" hasta la siguiente corrida de `reintentar_notificaciones`. En producción corre cada 15 minutos (`DESPLIEGUE.md` §6).
 - **Los datos personales de las solicitudes no tienen plazo de retención.** Nombre, correo, teléfono y mensaje quedan hasta que alguien los borre en la base. Definir el plazo es parte de la asesoría legal pendiente (Ley 21.719).
 
 ## 5. Excepciones justificadas
 
 - **`check --deploy`: dos advertencias aceptadas.** Con la configuración de producción y sus valores por defecto quedan `security.W005` (`SECURE_HSTS_INCLUDE_SUBDOMAINS`) y `security.W021` (`SECURE_HSTS_PRELOAD`). SEG-01 pide empezar HSTS con un valor bajo: extenderlo a los subdominios y pedir la precarga en los navegadores no se pueden deshacer rápido, y todavía no hay dominio ni se sabe qué subdominios tendrá. Se activan por variable (`SECURE_HSTS_INCLUDE_SUBDOMAINS`, `SECURE_HSTS_PRELOAD`) cuando todo el dominio sirva solo HTTPS; con ambas, `check --deploy` no advierte nada. Lo comprueba `test_check_deploy_con_la_configuracion_de_produccion`.
-- **`check --deploy` sin servidor de correo: `mail.W001`.** Si producción arranca sin `CORREO_HOST`, Django advierte que no hay cómo enviar correo. Es deliberado: la aplicación funciona y cada envío queda registrado como "correo no configurado" (R4). Con el proveedor SMTP definido (Etapa 8) la advertencia desaparece.
+- **`check --deploy` sin servidor de correo: `mail.W001`.** Si producción arranca sin `CORREO_HOST`, Django advierte que no hay cómo enviar correo. Es deliberado: la aplicación funciona y cada envío queda registrado como "correo no configurado" (R4). Con `CORREO_HOST` definido la advertencia desaparece.
 - **`mark_safe` en el código QR** (`cuentas/dos_factores.py`). R5 prohíbe `mark_safe` con datos de usuarios. Aquí el contenido es el SVG que genera `segno`, formado solo por trazos; no incluye texto de formularios. Es la forma de mostrar el QR sin imágenes `data:` (que la CSP bloquea) ni servicios externos (que conocerían el secreto).
 
 ## 6. Operación
 
-Estos procedimientos se detallarán en `docs/DESPLIEGUE.md` (Etapa 8). Todos se ejecutan en el servidor.
+Estos procedimientos están detallados en `docs/DESPLIEGUE.md` §8. Todos se ejecutan en el servidor, dentro del contenedor (`dc exec web python manage.py …`).
 
 | Para | Comando |
 | --- | --- |
@@ -204,3 +212,38 @@ No encontró rutas privadas sin control, acceso cruzado entre empresas, exencion
 El responsable aprobó la lista el 11-10-2026. Cada corrección partió por una prueba que reproducía el hallazgo y fallaba; H-10 es la excepción, porque endurece una prueba que ya pasaba. H-01 se confirmó además ejecutándolo antes de corregir.
 
 Evaluación del revisor por requisito: SEG-03, 04, 05, 06, 09, 10 y 13, cumplen; SEG-08 y SEG-12, cumplen en el código; SEG-01, 02 y 07, parcial (H-02 y H-03); SEG-11, no determinable desde el código. Pruebas de la sección 12.2: 2, 3, 4, 5, 7, 8, 9, 10, 12, 13 y 14, cumplen; 1 y 6, parcial (H-10, H-01 y H-05); 11, cumple en lo automático y queda la parte manual de staging.
+
+## 8. Plataforma de producción (Etapa 8)
+
+Decisiones DEC-164 a DEC-183. **Al 11-10-2026 esta sección describe lo diseñado y lo probado en local y en la CI; la plataforma real aún no existe** y sus verificaciones están pendientes en `DESPLIEGUE.md` §12.
+
+### Controles
+
+| Amenaza | Control | Dónde |
+| --- | --- | --- |
+| Ataque directo a la máquina (SSH, base de datos, Gunicorn) | La VM no tiene puertos de entrada: el sitio sale por un túnel. El puerto 22 solo lo alcanza el rango de IAP, con la cuenta de Google del responsable (OS Login) | `DESPLIEGUE.md` §3.3; `compose.prod.yaml` no publica puertos |
+| Sistema operativo sin parches | `unattended-upgrades` diario, Docker incluido, con reinicio automático de madrugada | `despliegue/vm/preparar.sh` |
+| Robo de la credencial del bucket | Clave HMAC de una cuenta de servicio con un solo rol sobre un solo bucket: leer, escribir y borrar objetos ahí, nada más (SEG-08) | `DESPLIEGUE.md` §3.4 |
+| Borrado o cifrado malicioso de los respaldos desde la VM | La cuenta de la VM puede crear y leer respaldos, no borrarlos ni reemplazarlos | `DESPLIEGUE.md` §3.5 |
+| Pérdida de la base de datos | Respaldo diario fuera de la VM, comprobado al crearlo, 14 días de retención; respaldo local antes de cada despliegue | `despliegue/vm/respaldar.sh`, `desplegar.sh` |
+| Pérdida o reemplazo indebido de un documento | Versionado del bucket, 30 días | `DESPLIEGUE.md` §7 |
+| Respaldo o tarea que falla sin que nadie lo note | systemd avisa por correo al fallar; el monitor externo avisa si el sitio no responde | `despliegue/systemd/`, `core/management/commands/avisar_fallo.py` |
+| Secretos en la imagen o en el repositorio | La imagen es pública y no lleva ninguno; viven en dos archivos de la VM que solo lee `root` | `despliegue/*.env.example`, `Dockerfile` |
+| Una versión defectuosa llega sola a producción | El despliegue es manual y solo de imágenes que pasaron la CI; volver atrás es un comando | `despliegue/vm/desplegar.sh` |
+| Cloudflare cachea una página privada | Cloudflare no cachea HTML por omisión y la única regla de caché es para `/static/`. A comprobar en staging | `DESPLIEGUE.md` §3.7 |
+| Correo suplantando al dominio | SPF, DKIM y DMARC | `DESPLIEGUE.md` §3.8 |
+
+### Riesgos aceptados
+
+- **Cloudflare descifra todo el tráfico.** HTTPS termina en Cloudflare y sigue cifrado por el túnel hasta la VM, pero Cloudflare ve en claro cada petición: contraseñas al iniciar sesión, cookies de sesión, tokens de los enlaces y los documentos mientras el administrador los sube. No los almacena ni los cachea, y las descargas no pasan por ahí (van del navegador al bucket con la URL firmada). **Es una tensión con R7** ("ningún tercero recibe documentos"): Cloudflare no es un visor ni un CDN de documentos, pero sí los ve en tránsito. Decisión del responsable (DEC-166); queda en la lista para la asesoría legal.
+- **Todos los datos están en EE. UU.** (Google, Cloudflare y Resend). Pendientes legales en `DESPLIEGUE.md` §14.
+- **Una sola máquina.** Sin redundancia: si la VM o su zona fallan, el sitio no responde hasta recrearla y restaurar. Cada despliegue y cada reinicio por parches lo corta entre segundos y un par de minutos. Hasta 24 horas de datos de la base se pueden perder (RPO); los documentos no, porque están en el bucket.
+- **Sin recuperación a un punto en el tiempo.** Solo el respaldo diario (DEC-178).
+- **Memoria justa.** 1 GB para todo. Varias verificaciones de contraseña simultáneas (unos 100 MB cada una) llevan la máquina al swap y las respuestas se vuelven lentas. Un ataque de fuerza bruta distribuido degrada el servicio aunque el bloqueo lo frene.
+- **PostgreSQL sin cifrado propio ni TLS interno.** La base solo es alcanzable desde la red de Docker de la misma máquina; el disco lo cifra Google en reposo.
+- **Los respaldos contienen todos los datos personales** de la base (no los documentos). Quien tenga acceso de lectura al bucket de respaldos los tiene todos.
+- **La cuenta de Google del responsable es la llave de todo:** VM, buckets, respaldos y, con la de Cloudflare, el tráfico. Deben tener verificación en dos pasos.
+- **El costo cero no está garantizado.** Los planes gratuitos cambian, y el volumen de diseño (20.000 documentos) supera los 5 GB gratuitos de almacenamiento. La alerta de presupuesto avisa; no detiene el gasto.
+- **Límites del correo gratuito:** 100 mensajes al día. Un día con muchas solicitudes o errores deja mensajes en "fallida", que `reintentar_notificaciones` retoma hasta su máximo de intentos.
+- **Después de promover no hay staging.** Las versiones nuevas llegan a producción probadas solo en local y en la CI.
+- **Los guiones de la VM no se han ejecutado en una VM.** Al 11-10-2026 se comprobaron su sintaxis y, a mano y en local, los comandos de respaldo y restauración que usan. `preparar.sh`, `desplegar.sh` y los temporizadores se prueban por primera vez en el despliegue de staging.

@@ -180,7 +180,29 @@ docker compose run --rm -e DJANGO_SETTINGS_MODULE=config.settings.prod -e SECRET
 
 Debe mostrar solo dos advertencias, las de HSTS para subdominios y precarga (`docs/SEGURIDAD.md`, sección 5).
 
-Las pruebas usan PostgreSQL real (el servicio `db`) e informan la cobertura. Los archivos de prueba se generan en memoria y se guardan en una carpeta temporal; el almacenamiento S3 se prueba contra `moto`, un emulador que corre dentro del mismo proceso, sin red. La CI de GitHub Actions ejecuta lo mismo, audita las dependencias con `pip-audit` y comprueba que `docker compose up` levante la aplicación desde cero.
+Las pruebas usan PostgreSQL real (el servicio `db`) e informan la cobertura. Los archivos de prueba se generan en memoria y se guardan en una carpeta temporal; el almacenamiento S3 se prueba contra `moto`, un emulador que corre dentro del mismo proceso, sin red. La CI de GitHub Actions ejecuta lo mismo, audita las dependencias con `pip-audit`, comprueba que `docker compose up` levante la aplicación desde cero y construye, prueba y publica la imagen de producción.
+
+## Producción
+
+La aplicación se publica en una máquina de Google Cloud detrás de Cloudflare Tunnel. Todo el procedimiento, incluidos los pasos en las consolas, está en [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md).
+
+Para probar en el equipo la misma imagen que corre en el servidor:
+
+```powershell
+docker build --target prod -t web-seba-prod:local .
+```
+
+La CI construye esa imagen en cada `push` a `main`, la levanta con `despliegue/compose.prod.yaml` y, si responde, la publica en `ghcr.io/felipe-martinez-contreras/web-seba` con el commit como etiqueta.
+
+### Lista de paso a producción
+
+El primer despliegue es staging, con datos DEMO. El responsable decide el paso a producción cuando se cumple esta lista:
+
+1. `contenido_pendiente --estricto` termina sin pendientes, con una política de privacidad real que mencione el almacenamiento en EE. UU.
+2. El simulacro de restauración está hecho y anotado en `docs/DESPLIEGUE.md`, sección 7.
+3. El responsable lo aprueba de forma explícita.
+
+La revisión legal por el traslado de datos a EE. UU. es una recomendación documentada (`docs/DESPLIEGUE.md`, sección 14), no un requisito de esta lista.
 
 ## Dependencias
 
@@ -209,8 +231,9 @@ solicitudes/   Formularios de consulta y cotización, antispam y notificación a
 templates/     Plantillas base, componentes, íconos y páginas 404 y 500
 static/        Fuentes, fotografías y JavaScript propios (sin CDN), incluida la subida con progreso
 static_src/    Entrada de Tailwind con los tokens de diseño
-docker/        Script de arranque de desarrollo
-docs/          Especificación, plan, arquitectura, decisiones, trazabilidad, seguridad y manual del administrador
+docker/        Script de arranque de desarrollo y comprobación de salud de producción
+despliegue/    Compose de producción, guiones de la máquina y tareas programadas
+docs/          Especificación, plan, arquitectura, decisiones, trazabilidad, seguridad, despliegue y manual del administrador
 ```
 
 ## Configuración
