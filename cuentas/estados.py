@@ -41,11 +41,14 @@ def anotar_estados(usuarios):
     usuarios = list(usuarios)
     bloqueados = bloqueo.ruts_bloqueados(usuario.rut for usuario in usuarios)
     pendientes = {usuario.pk for usuario in usuarios if not usuario.has_usable_password()}
-    # Generar un enlace revoca los anteriores: queda a lo más uno sin usar por cuenta.
+    # Una cuenta pendiente puede tener dos enlaces sin usar: el de activación y uno de
+    # restablecimiento pedido por la recuperación. Se muestra el que vence más tarde.
     vencimientos = dict(
         EnlaceAcceso.objects.filter(
             usuario__in=pendientes, usado_en__isnull=True, revocado_en__isnull=True
-        ).values_list("usuario_id", "expira_en")
+        )
+        .order_by("expira_en")
+        .values_list("usuario_id", "expira_en")
     )
     ahora = timezone.now()
     for usuario in usuarios:

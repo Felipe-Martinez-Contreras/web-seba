@@ -3,12 +3,12 @@
 {% block encabezado %}Códigos de recuperación{% endblock %}
 {% block bajada %}La verificación en dos pasos quedó configurada.{% endblock %}
 {% block contenido %}
-{% url 'panel:inicio' as url_panel %}
-{% include "componentes/alerta.html" with tipo="advertencia" titulo="Guarde estos códigos ahora" mensaje="No se volverán a mostrar. Cada uno sirve una sola vez para ingresar si pierde el acceso a su aplicación." only %}
+{% include "componentes/alerta.html" with tipo="advertencia" titulo="Guarde estos códigos ahora" mensaje="Al continuar no se volverán a mostrar. Cada uno sirve una sola vez para ingresar si pierde el acceso a su aplicación." only %}
 <ul class="mt-6 grid grid-cols-2 gap-2 rounded-caja border border-divisor p-4 font-mono text-sm">
   {% for codigo in codigos %}<li>{{ codigo }}</li>{% endfor %}
 </ul>
-<div class="mt-6">
-  {% include "componentes/boton.html" with texto="Ya los guardé, continuar" href=url_panel ancho=True only %}
-</div>
+<form class="mt-6" method="post">
+  {% csrf_token %}
+  {% include "componentes/boton.html" with texto="Ya los guardé, continuar" ancho=True only %}
+</form>
 {% endblock %}

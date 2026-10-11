@@ -120,17 +120,22 @@ def url_del_enlace(tipo, token):
     return settings.SITIO_URL.rstrip("/") + reverse(_RUTA[tipo], args=[token])
 
 
-def generar_enlace(usuario, tipo, *, creado_por=None, request=None, envio=""):
+def generar_enlace(
+    usuario, tipo, *, creado_por=None, request=None, envio="", conserva_activacion=False
+):
     """Crea un enlace nuevo y revoca los anteriores del usuario. Devuelve (enlace, token).
 
     El token solo existe en la memoria de quien llama: en la base queda su hash.
+    Con `conserva_activacion`, el enlace de activación vigente sigue valiendo: es el caso de
+    la recuperación, que cualquiera puede pedir con solo conocer el RUT.
     """
     token = secrets.token_urlsafe(32)
     ahora = timezone.now()
     with transaction.atomic():
-        usuario.enlaces.filter(usado_en__isnull=True, revocado_en__isnull=True).update(
-            revocado_en=ahora
-        )
+        anteriores = usuario.enlaces.filter(usado_en__isnull=True, revocado_en__isnull=True)
+        if conserva_activacion:
+            anteriores = anteriores.exclude(tipo=EnlaceAcceso.Tipo.ACTIVACION)
+        anteriores.update(revocado_en=ahora)
         enlace = EnlaceAcceso.objects.create(
             usuario=usuario,
             tipo=tipo,
@@ -344,22 +349,28 @@ def solicitar_recuperacion(request, rut_ingresado):
     rut = utilidades_rut.normalizar(rut_ingresado)
     ip = request.ip_cliente
     una_hora = 3600
-    # Se cuentan siempre los dos, para que el trabajo no dependa del resultado.
+    # Lo que se cuenta depende de la IP y del RUT escritos, nunca de si la cuenta existe.
+    # Una IP que ya superó su límite no crea más entradas por RUT: con RUT distintos podría
+    # llenar la caché, que también guarda los bloqueos de acceso.
     por_ip = limites.contar(f"recuperar:ip:{ip}", una_hora)
-    por_rut = limites.contar(f"recuperar:rut:{rut}", una_hora)
-    dentro_del_limite = (
-        por_ip <= settings.RECUPERACION_MAXIMO_POR_IP
-        and por_rut <= settings.RECUPERACION_MAXIMO_POR_RUT
+    ip_excedida = por_ip > settings.RECUPERACION_MAXIMO_POR_IP
+    por_rut = 0 if ip_excedida else limites.contar(f"recuperar:rut:{rut}", una_hora)
+    dentro_del_limite = not ip_excedida and por_rut <= settings.RECUPERACION_MAXIMO_POR_RUT
+    # Superar un límite deja un solo evento, no uno por cada petición siguiente.
+    primer_exceso = (
+        por_ip == settings.RECUPERACION_MAXIMO_POR_IP + 1
+        or por_rut == settings.RECUPERACION_MAXIMO_POR_RUT + 1
     )
 
     usuario = Usuario.objects.select_related("empresa").filter(rut=rut).first()
     califica = bool(usuario and usuario.puede_acceder and usuario.email)
-    registrar(
-        Accion.RECUPERACION_SOLICITADA,
-        request=request,
-        rut_intentado=rut,
-        detalle="" if dentro_del_limite else "Sobre el límite de solicitudes",
-    )
+    if dentro_del_limite or primer_exceso:
+        registrar(
+            Accion.RECUPERACION_SOLICITADA,
+            request=request,
+            rut_intentado=rut,
+            detalle="" if dentro_del_limite else "Sobre el límite de solicitudes",
+        )
     tareas.en_segundo_plano(
         enviar_enlace_de_recuperacion, usuario.pk if califica and dentro_del_limite else None, ip
     )
@@ -374,7 +385,10 @@ def enviar_enlace_de_recuperacion(usuario_id, ip):
         return
     # Nace como "pendiente": si el proceso se cae antes de terminar, queda como no enviado.
     enlace, token = generar_enlace(
-        usuario, EnlaceAcceso.Tipo.RESTABLECIMIENTO, envio=EnlaceAcceso.Envio.PENDIENTE
+        usuario,
+        EnlaceAcceso.Tipo.RESTABLECIMIENTO,
+        envio=EnlaceAcceso.Envio.PENDIENTE,
+        conserva_activacion=True,
     )
     cuerpo = render_to_string(
         "cuentas/correo/recuperacion.txt",

@@ -271,3 +271,9 @@ def test_las_pantallas_de_acceso_no_llevan_estilos_ni_scripts_en_linea(client, r
     assert re.findall(r'<img[^>]* src="([^"]+)"', contenido) == ["/static/img/acceso.webp"]
     assert "script-src 'self'" in respuesta["Content-Security-Policy"]
     assert 'content="noindex"' in contenido
+
+
+def test_un_destino_relativo_sin_barra_inicial_se_ignora(client, cliente_a_activo):
+    """`next=foo` pasaba la comprobación de destino y terminaba en un error 500."""
+    respuesta = client.post("/acceso/?next=foo", {"rut": RUT_CLIENTE_A, "contrasena": CLAVE})
+    assert respuesta.status_code == 302 and respuesta["Location"] == "/portal/"

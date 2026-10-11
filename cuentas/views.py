@@ -48,7 +48,8 @@ _TEXTOS_ENLACE = {
 def _destino_pedido(request):
     """El destino indicado en `next`, solo si apunta a esta misma aplicación."""
     destino = request.POST.get(REDIRECT_FIELD_NAME) or request.GET.get(REDIRECT_FIELD_NAME) or ""
-    if url_has_allowed_host_and_scheme(
+    # Solo rutas absolutas de la aplicación: `redirect` trataría "foo" como nombre de vista.
+    if destino.startswith("/") and url_has_allowed_host_and_scheme(
         destino, allowed_hosts={request.get_host()}, require_https=request.is_secure()
     ):
         return destino
@@ -167,14 +168,18 @@ def configurar_2fa(request):
 
 
 @never_cache
-@require_http_methods(["GET"])
+@require_http_methods(["GET", "POST"])
 def codigos_2fa(request):
     rechazo = _requiere_administrador_con_sesion(request)
     if rechazo:
         return rechazo
-    codigos = dos_factores.tomar_codigos_de_recuperacion(request)
+    if request.method == "POST":
+        dos_factores.olvidar_codigos_de_recuperacion(request)
+        return redirect("panel:inicio")
+    # Siguen disponibles hasta que la persona confirma que los guardó: mostrarlos con un GET
+    # que además los borraba hacía que una recarga de la página los perdiera.
+    codigos = dos_factores.codigos_de_recuperacion_por_guardar(request)
     if not codigos:
-        # Se muestran una sola vez.
         return redirect("cuentas:verificacion")
     return render(request, "cuentas/codigos_2fa.html", {"codigos": codigos})
 

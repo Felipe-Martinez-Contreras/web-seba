@@ -17,6 +17,7 @@ from django.urls.resolvers import RegexPattern, RoutePattern
 
 from auditoria.models import EventoAuditoria
 from conftest import RUT_ADMINISTRADOR, RUT_CLIENTE_A, entrar, verificar_segundo_factor
+from core.mixins import _VistaPrivada
 from cuentas.models import EnlaceAcceso, Usuario
 from documentos import almacenamiento, services
 from documentos.models import Documento, VersionDocumento
@@ -294,6 +295,27 @@ def test_un_anonimo_solo_accede_a_la_lista_publica(urls):
             assert respuesta.status_code == 404, (nombre, ruta, respuesta.status_code)
     cadena = cliente.get("/admin-tecnico/", follow=True).redirect_chain
     assert cadena[-1][0].startswith("/acceso/?next=")
+
+
+# Vistas privadas que no son clases: las pantallas del segundo factor. Las tres exigen la
+# sesión de un administrador (`cuentas/tests/test_dos_factores.py`).
+SEGUNDO_FACTOR = {"cuentas:verificacion", "cuentas:configurar_2fa", "cuentas:codigos_2fa"}
+
+
+def test_toda_ruta_no_publica_pasa_por_un_control_de_rol(urls):
+    """Un 404 con identificadores de relleno no prueba nada: una vista sin control que busque
+    un objeto por su UUID también lo daría. Aquí se exige el control mismo."""
+    for nombre, ruta, vista in urls:
+        if nombre in PUBLICAS or nombre in SEGUNDO_FACTOR:
+            continue
+        if nombre.startswith("admin:"):
+            # Todas las vistas del admin de Django salen de su sitio, que exige 2FA.
+            continue
+        clase = getattr(vista, "view_class", None)
+        assert clase is not None and issubclass(clase, _VistaPrivada), (nombre, ruta)
+        # El control es el `dispatch` del mixin: ninguna vista lo reemplaza.
+        assert clase.dispatch is _VistaPrivada.dispatch, (nombre, ruta)
+        assert clase.roles, (nombre, ruta)
 
 
 def test_las_urls_publicas_responden_sin_sesion(urls):

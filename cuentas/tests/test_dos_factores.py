@@ -12,7 +12,14 @@ from django_otp.plugins.otp_totp.models import TOTPDevice
 
 from auditoria.models import EventoAuditoria
 from auditoria.services import Accion
-from conftest import CLAVE, RUT_ADMINISTRADOR, RUT_CLIENTE_A, codigo_totp, entrar
+from conftest import (
+    CLAVE,
+    RUT_ADMINISTRADOR,
+    RUT_CLIENTE_A,
+    codigo_totp,
+    entrar,
+    verificar_segundo_factor,
+)
 from cuentas import services
 from cuentas.models import EnlaceAcceso, Usuario
 
@@ -95,8 +102,14 @@ def test_tras_usar_el_enlace_de_activacion_el_administrador_enrola_y_entra(clien
     assert len(mostrados) == 10 == len(set(mostrados))
     assert set(mostrados) == set(StaticToken.objects.values_list("token", flat=True))
     assert "no-store" in codigos["Cache-Control"]
-    # Se muestran una sola vez.
+    # Recargar la página no los pierde: siguen ahí hasta que la persona confirma que los guardó.
+    de_nuevo = client.get("/acceso/2fa/codigos/")
+    assert re.findall(r"<li>([a-z0-9]{8})</li>", de_nuevo.content.decode()) == mostrados
+    confirmar = client.post("/acceso/2fa/codigos/")
+    assert confirmar.status_code == 302 and confirmar["Location"] == "/panel/"
+    # Después no se vuelven a mostrar ni quedan en la sesión.
     assert client.get("/acceso/2fa/codigos/").status_code == 302
+    assert not any(codigo in str(dict(client.session)) for codigo in mostrados)
 
     assert client.get("/panel/").status_code == 200
     assert _eventos(Accion.DOS_FACTORES_ENROLADO).get().actor == administrador
@@ -340,3 +353,42 @@ def test_el_admin_de_django_no_permite_fijar_contrasenas_ni_tocar_la_auditoria(
     admin_enlace = admin.site._registry[EnlaceAcceso]
     assert "token_hash" not in admin_enlace.get_fields(request)
     assert admin_enlace.has_change_permission(request) is False
+
+
+def test_el_admin_de_django_no_cambia_empresa_ni_privilegios_y_audita_lo_que_edita(
+    client, superusuario, cliente_a_activo, empresa_b
+):
+    """Cambiar la empresa de un cliente le daría los documentos de otra; el correo es por
+    donde llega la recuperación. Lo que sí se puede editar deja un evento."""
+    usuario, dispositivo = superusuario
+    verificar_segundo_factor(client, usuario, dispositivo)
+    ruta = f"{ADMIN_DJANGO}cuentas/usuario/{cliente_a_activo.pk}/change/"
+    assert client.get(ruta).status_code == 200
+
+    respuesta = client.post(
+        ruta,
+        {
+            "nombre": "Nombre corregido",
+            "email": "otro.correo@ejemplo.test",
+            "empresa": str(empresa_b.pk),
+            "is_staff": "on",
+            "is_superuser": "on",
+        },
+    )
+    assert respuesta.status_code == 302
+    cliente_a_activo.refresh_from_db()
+    assert cliente_a_activo.empresa_id != empresa_b.pk
+    assert cliente_a_activo.is_staff is False and cliente_a_activo.is_superuser is False
+    assert cliente_a_activo.email == "otro.correo@ejemplo.test"
+    assert cliente_a_activo.is_active is False
+
+    editado = _eventos(Accion.USUARIO_EDITADO).get()
+    assert editado.actor == usuario and editado.empresa_id == cliente_a_activo.empresa_id
+    assert editado.detalle == "Desde el admin de Django: nombre, correo"
+    assert "otro.correo" not in editado.detalle
+    assert _eventos(Accion.USUARIO_DESACTIVADO).get().actor == usuario
+
+    # Guardar sin cambios no deja eventos.
+    client.post(ruta, {"nombre": "Nombre corregido", "email": "otro.correo@ejemplo.test"})
+    assert _eventos(Accion.USUARIO_EDITADO).count() == 1
+    assert _eventos(Accion.USUARIO_DESACTIVADO).count() == 1

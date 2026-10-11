@@ -156,7 +156,8 @@ def test_limite_silencioso_por_rut(client, cliente_a_activo, settings):
     sobre_el_limite = EventoAuditoria.objects.filter(
         accion=Accion.RECUPERACION_SOLICITADA, detalle="Sobre el límite de solicitudes"
     )
-    assert sobre_el_limite.count() == 2
+    # Superar el límite deja un solo evento, no uno por cada petición siguiente.
+    assert sobre_el_limite.count() == 1
 
 
 def test_limite_silencioso_por_ip(client, cliente_a_activo, settings):
@@ -275,3 +276,47 @@ def test_un_error_en_el_hilo_se_registra_y_la_conexion_se_cierra_igual(settings,
         tareas.en_segundo_plano(tarea_que_falla).join(timeout=10)
     cerrar.assert_called_once_with()
     assert "Falló una tarea en segundo plano: tarea_que_falla" in caplog.text
+
+
+def _entradas_por_rut():
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT count(*) FROM cache WHERE cache_key LIKE %s", ["%recuperar:rut:%"])
+        return cursor.fetchone()[0]
+
+
+def test_sobre_el_limite_por_ip_no_se_crean_entradas_por_rut_ni_un_evento_por_peticion(
+    client, settings
+):
+    """Quien supera su límite no puede seguir llenando la caché ni la auditoría."""
+    settings.RECUPERACION_MAXIMO_POR_IP = 2
+    ruts = ("11.111.111-1", "22.222.222-2", "12.345.678-5", "9.876.543-3", "5.126.663-3")
+    for rut in ruts:
+        assert _pedir(client, rut)["Location"] == "/recuperar/enviado/"
+    assert _entradas_por_rut() == 2
+    eventos = EventoAuditoria.objects.filter(accion=Accion.RECUPERACION_SOLICITADA)
+    # Las dos dentro del límite y una sola que deja constancia de que se superó.
+    assert eventos.count() == 3
+    assert eventos.filter(detalle="Sobre el límite de solicitudes").count() == 1
+
+
+def test_la_recuperacion_no_revoca_el_enlace_de_activacion_vigente(client, cliente_a):
+    """Con solo conocer el RUT, cualquiera podía inutilizar el enlace que entregó el
+    administrador."""
+    cliente_a.email = "cliente.a@ejemplo.test"
+    cliente_a.save()
+    _, activacion = services.generar_enlace(cliente_a, EnlaceAcceso.Tipo.ACTIVACION)
+
+    _pedir(client, RUT_CLIENTE_A)
+    primero = _enlace_del_correo(mail.outbox[0])
+    assert services.enlace_vigente(EnlaceAcceso.Tipo.ACTIVACION, activacion) is not None
+
+    # Un restablecimiento nuevo sí reemplaza al restablecimiento anterior.
+    _pedir(client, RUT_CLIENTE_A)
+    assert client.get(primero.removeprefix("http://testserver")).status_code == 404
+    assert services.enlace_vigente(EnlaceAcceso.Tipo.ACTIVACION, activacion) is not None
+
+    # Al usar uno, los demás dejan de valer.
+    segundo = _enlace_del_correo(mail.outbox[1]).removeprefix("http://testserver")
+    nueva = "otra-clave-larga-2026"
+    client.post(segundo, {"new_password1": nueva, "new_password2": nueva})
+    assert services.enlace_vigente(EnlaceAcceso.Tipo.ACTIVACION, activacion) is None

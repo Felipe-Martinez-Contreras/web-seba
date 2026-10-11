@@ -124,9 +124,14 @@ def confirmar_enrolamiento(request, codigo):
     return True
 
 
-def tomar_codigos_de_recuperacion(request):
-    """Entrega los códigos recién generados y los borra de la sesión."""
-    return request.session.pop(_CODIGOS, None)
+def codigos_de_recuperacion_por_guardar(request):
+    """Los códigos recién generados, mientras la persona no confirme que los guardó."""
+    return request.session.get(_CODIGOS)
+
+
+def olvidar_codigos_de_recuperacion(request):
+    """La persona confirmó que los guardó: salen de la sesión y no se vuelven a mostrar."""
+    request.session.pop(_CODIGOS, None)
 
 
 # --- Verificación en cada inicio de sesión -------------------------------------------

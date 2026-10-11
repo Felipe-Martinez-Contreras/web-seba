@@ -14,10 +14,12 @@ class Command(BaseCommand):
     )
 
     def handle(self, *args, **opciones):
-        if not (settings.DEBUG or settings.DEMO_PERMITIDO):
+        # DEBUG no cuenta como permiso: `manage.py` usa la configuración de desarrollo si
+        # falta DJANGO_SETTINGS_MODULE, también en un servidor.
+        if not settings.DEMO_PERMITIDO:
             raise CommandError(
-                "cargar_demo no se ejecuta en producción. En staging, con datos ficticios, "
-                "defina DEMO_PERMITIDO=true."
+                "cargar_demo no se ejecuta en producción. Solo corre con DEMO_PERMITIDO=true: "
+                "en desarrollo y en staging con datos ficticios."
             )
         # Los documentos de demostración quedan subidos a nombre de un administrador real.
         administrador = (

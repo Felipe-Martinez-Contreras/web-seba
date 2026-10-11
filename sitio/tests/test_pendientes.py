@@ -211,3 +211,13 @@ def test_el_pdf_de_demostracion_pasa_la_validacion_de_documentos():
     assert datos[inicio:].startswith(b"xref")
     validado = validacion.validar(SimpleUploadedFile("demo.pdf", datos))
     assert validado.tipo_mime == "application/pdf"
+
+
+def test_cargar_demo_no_acepta_debug_como_permiso(administrador, settings):
+    """`manage.py` usa la configuración de desarrollo si falta la variable de entorno: en el
+    servidor, DEBUG no puede ser lo que autorice a cargar datos de demostración."""
+    settings.DEBUG = True
+    assert settings.DEMO_PERMITIDO is False
+    with pytest.raises(CommandError, match="DEMO_PERMITIDO"):
+        _cargar_demo()
+    assert Empresa.objects.count() == 0
