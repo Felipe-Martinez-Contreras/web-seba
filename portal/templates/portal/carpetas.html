@@ -1,0 +1,13 @@
+{% extends "base_portal.html" %}
+{% block titulo %}Carpetas{% endblock %}
+{% block contenido %}
+<h1 class="text-2xl">Carpetas</h1>
+<p class="mt-1 max-w-lectura text-sm text-texto-secundario">Los documentos de su empresa están ordenados en estas carpetas.</p>
+<div class="mt-6">
+  {% if carpetas %}
+  {% include "portal/_carpetas.html" with carpetas=carpetas only %}
+  {% else %}
+  {% include "componentes/estado_vacio.html" with titulo="Aún no hay carpetas" texto="Cuando se publiquen documentos para su empresa, aparecerán aquí. No necesita hacer nada por ahora." only %}
+  {% endif %}
+</div>
+{% endblock %}

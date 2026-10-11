@@ -28,6 +28,21 @@ class DocumentoQuerySet(models.QuerySet):
             return self.filter(empresa_id=usuario.empresa_id, eliminado_en__isnull=True)
         return self.none()
 
+    def con_vigente(self):
+        """Con la carpeta y la versión vigente ya cargadas: los listados no consultan por fila."""
+        return self.select_related("carpeta", "version_vigente")
+
+    def recientes(self):
+        """Primero los últimos subidos o reemplazados."""
+        return self.order_by("-version_vigente__subido_en", "pk")
+
+    def buscar(self, texto):
+        """Por título, sin distinguir mayúsculas ni tildes (CLI-03). Sin texto no hay resultados."""
+        texto = (texto or "").strip()
+        if not texto:
+            return self.none()
+        return self.filter(titulo__unaccent__icontains=texto)
+
 
 class VersionQuerySet(models.QuerySet):
     def update(self, **kwargs):

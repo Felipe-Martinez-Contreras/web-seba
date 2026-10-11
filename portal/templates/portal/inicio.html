@@ -1,11 +1,43 @@
 {% extends "base_portal.html" %}
 {% block titulo %}Inicio{% endblock %}
 {% block contenido %}
-<h1 class="text-2xl">Hola, {{ empresa.nombre_fantasia|default:empresa.razon_social }}</h1>
+<h1 class="text-2xl break-words">Hola, {{ empresa.nombre_fantasia|default:empresa.razon_social }}</h1>
+<p class="mt-1 max-w-lectura text-sm text-texto-secundario">Aquí puede revisar y descargar los documentos publicados para su empresa.</p>
 <div class="mt-6">
   {% include "componentes/tarjeta_empresa.html" with razon_social=empresa.razon_social rut_empresa=empresa.rut only %}
 </div>
-<div class="mt-6">
-  {% include "componentes/estado_vacio.html" with titulo="Aún no hay documentos disponibles" texto="Cuando se publiquen documentos para su empresa, aparecerán aquí." only %}
+
+{% if hay_documentos %}
+<form class="mt-6 flex gap-2" method="get" action="{% url 'portal:buscar' %}" role="search">
+  <label class="sr-only" for="buscador-portal">Buscar documentos por título</label>
+  <input class="min-h-11 min-w-0 flex-1 rounded-caja border border-borde-campo bg-superficie px-3 text-base text-texto placeholder:text-texto-secundario" id="buscador-portal" type="search" name="q" maxlength="{{ buscador_maximo }}" placeholder="Buscar documentos por título">
+  {% include "componentes/boton.html" with texto="Buscar" icono="search" only %}
+</form>
+{% endif %}
+
+{% if carpetas %}
+<section class="mt-8" aria-labelledby="carpetas-titulo">
+  <div class="flex flex-wrap items-baseline justify-between gap-2">
+    <h2 class="text-lg" id="carpetas-titulo">Sus carpetas</h2>
+    <a class="enlace text-sm" href="{% url 'portal:carpetas' %}">Ver todas<span class="sr-only"> las carpetas</span></a>
+  </div>
+  <div class="mt-3">{% include "portal/_carpetas.html" with carpetas=carpetas only %}</div>
+</section>
+{% endif %}
+
+{% if hay_documentos %}
+<section class="mt-8" aria-labelledby="recientes-titulo">
+  <h2 class="text-lg" id="recientes-titulo">Documentos recientes</h2>
+  <ul class="lista-filas mt-3">
+    {% for documento in recientes %}
+    {% url 'portal:documento' documento.pk as url_ficha %}
+    {% include "componentes/fila_documento.html" with titulo=documento.titulo url=url_ficha tipo=documento.version_vigente.familia tamano=documento.version_vigente.tamano fecha=documento.version_vigente.subido_en nuevo=documento.nuevo only %}
+    {% endfor %}
+  </ul>
+</section>
+{% else %}
+<div class="mt-8">
+  {% include "componentes/estado_vacio.html" with titulo="Aún no hay documentos disponibles" texto="Cuando se publiquen documentos para su empresa, aparecerán aquí. No necesita hacer nada por ahora." only %}
 </div>
+{% endif %}
 {% endblock %}

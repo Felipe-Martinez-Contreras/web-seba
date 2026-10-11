@@ -1,0 +1,28 @@
+{% comment %}
+Fila de documento con acciones, para usar dentro de <ul class="lista-filas">: el título lleva
+a la ficha y los botones entregan el archivo sin pasar por ella (CLI-02, CLI-07).
+Parámetros: titulo; url (ficha); tipo (pdf, word, excel, powerpoint o imagen); formato
+(extensión, se muestra como texto); tamano (bytes); fecha; carpeta (nombre, opcional);
+nuevo (muestra la etiqueta "Nuevo"); url_descargar; url_ver (opcional: solo si el navegador
+puede mostrarlo).
+{% endcomment %}
+<li class="fila flex-wrap">
+  {% include "componentes/icono_archivo.html" with tipo=tipo only %}
+  <span class="min-w-0 flex-1 basis-48">
+    <a class="fila-titulo enlace block" href="{{ url }}">{{ titulo }}</a>
+    <span class="fila-meta block tabular-nums">{{ formato|upper }} · {{ tamano|filesizeformat }} · Actualizado el {{ fecha|date }}{% if carpeta %} · Carpeta: {{ carpeta }}{% endif %}</span>
+  </span>
+  {% if nuevo %}{% include "componentes/insignia.html" with texto="Nuevo" tono="info" only %}{% endif %}
+  <span class="flex w-full flex-wrap gap-2 sm:w-auto">
+    {% if url_ver %}
+    <a class="boton boton-fantasma" href="{{ url_ver }}" target="_blank" rel="noopener">
+      {% include "componentes/icono.html" with nombre="eye" clase="icono-chico" only %}
+      <span>Ver<span class="sr-only"> {{ titulo }} (se abre en una pestaña nueva)</span></span>
+    </a>
+    {% endif %}
+    <a class="boton boton-secundario" href="{{ url_descargar }}">
+      {% include "componentes/icono.html" with nombre="download" clase="icono-chico" only %}
+      <span>Descargar<span class="sr-only"> {{ titulo }}</span></span>
+    </a>
+  </span>
+</li>

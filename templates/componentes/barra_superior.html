@@ -1,7 +1,8 @@
 {% comment %}
 Barra superior del portal y del panel: buscador y menú del usuario.
 Parámetros (lo que falta no se muestra): buscador_accion (URL del formulario GET),
-buscador_etiqueta (texto de la etiqueta y del ejemplo) y buscador_valor;
+buscador_etiqueta (texto de la etiqueta y del ejemplo), buscador_valor y buscador_maximo
+(largo máximo, opcional);
 usuario_nombre; menu_usuario: lista de pares (texto, url).
 {% endcomment %}
 {% if buscador_accion or usuario_nombre %}
@@ -11,7 +12,7 @@ usuario_nombre; menu_usuario: lista de pares (texto, url).
     <form class="relative w-full max-w-md" method="get" action="{{ buscador_accion }}" role="search">
       <label class="sr-only" for="buscador-superior">{{ buscador_etiqueta }}</label>
       <span class="icono icono-chico pointer-events-none absolute inset-y-0 left-3 items-center text-texto-secundario" aria-hidden="true">{% include "iconos/search.svg" %}</span>
-      <input class="min-h-11 w-full rounded-caja border border-borde-campo bg-superficie pr-3 pl-9 text-sm text-texto placeholder:text-texto-secundario" id="buscador-superior" type="search" name="q" value="{{ buscador_valor|default:'' }}" placeholder="{{ buscador_etiqueta }}">
+      <input class="min-h-11 w-full rounded-caja border border-borde-campo bg-superficie pr-3 pl-9 text-sm text-texto placeholder:text-texto-secundario" id="buscador-superior" type="search" name="q" value="{{ buscador_valor|default:'' }}" placeholder="{{ buscador_etiqueta }}"{% if buscador_maximo %} maxlength="{{ buscador_maximo }}"{% endif %}>
     </form>
     {% else %}
     <span></span>

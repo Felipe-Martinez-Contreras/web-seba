@@ -10,11 +10,12 @@ from django.utils.functional import cached_property
 from django.views import View
 from django.views.generic import FormView, TemplateView
 
+from core.paginacion import paginar
 from documentos import services, validacion
 from documentos.forms import FormularioDocumento, FormularioMover
 from documentos.models import Documento
 from documentos.validacion import ArchivoRechazado
-from panel.views.base import VistaDeCarpeta, VistaDeCliente, paginar
+from panel.views.base import VistaDeCarpeta, VistaDeCliente
 
 # La subida con JavaScript envía un archivo por petición y pide solo el resultado.
 ENCABEZADO_FRAGMENTO = "fragmento"

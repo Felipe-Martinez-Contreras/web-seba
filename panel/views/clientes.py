@@ -4,7 +4,7 @@ import copy
 
 from django.conf import settings
 from django.contrib import messages
-from django.db.models import Count, Max, Q
+from django.db.models import Count, Q
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.http import urlencode
@@ -14,12 +14,13 @@ from django.views.generic import FormView, TemplateView
 from auditoria.models import EventoAuditoria
 from core import correo
 from core.mixins import AdministradorMixin
+from core.paginacion import paginar
 from cuentas.estados import anotar_estados
 from documentos.models import Documento
 from empresas import services
 from empresas.forms import FormularioEmpresa, FormularioEmpresaNueva
 from empresas.models import Empresa
-from panel.views.base import VistaDeCliente, paginar
+from panel.views.base import VistaDeCliente
 
 _ESTADOS = (("", "Todos", None), ("activos", "Activos", True), ("inactivos", "Inactivos", False))
 
@@ -143,16 +144,11 @@ class ClienteDocumentos(VistaDeCliente, TemplateView):
 
     def get_context_data(self, **kwargs):
         contexto = super().get_context_data(**kwargs)
-        vigente = Q(documentos__eliminado_en__isnull=True)
         eliminado = Q(documentos__eliminado_en__isnull=False)
         contexto["carpetas"] = list(
-            self.empresa.carpetas.annotate(
-                cantidad=Count("documentos", filter=vigente),
-                en_papelera=Count("documentos", filter=eliminado),
-                actualizado=Max("documentos__version_vigente__subido_en", filter=vigente),
+            self.empresa.carpetas.con_resumen().annotate(
+                en_papelera=Count("documentos", filter=eliminado)
             )
-            # Explícito: al agrupar, Django deja de aplicar el orden por defecto del modelo.
-            .order_by("orden", "nombre")
         )
         en_papelera = Documento.objects.en_papelera().filter(empresa=self.empresa).count()
         contexto["en_papelera"] = en_papelera

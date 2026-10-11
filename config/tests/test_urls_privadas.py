@@ -117,7 +117,16 @@ PANEL = {
     "panel:auditoria",
 }
 
-PORTAL_DOCUMENTOS = {"portal:documento_ver", "portal:documento_descargar"}
+# Rutas del portal: todas de solo lectura. Una ruta nueva debe sumarse aquí o la prueba falla.
+PORTAL = {
+    "portal:inicio",
+    "portal:carpetas",
+    "portal:carpeta",
+    "portal:buscar",
+    "portal:documento",
+    "portal:documento_ver",
+    "portal:documento_descargar",
+}
 
 
 def _datos_post(carpeta=None):
@@ -148,7 +157,8 @@ def urls():
     encontradas = list(_recorrer(get_resolver().url_patterns))
     # Si el recorrido dejara de encontrar las URL, la prueba pasaría sin probar nada.
     nombres = {nombre for nombre, _, _ in encontradas}
-    assert {"portal:inicio", "admin:index"} | PANEL | PORTAL_DOCUMENTOS <= nombres
+    assert {"admin:index"} | PANEL | PORTAL <= nombres
+    assert {nombre for nombre in nombres if nombre.startswith("portal:")} == PORTAL
     assert nombres >= PUBLICAS
     return encontradas
 
@@ -172,6 +182,18 @@ def _rutas_del_panel(empresa, usuario, carpeta, documento):
         if nombre.startswith("panel:")
     ]
     assert {nombre for nombre, _ in rutas} == PANEL
+    return rutas
+
+
+def _rutas_del_portal(empresa, usuario, carpeta, documento):
+    """Las rutas del portal con los identificadores reales de una empresa y de lo suyo."""
+    reales = _reales(empresa, usuario, carpeta, documento)
+    rutas = [
+        (nombre, ruta)
+        for nombre, ruta, _ in _recorrer(get_resolver().url_patterns, reales=reales)
+        if nombre.startswith("portal:")
+    ]
+    assert {nombre for nombre, _ in rutas} == PORTAL
     return rutas
 
 
@@ -276,8 +298,8 @@ def test_un_cliente_recibe_404_en_el_panel_con_identificadores_reales_y_nada_cam
 def test_prueba_3_un_cliente_no_modifica_un_documento_en_la_papelera_ni_por_el_portal(
     cliente_a_activo, administrador, carpeta_a, documento_a
 ):
-    """Restaurar exige un documento en la papelera: se prueba con uno que sí lo está. Las
-    rutas de ver y descargar del portal no admiten ningún método que no sea GET."""
+    """Restaurar exige un documento en la papelera: se prueba con uno que sí lo está.
+    Ninguna ruta del portal admite un método que no sea GET (CLI-05)."""
     eliminado = services.subir(
         carpeta_a, archivos.pdf("eliminado.pdf"), actor=administrador, request=None
     )
@@ -290,15 +312,41 @@ def test_prueba_3_un_cliente_no_modifica_un_documento_en_la_papelera_ni_por_el_p
         assert cliente.post(ruta, _datos_post()).status_code == 404, nombre
     probadas = 0
     for documento in (documento_a, eliminado):
-        reales = _reales(carpeta_a.empresa, cliente_a_activo, carpeta_a, documento)
-        for nombre, ruta, _ in _recorrer(get_resolver().url_patterns, reales=reales):
-            if nombre in PORTAL_DOCUMENTOS:
-                probadas += 1
-                assert cliente.post(ruta, _datos_post()).status_code == 405, nombre
-                for metodo in (cliente.put, cliente.patch, cliente.delete):
-                    assert metodo(ruta).status_code == 405, nombre
-    assert probadas == 4
+        for nombre, ruta in _rutas_del_portal(
+            carpeta_a.empresa, cliente_a_activo, carpeta_a, documento
+        ):
+            probadas += 1
+            assert cliente.post(ruta, _datos_post(carpeta_a)).status_code == 405, nombre
+            for metodo in (cliente.put, cliente.patch, cliente.delete):
+                assert metodo(ruta).status_code == 405, nombre
+    assert probadas == 2 * len(PORTAL)
     assert _foto_de_la_base() == antes
+
+
+def test_el_portal_con_identificadores_reales_solo_responde_al_cliente_de_esa_empresa(
+    cliente_a_activo, cliente_b_activo, carpeta_a, documento_a, cliente_http_admin
+):
+    """Pruebas 1 y 2 sobre todas las rutas del portal, con UUID que existen: un anónimo va
+    al acceso, y un administrador o un cliente de otra empresa reciben 404."""
+    rutas = _rutas_del_portal(carpeta_a.empresa, cliente_a_activo, carpeta_a, documento_a)
+    anonimo = Client()
+    de_b = Client()
+    de_b.force_login(cliente_b_activo)
+    antes = _foto_de_la_base()
+    for nombre, ruta in rutas:
+        respuesta = anonimo.get(ruta)
+        assert respuesta.status_code == 302, nombre
+        assert respuesta["Location"] == f"/acceso/?next={ruta}", nombre
+        assert cliente_http_admin.get(ruta).status_code == 404, nombre
+        # Las rutas sin identificador muestran al cliente de B lo suyo; las demás, 404.
+        esperado = 200 if nombre in {"portal:inicio", "portal:carpetas", "portal:buscar"} else 404
+        assert de_b.get(ruta).status_code == esperado, nombre
+    assert _foto_de_la_base() == antes
+    # Su dueño sí las abre todas.
+    de_a = Client()
+    de_a.force_login(cliente_a_activo)
+    for nombre, ruta in rutas:
+        assert de_a.get(ruta).status_code == 200, nombre
 
 
 def test_un_anonimo_es_enviado_al_acceso_con_identificadores_reales(

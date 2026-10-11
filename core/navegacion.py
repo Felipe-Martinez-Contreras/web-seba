@@ -10,6 +10,7 @@ from django.urls import reverse
 _SECCIONES = {
     "cliente": [
         ("inicio", "Inicio", "portal:inicio", "house"),
+        ("carpetas", "Carpetas", "portal:carpetas", "folder"),
         ("cuenta", "Mi cuenta", "cuentas:mi_cuenta", "circle-user"),
     ],
     "administrador": [
@@ -25,6 +26,8 @@ _SECCIONES = {
     ],
 }
 _BASE = {"cliente": "base_portal.html", "administrador": "base_panel.html"}
+# Largo máximo del texto de búsqueda del portal: lo aplican el campo y la vista.
+BUSQUEDA_MAXIMO = 100
 
 
 def inicio_de(usuario):
@@ -54,4 +57,9 @@ def contexto(usuario, seccion):
         # El buscador del panel se limita a los clientes (DISENO.md, diferencia 6).
         datos["buscador_accion"] = reverse("panel:clientes")
         datos["buscador_etiqueta"] = "Buscar clientes por RUT o razón social"
+    else:
+        # El del portal busca por título entre los documentos de su empresa (CLI-03).
+        datos["buscador_accion"] = reverse("portal:buscar")
+        datos["buscador_etiqueta"] = "Buscar documentos por título"
+        datos["buscador_maximo"] = BUSQUEDA_MAXIMO
     return datos

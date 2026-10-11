@@ -20,6 +20,8 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
+    # Solo por la búsqueda sin tildes (`unaccent`) del portal.
+    "django.contrib.postgres",
     "whitenoise.runserver_nostatic",
     "django.contrib.staticfiles",
     "django_otp",

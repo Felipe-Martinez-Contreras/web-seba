@@ -1,0 +1,7 @@
+{% comment %}Lista de las carpetas de la empresa. Parámetros: carpetas (con cantidad y actualizado).{% endcomment %}
+<ul class="lista-filas">
+  {% for carpeta in carpetas %}
+  {% url 'portal:carpeta' carpeta.pk as url_carpeta %}
+  {% include "componentes/fila_carpeta.html" with titulo=carpeta.nombre url=url_carpeta cantidad=carpeta.cantidad actualizado=carpeta.actualizado only %}
+  {% endfor %}
+</ul>

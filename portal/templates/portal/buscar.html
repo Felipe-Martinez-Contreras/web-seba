@@ -1,0 +1,28 @@
+{% extends "base_portal.html" %}
+{% block titulo %}Buscar documentos{% endblock %}
+{% block contenido %}
+<h1 class="text-2xl">Buscar documentos</h1>
+
+<form class="mt-4 flex gap-2" method="get" action="{% url 'portal:buscar' %}" role="search">
+  <label class="sr-only" for="buscador-portal">Buscar documentos por título</label>
+  <input class="min-h-11 min-w-0 flex-1 rounded-caja border border-borde-campo bg-superficie px-3 text-base text-texto placeholder:text-texto-secundario" id="buscador-portal" type="search" name="q" value="{{ busqueda }}" maxlength="{{ buscador_maximo }}" placeholder="Buscar documentos por título">
+  {% include "componentes/boton.html" with texto="Buscar" icono="search" only %}
+</form>
+
+<div class="mt-6" aria-live="polite">
+  {% if not busqueda %}
+  {% url 'portal:carpetas' as url_carpetas %}
+  {% include "componentes/estado_vacio.html" with titulo="Escriba qué documento busca" texto="Ingrese una palabra del título del documento. También puede encontrarlo por su carpeta." accion_texto="Ver las carpetas" accion_url=url_carpetas only %}
+  {% elif pagina.object_list %}
+  <p class="text-sm">{{ pagina.paginator.count }} resultado{{ pagina.paginator.count|pluralize }} para <span class="font-semibold break-words">«{{ busqueda }}»</span>.</p>
+  <div class="mt-3">{% include "portal/_documentos.html" with con_carpeta=True %}</div>
+  {% else %}
+  <div class="tarjeta px-6 py-10 text-center">
+    <span class="cuadro-icono mx-auto" aria-hidden="true">{% include "iconos/search.svg" %}</span>
+    <p class="mt-3 text-base font-semibold break-words">Sin resultados para «{{ busqueda }}»</p>
+    <p class="mx-auto mt-1 max-w-lectura text-sm text-texto-secundario">No hay documentos de su empresa con ese texto en el título. Pruebe con otra palabra o búsquelo por su carpeta.</p>
+    <p class="mt-4">{% url 'portal:carpetas' as url_carpetas %}{% include "componentes/boton.html" with texto="Ver las carpetas" href=url_carpetas variante="secundario" only %}</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

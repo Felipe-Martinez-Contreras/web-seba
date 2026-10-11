@@ -5,7 +5,7 @@ from django.views.generic import TemplateView
 from auditoria.forms import FormularioFiltros
 from auditoria.models import EventoAuditoria
 from core.mixins import AdministradorMixin
-from panel.views.base import paginar
+from core.paginacion import paginar
 
 
 class Auditoria(AdministradorMixin, TemplateView):

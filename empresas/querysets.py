@@ -2,7 +2,7 @@
 
 from django.contrib.auth.hashers import UNUSABLE_PASSWORD_PREFIX
 from django.db import models
-from django.db.models import Count, Q
+from django.db.models import Count, Max, Q
 
 from core import rut as utilidades_rut
 
@@ -45,3 +45,16 @@ class CarpetaQuerySet(models.QuerySet):
         if usuario.es_cliente and usuario.empresa_id:
             return self.filter(empresa_id=usuario.empresa_id)
         return self.none()
+
+    def con_resumen(self):
+        """Cada carpeta con su cantidad de documentos y la fecha del último subido o
+        reemplazado. Los de la papelera no cuentan ni mueven la fecha."""
+        vigente = Q(documentos__eliminado_en__isnull=True)
+        return (
+            self.annotate(
+                cantidad=Count("documentos", filter=vigente),
+                actualizado=Max("documentos__version_vigente__subido_en", filter=vigente),
+            )
+            # Explícito: al agrupar, Django deja de aplicar el orden por defecto del modelo.
+            .order_by("orden", "nombre")
+        )

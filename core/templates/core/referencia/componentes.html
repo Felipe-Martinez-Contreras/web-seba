@@ -161,6 +161,11 @@
         {% endfor %}
       </ul>
     </div>
+    <h3 class="mt-8 text-lg">Fila de documento con acciones</h3>
+    <ul class="lista-filas mt-4">
+      {% include "componentes/fila_documento_acciones.html" with titulo="Documento PDF de muestra" url="#ref-filas" tipo="pdf" formato="pdf" tamano=2516582 fecha=fecha nuevo=True url_descargar="#ref-filas" url_ver="#ref-filas" only %}
+      {% include "componentes/fila_documento_acciones.html" with titulo="Planilla Excel de muestra, que solo se descarga" url="#ref-filas" tipo="excel" formato="xlsx" tamano=96256 fecha=fecha carpeta="Carpeta de muestra" url_descargar="#ref-filas" only %}
+    </ul>
   </section>
 
   <section aria-labelledby="ref-tabla">

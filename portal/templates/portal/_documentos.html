@@ -1,0 +1,19 @@
+{% comment %}
+Lista paginada de documentos con sus acciones. Parámetros: pagina; con_carpeta (muestra la
+carpeta de cada documento: en los resultados de búsqueda).
+{% endcomment %}
+<ul class="lista-filas">
+  {% for documento in pagina %}
+  {% with vigente=documento.version_vigente %}
+  {% url 'portal:documento' documento.pk as url_ficha %}
+  {% url 'portal:documento_descargar' documento.pk as url_descargar %}
+  {% if vigente.se_puede_ver %}{% url 'portal:documento_ver' documento.pk as url_ver %}{% endif %}
+  {% if con_carpeta %}
+  {% include "componentes/fila_documento_acciones.html" with titulo=documento.titulo url=url_ficha tipo=vigente.familia formato=vigente.extension tamano=vigente.tamano fecha=vigente.subido_en nuevo=documento.nuevo carpeta=documento.carpeta.nombre url_descargar=url_descargar url_ver=url_ver only %}
+  {% else %}
+  {% include "componentes/fila_documento_acciones.html" with titulo=documento.titulo url=url_ficha tipo=vigente.familia formato=vigente.extension tamano=vigente.tamano fecha=vigente.subido_en nuevo=documento.nuevo url_descargar=url_descargar url_ver=url_ver only %}
+  {% endif %}
+  {% endwith %}
+  {% endfor %}
+</ul>
+<div class="mt-4">{% include "componentes/paginacion.html" %}</div>

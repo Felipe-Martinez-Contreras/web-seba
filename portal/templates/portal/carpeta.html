@@ -1,0 +1,23 @@
+{% extends "base_portal.html" %}
+{% block titulo %}{{ carpeta.nombre }}{% endblock %}
+{% block contenido %}
+{% include "componentes/migas.html" with migas=migas only %}
+
+<div class="mt-4 flex flex-wrap items-center gap-4">
+  <span class="icono icono-grande text-primario" aria-hidden="true">{% include "iconos/folder.svg" %}</span>
+  <div class="min-w-0 flex-1 basis-48">
+    <h1 class="text-2xl break-words">{{ carpeta.nombre }}</h1>
+    {% if carpeta.descripcion %}<p class="text-sm break-words text-texto-secundario">{{ carpeta.descripcion }}</p>{% endif %}
+  </div>
+</div>
+
+<div class="mt-6">
+  {% if pagina.object_list %}
+  {% include "componentes/pestanas.html" with pestanas=pestanas pestanas_etiqueta="Ordenar los documentos" only %}
+  <div class="mt-4">{% include "portal/_documentos.html" %}</div>
+  {% else %}
+  {% url 'portal:carpetas' as url_carpetas %}
+  {% include "componentes/estado_vacio.html" with titulo="Esta carpeta aún no tiene documentos" texto="Cuando se publiquen documentos en esta carpeta, aparecerán aquí. Puede revisar las demás carpetas de su empresa." accion_texto="Ver las carpetas" accion_url=url_carpetas only %}
+  {% endif %}
+</div>
+{% endblock %}

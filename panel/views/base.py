@@ -1,6 +1,5 @@
 """Piezas comunes de las vistas del panel."""
 
-from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.functional import cached_property
@@ -9,14 +8,7 @@ from core.mixins import AdministradorMixin
 from cuentas.models import Usuario
 from empresas.models import Carpeta, Empresa
 
-POR_PAGINA = 25
-
 PESTANAS = (("documentos", "Documentos"), ("usuarios", "Usuarios"), ("actividad", "Actividad"))
-
-
-def paginar(request, elementos):
-    """Página pedida en `?page=`; un valor inválido o fuera de rango cae en la más cercana."""
-    return Paginator(elementos, POR_PAGINA).get_page(request.GET.get("page"))
 
 
 class VistaDeCliente(AdministradorMixin):
