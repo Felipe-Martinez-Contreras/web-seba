@@ -39,5 +39,12 @@
 <div class="mt-8">
   {% include "componentes/estado_vacio.html" with titulo="Aún no hay documentos disponibles" texto="Cuando se publiquen documentos para su empresa, aparecerán aquí. No necesita hacer nada por ahora." only %}
 </div>
+{% if contacto.hay %}
+<section class="tarjeta mt-4 p-5" aria-labelledby="contacto-titulo">
+  <h2 class="text-base" id="contacto-titulo">¿Necesita un documento?</h2>
+  <p class="mt-1 text-sm text-texto-secundario">{% if contacto.nombre %}Puede contactar a {{ contacto.nombre }}:{% else %}Puede contactarnos:{% endif %}</p>
+  <div class="mt-2">{% include "componentes/datos_contacto.html" with contacto=contacto only %}</div>
+</section>
+{% endif %}
 {% endif %}
 {% endblock %}

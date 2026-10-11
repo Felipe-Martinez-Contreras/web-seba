@@ -21,6 +21,7 @@ from core.paginacion import paginar
 from documentos import services
 from documentos.models import Documento
 from empresas.models import Carpeta
+from sitio.services import contacto_publico
 
 # Un documento lleva la etiqueta "Nuevo" durante estos días desde que se subió o se reemplazó.
 NUEVO_DIAS = 14
@@ -65,6 +66,8 @@ class Inicio(VistaDelPortal):
             empresa=self.request.user.empresa,
             carpetas=carpetas,
             hay_documentos=hay_documentos,
+            # Solo en el estado vacío: a quién pedirle los documentos (CLI-06).
+            contacto=None if hay_documentos else contacto_publico(),
             recientes=(
                 marcar_nuevos(self.documentos().recientes()[:RECIENTES]) if hay_documentos else []
             ),

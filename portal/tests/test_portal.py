@@ -102,6 +102,47 @@ def test_cli_06_sin_documentos_el_inicio_muestra_un_estado_vacio_neutro(portal_a
     assert "Aún no hay carpetas" in portal_a.get("/portal/carpetas/").content.decode()
 
 
+def test_cli_06_el_estado_vacio_muestra_el_contacto_del_profesional(portal_a, carpeta_a, negocio):
+    """CLI-06: con datos registrados en DatosNegocio, el cliente sabe a quién pedirle sus
+    documentos."""
+    contenido = portal_a.get("/portal/").content.decode()
+    assert "Aún no hay documentos disponibles" in contenido
+    assert "¿Necesita un documento?" in contenido
+    assert "Puede contactar a Prevención de Prueba:" in contenido
+    assert 'href="tel:+56987654321"' in contenido and "+56 9 8765 4321" in contenido
+    assert 'href="mailto:contacto@prevencion-de-prueba.cl"' in contenido
+    assert "Lunes a viernes, de 9:00 a 18:00" in contenido
+
+    negocio.whatsapp = "+56 9 5555 6666"
+    negocio.nombre_comercial = ""
+    negocio.save()
+    contenido = portal_a.get("/portal/").content.decode()
+    assert "Puede contactarnos:" in contenido
+    assert 'href="https://wa.me/56955556666"' in contenido
+
+
+def test_cli_06_sin_contacto_registrado_el_estado_vacio_no_muestra_marcadores(
+    portal_a, carpeta_a, negocio
+):
+    """Con los datos en [COMPLETAR] o vacíos, queda el texto neutro y nada más (R2)."""
+    for telefono, correo in (("", ""), ("[COMPLETAR]", "[COMPLETAR]")):
+        negocio.telefono, negocio.email_publico = telefono, correo
+        negocio.save()
+        contenido = portal_a.get("/portal/").content.decode()
+        assert "Aún no hay documentos disponibles" in contenido
+        assert "¿Necesita un documento?" not in contenido
+        assert "COMPLETAR" not in contenido and "mailto:" not in contenido
+
+
+def test_cli_06_con_documentos_el_contacto_no_se_muestra_ni_se_consulta(
+    portal_a, carpeta_a, administrador, negocio
+):
+    subir_documento(carpeta_a, administrador)
+    contenido = portal_a.get("/portal/").content.decode()
+    assert "¿Necesita un documento?" not in contenido
+    assert "contacto@prevencion-de-prueba.cl" not in contenido
+
+
 def test_la_lista_de_carpetas_respeta_el_orden_del_administrador(
     portal_a, administrador, carpeta_a, empresa_a
 ):
