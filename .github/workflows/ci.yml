@@ -147,7 +147,9 @@ jobs:
           test "$(despliegue/vm/dc exec -T web id -u)" = "1000"
           test -z "$(docker ps --filter name=web-seba --format '{{.Ports}}' | grep --fixed-strings -e '->' || true)"
       - name: Los logs de Gunicorn salen en JSON
-        run: despliegue/vm/dc logs --no-log-prefix web | grep --fixed-strings '"origen": "gunicorn.access"' | head -n 3
+        run: |
+          despliegue/vm/dc logs --no-log-prefix web > registros.txt
+          grep --max-count 3 --fixed-strings '"origen": "gunicorn.access"' registros.txt
       - name: Registros si algo falla
         if: failure()
         run: despliegue/vm/dc logs --no-color
