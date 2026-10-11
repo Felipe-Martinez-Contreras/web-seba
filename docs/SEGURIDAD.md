@@ -166,3 +166,26 @@ Estos procedimientos se detallarán en `docs/DESPLIEGUE.md` (Etapa 8). Todos se 
 El desbloqueo de un usuario cliente se hace desde el panel, en la pestaña Usuarios de su cliente; el comando queda para administradores, RUT sin cuenta e IP.
 
 Los dos primeros y `restablecer_2fa` imprimen un enlace de un solo uso. Quien lo use define su contraseña y, en esa misma sesión, configura su 2FA. El enlace no debe pegarse en canales que guarden historial.
+
+## 7. Revisión independiente (Etapa 7)
+
+El 11-10-2026 un revisor sin el contexto de las etapas anteriores auditó el código contra las secciones 3, 4, 8 y 12.2 de la especificación. Trabajó en solo lectura y sin leer este documento ni `DECISIONES.md`, `PLAN.md` o `TRAZABILIDAD.md`, para no heredar sus justificaciones. No ejecutó nada: sus conclusiones salen de leer el código. Cada hallazgo se verificó después contra el código, y H-01 además ejecutándolo.
+
+No encontró rutas privadas sin control, acceso cruzado entre empresas, exenciones de CSRF, `safe` sobre datos de usuarios ni secretos en el historial (37 commits). Dejó sin revisar línea a línea: `htmx.min.js`, el CSS, las migraciones, `sitio/pendientes.py`, `sitio/fotos.py`, `sitio/demo.py` y parte de las pruebas de `panel`, `portal`, `core` y `empresas`.
+
+| # | Severidad | Hallazgo | Requisito | Verificación propia | Decisión |
+| --- | --- | --- | --- | --- | --- |
+| H-01 | Alta | El bloqueo por intentos se anula llenando la caché: `DatabaseCache` guarda 300 entradas por defecto y, al pasar el tope, borra primero las claves alfabéticamente menores, que son las de `acceso:`. Unas 300 solicitudes de recuperación con RUT distintos bastan | AUT-04, prueba 6 | Confirmado y reproducido sobre una tabla temporal: tras 299 entradas `recuperar:rut:…` se pierden el bloqueo por RUT e IP, el bloqueo por IP y la generación del RUT | Pendiente del responsable |
+| H-02 | Media | Ninguna respuesta lleva `Permissions-Policy`, y la prueba de encabezados no lo comprueba | SEG-02 | Confirmado. Ya figuraba como pendiente de esta etapa | Pendiente del responsable |
+| H-03 | Media | Producción incompleta: sin `SECURE_PROXY_SSL_HEADER`, sin HSTS de subdominios ni `preload`, CI sin `check --deploy`; sin imagen de producción ni límite de tamaño en el proxy. Además, si `REMOTE_ADDR` no es una IP (Gunicorn tras un socket Unix) todos comparten la clave de bloqueo `None` | SEG-01, SEG-07 | Confirmado. La imagen, Gunicorn y el proxy son de la Etapa 8 | Pendiente del responsable |
+| H-04 | Baja | Una solicitud de recuperación anónima revoca el enlace de activación vigente de esa cuenta; tres por hora agotan su cupo, y cada una agrega un evento de auditoría sin tope | AUT-06, AUT-07 | Confirmado: `generar_enlace` revoca todos los enlaces sin usar, de cualquier tipo | Pendiente del responsable |
+| H-05 | Baja | El panel no muestra ni levanta el bloqueo por IP | AUT-04 | Confirmado. Ya estaba en la sección 4 ("Una red compartida puede bloquearse entera") | Pendiente del responsable |
+| H-06 | Baja | `manage.py` usa `config.settings.dev` si falta `DJANGO_SETTINGS_MODULE`: en el servidor, `cargar_demo` y los comandos del cron correrían con `DEBUG=True` | R5, SEG-01 | Confirmado. `config/wsgi.py` usa `prod` por omisión; `manage.py`, `dev` | Pendiente del responsable |
+| H-07 | Baja | La marca de tiempo del antispam se puede reutilizar durante 24 horas | SOL-04 | Confirmado. Siguen actuando el campo trampa y el límite por IP | Pendiente del responsable |
+| H-08 | Baja | En el admin de Django, el superusuario técnico puede cambiar empresa, correo y privilegios de un usuario sin dejar un evento de auditoría | AUD-01, ADM-12 | Confirmado. La falta de eventos ya estaba en la sección 4; que esos campos sean editables, no | Pendiente del responsable |
+| H-09 | Baja | Los códigos de recuperación del 2FA se consumen con un GET: una recarga o una precarga los pierde | AUT-10 | Confirmado (`tomar_codigos_de_recuperacion`) | Pendiente del responsable |
+| H-10 | Baja | La prueba 1 acepta un 404 con identificadores de relleno fuera del panel y del portal: una ruta nueva sin control en otro espacio de nombres pasaría | SEG-04, prueba 1 | Confirmado leyendo `test_urls_privadas.py` | Pendiente del responsable |
+| H-11 | Informativa | `/acceso/?next=foo` termina en error 500 después de iniciar la sesión. No es una redirección abierta | — | Confirmado por lectura: `redirect("foo")` trata el texto como nombre de vista | Pendiente del responsable |
+| H-12 | Informativa | Las rutas de servicios del panel usan un entero | SEG-05 | Confirmado; la sección 6 de la especificación pide UUID para empresas, carpetas, documentos y versiones, no para servicios | Pendiente del responsable |
+
+Evaluación del revisor por requisito: SEG-03, 04, 05, 06, 09, 10 y 13, cumplen; SEG-08 y SEG-12, cumplen en el código; SEG-01, 02 y 07, parcial (H-02 y H-03); SEG-11, no determinable desde el código. Pruebas de la sección 12.2: 2, 3, 4, 5, 7, 8, 9, 10, 12, 13 y 14, cumplen; 1 y 6, parcial (H-10, H-01 y H-05); 11, cumple en lo automático y queda la parte manual de staging.
