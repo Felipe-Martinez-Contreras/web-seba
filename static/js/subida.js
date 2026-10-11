@@ -1,4 +1,5 @@
-// Subida de documentos con progreso (ADM-08). Envía un archivo por petición, uno tras otro,
+// Subida de documentos con progreso (ADM-08), también al reemplazar el archivo de un
+// documento. Envía un archivo por petición, uno tras otro,
 // con XMLHttpRequest (único camino con eventos de progreso de subida confiables), y muestra
 // por cada archivo una barra <progress> y luego el resultado que responde el servidor.
 // Al terminar vuelve a cargar la lista de documentos de la página.
@@ -41,11 +42,17 @@ document.addEventListener("submit", function (evento) {
     refrescar();
   }
 
-  // Trae la página de nuevo y cambia solo el bloque de la lista. Si no se puede, queda un
-  // enlace para recargarla: la lista nunca se muestra desactualizada sin aviso.
+  // Trae la página de nuevo y cambia solo los bloques indicados (uno o varios id separados
+  // por espacios). Si no se puede, queda un enlace para recargarla: la página nunca se
+  // muestra desactualizada sin aviso.
   function refrescar() {
-    var bloque = formulario.dataset.refresca && document.getElementById(formulario.dataset.refresca);
-    if (!bloque) {
+    var bloques = (formulario.dataset.refresca || "")
+      .split(" ")
+      .map(function (id) {
+        return id && document.getElementById(id);
+      })
+      .filter(Boolean);
+    if (!bloques.length) {
       return;
     }
     function ofrecerEnlace() {
@@ -54,7 +61,7 @@ document.addEventListener("submit", function (evento) {
       var enlace = document.createElement("a");
       enlace.className = "enlace";
       enlace.href = formulario.dataset.lista || window.location.href;
-      enlace.textContent = "Ver la lista de documentos actualizada";
+      enlace.textContent = formulario.dataset.listaTexto || "Ver la lista de documentos actualizada";
       cierre.appendChild(enlace);
       lista.appendChild(cierre);
     }
@@ -62,10 +69,17 @@ document.addEventListener("submit", function (evento) {
     consulta.open("GET", formulario.dataset.lista || window.location.href);
     consulta.responseType = "document";
     consulta.addEventListener("load", function () {
-      var nuevo = consulta.status === 200 && consulta.response && consulta.response.getElementById(bloque.id);
-      if (nuevo) {
-        bloque.replaceWith(document.importNode(nuevo, true));
-      } else {
+      var pagina = consulta.status === 200 && consulta.response;
+      var faltan = !pagina;
+      bloques.forEach(function (bloque) {
+        var nuevo = pagina && pagina.getElementById(bloque.id);
+        if (nuevo) {
+          bloque.replaceWith(document.importNode(nuevo, true));
+        } else {
+          faltan = true;
+        }
+      });
+      if (faltan) {
         ofrecerEnlace();
       }
     });
@@ -89,7 +103,7 @@ document.addEventListener("submit", function (evento) {
       return;
     }
     var datos = new FormData();
-    datos.append("archivos", archivo);
+    datos.append(entrada.name, archivo);
     var peticion = new XMLHttpRequest();
     peticion.open("POST", formulario.action);
     peticion.setRequestHeader("X-CSRFToken", token.value);

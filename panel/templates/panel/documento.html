@@ -1,10 +1,12 @@
 {% extends "base_panel.html" %}
+{% load static %}
 {% block titulo %}{{ documento.titulo }} · {{ empresa.razon_social }}{% endblock %}
+{% block scripts %}<script src="{% static 'js/subida.js' %}" defer></script>{% endblock %}
 {% block contenido %}
 {% include "componentes/migas.html" with migas=migas only %}
 
 {% with vigente=documento.version_vigente %}
-<div class="mt-4 flex flex-wrap items-center gap-4">
+<div class="mt-4 flex flex-wrap items-center gap-4" id="documento-cabecera">
   {% include "componentes/icono_archivo.html" with tipo=vigente.familia only %}
   <div class="min-w-0 flex-1 basis-48">
     <h1 class="text-2xl break-words">{{ documento.titulo }}</h1>
@@ -39,7 +41,7 @@
 <section class="mt-8" aria-labelledby="versiones-titulo">
   <h2 class="text-lg" id="versiones-titulo">Historial de versiones</h2>
   <p class="mt-1 text-sm text-texto-secundario">El cliente solo ve la versión vigente. Las anteriores quedan aquí.</p>
-  <div class="tarjeta mt-3">
+  <div class="tarjeta mt-3" id="documento-versiones">
     <table class="tabla tabla-ancha">
       <thead>
         <tr>
@@ -89,7 +91,8 @@
   <section class="tarjeta p-5" aria-labelledby="reemplazar-titulo">
     <h2 class="text-lg" id="reemplazar-titulo">Reemplazar el archivo</h2>
     <p class="mt-1 text-sm text-texto-secundario">El archivo nuevo pasa a ser la versión vigente. El actual se conserva en el historial.</p>
-    <form class="mt-4 flex flex-col gap-4" method="post" action="{% url 'panel:documento_reemplazar' empresa.pk documento.pk %}" enctype="multipart/form-data">
+    {% url 'panel:documento' empresa.pk documento.pk as url_documento %}
+    <form class="mt-4 flex flex-col gap-4" method="post" action="{% url 'panel:documento_reemplazar' empresa.pk documento.pk %}" enctype="multipart/form-data" data-subida="reemplazo-resultado" data-maximo="{{ maximo_bytes }}" data-maximo-mb="{{ maximo_mb }}" data-lista="{{ url_documento }}" data-lista-texto="Ver el documento actualizado" data-refresca="documento-cabecera documento-versiones">
       {% csrf_token %}
       <div class="campo">
         <label class="campo-etiqueta" for="reemplazo-archivo">Archivo nuevo</label>
@@ -98,6 +101,7 @@
       </div>
       <div>{% include "componentes/boton.html" with texto="Reemplazar archivo" variante="secundario" icono="upload" only %}</div>
     </form>
+    <ul class="lista-filas mt-4" id="reemplazo-resultado" aria-live="polite" aria-label="Resultado del reemplazo" hidden></ul>
   </section>
 
   <section class="tarjeta p-5" aria-labelledby="mover-titulo">

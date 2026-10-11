@@ -145,6 +145,50 @@ def test_e4_reemplazar_crea_una_version_nueva_y_conserva_la_anterior(
     assert documento_a.versiones.count() == 2 and len(almacen_de_prueba.claves()) == 2
 
 
+def test_el_reemplazo_con_javascript_recibe_solo_el_resultado(
+    cliente_http_admin, administrador_activo, documento_a, almacen_de_prueba
+):
+    """subida.js envía el archivo con barra de progreso y pide solo la fila del resultado."""
+    url = _de(documento_a, "reemplazar")
+    fragmento = {"X-Subida": "fragmento"}
+    respuesta = cliente_http_admin.post(
+        url, {"archivo": archivos.pdf("corregido.pdf", b"% v2")}, headers=fragmento
+    )
+    contenido = respuesta.content.decode().strip()
+    assert respuesta.status_code == 200
+    assert contenido.startswith("<li") and contenido.endswith("</li>")
+    assert "<html" not in contenido and "corregido.pdf" in contenido
+    assert "Aceptado." in contenido and "Es la versión 2." in contenido
+    assert "Publicado para Empresa A de Prueba SpA." in contenido
+    documento_a.refresh_from_db()
+    assert documento_a.version_vigente.numero == 2
+    assert len(almacen_de_prueba.claves()) == 2
+    assert _evento(Accion.DOCUMENTO_REEMPLAZADO).actor == administrador_activo
+
+    malo = archivos.archivo("<b>malo</b>.pdf", archivos.BYTES_HTML)
+    respuesta = cliente_http_admin.post(url, {"archivo": malo}, headers=fragmento)
+    contenido = respuesta.content.decode()
+    assert respuesta.status_code == 200 and "Rechazado." in contenido
+    assert "El contenido no corresponde a un archivo PDF." in contenido
+    assert "Publicado para" not in contenido and "<b>" not in contenido
+    assert cliente_http_admin.post(url, headers=fragmento).status_code == 400
+    assert documento_a.versiones.count() == 2 and len(almacen_de_prueba.claves()) == 2
+    assert EventoAuditoria.objects.filter(accion=Accion.DOCUMENTO_REEMPLAZADO).count() == 1
+    # El resultado no deja un mensaje pendiente para la página siguiente.
+    assert "Se subió la versión" not in cliente_http_admin.get(_de(documento_a)).content.decode()
+
+
+def test_la_ficha_carga_el_script_de_subida_para_el_reemplazo(cliente_http_admin, documento_a):
+    pagina = cliente_http_admin.get(_de(documento_a)).content.decode()
+    assert '<script src="/static/js/subida.js" defer></script>' in pagina
+    assert 'data-subida="reemplazo-resultado"' in pagina and 'id="reemplazo-resultado"' in pagina
+    assert f'data-maximo="{25 * 1024 * 1024}"' in pagina
+    # Al terminar, el script vuelve a cargar la cabecera y el historial.
+    assert 'data-refresca="documento-cabecera documento-versiones"' in pagina
+    assert 'id="documento-cabecera"' in pagina and 'id="documento-versiones"' in pagina
+    assert "style=" not in pagina
+
+
 def test_las_versiones_no_se_editan_ni_se_borran(documento_a):
     version = documento_a.version_vigente
     version.nombre_original = "otro.pdf"

@@ -3,8 +3,8 @@ restaurar (ADM-08, ADM-09, DOC-04)."""
 
 from django.conf import settings
 from django.contrib import messages
-from django.http import Http404
-from django.shortcuts import get_object_or_404, redirect
+from django.http import Http404, HttpResponseBadRequest
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.functional import cached_property
 from django.views import View
@@ -114,6 +114,7 @@ class DocumentoDetalle(VistaDeDocumento, TemplateView):
             formatos=validacion.nombres_de_formatos(),
             extensiones=",".join("." + e for e in validacion.formatos_permitidos()),
             maximo_mb=settings.DOCUMENTOS_TAMANO_MAXIMO_MB,
+            maximo_bytes=validacion.tamano_maximo(),
             mensaje_eliminar=(
                 "El cliente dejará de verlo de inmediato. Quedará en la papelera y podrá "
                 f"restaurarlo durante {settings.PAPELERA_DIAS} días; después se borra de "
@@ -164,12 +165,27 @@ class DocumentoMover(VistaDeDocumento, View):
 
 
 class DocumentoReemplazar(VistaDeDocumento, View):
-    """Sube un archivo nuevo, que pasa a ser la versión vigente (DOC-08)."""
+    """Sube un archivo nuevo, que pasa a ser la versión vigente (DOC-08). Con JavaScript,
+    subida.js lo envía con barra de progreso y recibe solo el resultado."""
 
     http_method_names = ["post"]
 
+    def _fragmento(self, archivo):
+        resultado = {"nombre": (archivo.name or "")[:150]}
+        try:
+            version = services.reemplazar(
+                self.documento, archivo, actor=self.request.user, request=self.request
+            )
+        except ArchivoRechazado as rechazo:
+            resultado["motivo"] = rechazo.motivo
+        else:
+            resultado.update(version=version.numero, publicado_para=self.empresa.razon_social)
+        return render(self.request, "componentes/resultado_subida.html", resultado)
+
     def post(self, request, **kwargs):
         archivo = request.FILES.get("archivo")
+        if request.headers.get("X-Subida") == ENCABEZADO_FRAGMENTO:
+            return self._fragmento(archivo) if archivo else HttpResponseBadRequest()
         if archivo is None:
             messages.error(request, "Seleccione el archivo que reemplazará al actual.")
             return redirect(self.url_documento())
