@@ -218,5 +218,6 @@ Lo que todavía no existe: documentos (Etapa 4), portal completo (Etapa 5), soli
 - Las acciones de cada usuario van en un menú "Acciones"; solo "Desbloquear" queda como botón visible en la fila.
 - Las tablas de usuarios y de eventos pasan a lista hasta los 1.280 px (DEC-92): a 768 px la de usuarios desbordaba.
 - Se agregó el evento "Correo con enlace de acceso", con el resultado del envío, y el evento "Depuración de la auditoría".
+- Respuestas del responsable al cierre (11-10-2026): el menú "Acciones" por usuario queda como está; "Pendiente" en ámbar queda aprobado (DEC-84); para desbloquear a un administrador basta con el comando (DEC-85).
 - La revisión visual se hizo con Edge sin interfaz sobre una base de datos temporal (DEC-94), con una sesión de administrador creada para ese fin. No se recorrió el ingreso con un código 2FA real: queda para la revisión del responsable.
 
