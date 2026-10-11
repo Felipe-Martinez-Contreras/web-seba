@@ -34,6 +34,9 @@ class Command(BaseCommand):
                 self.stdout.write(f"  - {pendiente.nombre}: {pendiente.detalle}{marca}")
                 self.stdout.write(f"    Dónde: {pendiente.donde}")
         self.stdout.write("")
-        self.stdout.write("Lo que falta no se muestra en el sitio público.")
+        self.stdout.write(
+            "Los datos vacíos no se muestran en el sitio; los de prueba sí, y deben "
+            "reemplazarse antes de publicar."
+        )
         if opciones["estricto"]:
             raise CommandError(f"Quedan {len(pendientes)} pendientes.")
