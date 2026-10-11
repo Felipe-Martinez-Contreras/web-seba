@@ -275,3 +275,55 @@ def test_comprobar_almacenamiento_exige_un_bucket_privado_y_una_url_de_dos_minut
     with pytest.raises(CommandError, match="Sin firma no se puede leer"):
         call_command("comprobar_almacenamiento")
     assert almacen_s3.claves() == []
+
+
+def test_crear_bucket_es_solo_para_el_emulador_de_s3(almacen_s3, almacen_de_prueba, settings):
+    # Con el bucket ya creado no falla; con el almacenamiento local, el comando lo rechaza.
+    almacen_s3.crear_bucket()
+    settings.S3_BUCKET = "otro-bucket"
+    almacenamiento._almacen_s3.cache_clear()
+    nuevo = almacenamiento.almacen()
+    nuevo.crear_bucket()
+    assert nuevo.claves() == []
+    settings.DOCUMENTOS_ALMACENAMIENTO = "local"
+    with pytest.raises(CommandError, match="solo aplica"):
+        call_command("comprobar_almacenamiento", crear_bucket=True)
+
+
+def test_comprobar_almacenamiento_con_firma_exige_que_el_bucket_valide_firma_y_vencimiento(
+    almacen_s3, monkeypatch, capsys
+):
+    """Con --firma, para el bucket real. La red y la espera se sustituyen: lo que se prueba
+    es que el comando falla ante un servicio que, como el emulador, no valida la firma."""
+    from documentos.management.commands import comprobar_almacenamiento as comando
+
+    esperas = []
+    valida_firmas = True
+    original = None
+
+    def respuesta_simulada(url):
+        nonlocal original
+        consulta = parse_qs(urlsplit(url).query)
+        if "X-Amz-Signature" not in consulta:
+            return 403, {}, b""
+        original = original or url
+        if valida_firmas and (url != original or esperas):
+            return 403, {}, b""  # firma alterada, o URL ya vencida
+        encabezados = {
+            "Content-Type": consulta["response-content-type"][0],
+            "Content-Disposition": consulta["response-content-disposition"][0],
+        }
+        return 200, encabezados, comando._CONTENIDO
+
+    monkeypatch.setattr(comando, "_estado", respuesta_simulada)
+    monkeypatch.setattr(comando.time, "sleep", esperas.append)
+    call_command("comprobar_almacenamiento", firma=True)
+    salida = capsys.readouterr().out
+    assert "Con la firma alterada no se puede leer (respondió 403): correcto" in salida
+    assert "Vencida, la URL ya no sirve (respondió 403): correcto" in salida
+    assert esperas == [130]
+
+    valida_firmas, original, esperas[:] = False, None, []
+    with pytest.raises(CommandError, match="Con la firma alterada no se puede leer"):
+        call_command("comprobar_almacenamiento", firma=True)
+    assert almacen_s3.claves() == []

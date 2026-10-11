@@ -1,6 +1,6 @@
 # Manual del administrador
 
-Guía breve para el uso diario del panel. Se completa a medida que avanza el proyecto: por ahora cubre clientes, carpetas, usuarios y auditoría. Documentos y solicitudes se agregan cuando existan.
+Guía breve para el uso diario del panel. Se completa a medida que avanza el proyecto: por ahora cubre clientes, carpetas, documentos, usuarios y auditoría. Las solicitudes se agregan cuando existan.
 
 ## Entrar al panel
 
@@ -43,9 +43,57 @@ En la ficha del cliente, pestaña **Documentos**:
 - **Nueva carpeta** agrega una al final.
 - Las flechas suben o bajan una carpeta en la lista.
 - **Editar** cambia su nombre o su descripción.
-- **Eliminar** la borra, tras confirmar.
+- **Eliminar** la borra, tras confirmar. Solo aparece en las carpetas sin documentos.
 
 Dentro de un mismo cliente no puede haber dos carpetas con el mismo nombre.
+
+Una carpeta con documentos no se puede eliminar, y los de la papelera también cuentan. Mueva sus documentos a otra carpeta o espere a que la papelera se vacíe.
+
+## Documentos
+
+Pulse el nombre de una carpeta para ver sus documentos.
+
+### Subir documentos
+
+1. Abra la carpeta y, en **Subir documentos**, elija uno o varios archivos.
+2. Pulse **Subir documentos**. Cada archivo muestra su avance y, al terminar, su resultado: **Aceptado** o **Rechazado**, con el motivo.
+
+Lo que debe saber:
+
+- Se admiten PDF, Word (.docx), Excel (.xlsx), PowerPoint (.pptx), JPG y PNG, de hasta 25 MB cada uno.
+- Un archivo aceptado queda **publicado de inmediato**: el cliente ya puede verlo.
+- El título del documento es el nombre del archivo. Puede cambiarlo después.
+- No cierre la página mientras haya archivos subiendo.
+
+Motivos de rechazo frecuentes:
+
+| Motivo | Qué hacer |
+| --- | --- |
+| Formato antiguo de Office (.doc, .xls, .ppt) o archivo con contraseña | Ábralo y guárdelo como .docx, .xlsx o .pptx, sin contraseña |
+| El archivo contiene macros | Guárdelo sin macros |
+| El contenido no corresponde a su extensión | El archivo fue renombrado o está dañado. Vuelva a exportarlo desde el programa original |
+| Supera el tamaño máximo | Reduzca el archivo o divídalo |
+
+### Ficha del documento
+
+Pulse un documento para abrir su ficha. Desde ahí puede:
+
+- **Descargar** el archivo, o **Ver en pantalla** si es PDF, JPG o PNG (se abre en una pestaña nueva).
+- **Editar título y descripción.** El cliente ve ambos.
+- **Reemplazar el archivo**: sube una versión nueva, que pasa a ser la que ve el cliente. Las anteriores quedan en el **Historial de versiones**, que solo ven los administradores.
+- **Mover a otra carpeta** del mismo cliente. Un documento no se puede pasar a otro cliente.
+- **Eliminar**: lo envía a la papelera.
+
+### Papelera
+
+En la pestaña **Documentos** del cliente, pulse **Papelera**.
+
+- El cliente deja de ver un documento apenas usted lo elimina.
+- Durante 30 días puede **Restaurar** el documento: vuelve a su carpeta y el cliente vuelve a verlo.
+- Pasado ese plazo, el documento y todas sus versiones se borran de forma definitiva y no se pueden recuperar.
+- Para revisar un documento eliminado, primero restáurelo: mientras está en la papelera no se puede abrir ni descargar.
+
+Si un cliente le pide eliminar sus datos por completo, avise a quien mantiene el sistema: el borrado definitivo no es instantáneo en los respaldos del almacenamiento.
 
 ## Usuarios
 
@@ -88,7 +136,7 @@ Generar un enlace nuevo deja sin efecto el anterior.
 
 ## Auditoría
 
-En **Auditoría** queda registrado quién entró, quién falló al entrar y qué cambios se hicieron: clientes, usuarios, carpetas y enlaces generados. Puede filtrar por cliente, por RUT, por tipo de acción y por fechas.
+En **Auditoría** queda registrado quién entró, quién falló al entrar y qué cambios se hicieron: clientes, usuarios, carpetas, enlaces generados y documentos (subidas, reemplazos, movimientos, eliminaciones y restauraciones). También queda cada vez que alguien ve o descarga un documento, y quién fue. Puede filtrar por cliente, por RUT, por tipo de acción y por fechas.
 
 En la ficha de cada cliente, la pestaña **Actividad** muestra lo mismo, solo para ese cliente.
 
@@ -101,5 +149,8 @@ Los registros no se pueden editar ni borrar desde el panel.
 | Un usuario dice que su enlace "no es válido" | Venció, ya se usó o se generó otro después. Genere uno nuevo |
 | Un usuario dice que su enlace "ya fue usado" y no fue él | Desactive la cuenta, revise la pestaña Actividad y avise a quien mantiene el sistema |
 | Un usuario no puede entrar y aparece Activo | Probablemente olvidó su contraseña: puede usar "¿Olvidó su contraseña?" en la página de acceso, o usted puede generarle un enlace |
+| Un archivo se rechaza y no entiende el motivo | Lea el motivo junto al nombre del archivo; la tabla de "Subir documentos" dice qué hacer en cada caso |
+| Necesita eliminar una carpeta y no aparece el botón | Tiene documentos, quizá en la papelera. Muévalos o restáurelos y muévalos |
+| Eliminó un documento por error | Vaya a la Papelera del cliente y pulse Restaurar, dentro de los 30 días |
 | Usted quedó bloqueado | Espere 15 minutos o pida a quien mantiene el sistema que lo desbloquee |
 | Perdió su teléfono con la aplicación de autenticación | Use uno de sus códigos de recuperación. Si no los tiene, pida a quien mantiene el sistema que restablezca su verificación en dos pasos |

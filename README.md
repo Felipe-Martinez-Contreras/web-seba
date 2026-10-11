@@ -51,6 +51,29 @@ Con el administrador ya dentro del panel:
 4. Para probar el corte de acceso: con esa ventana abierta, pulse "Desactivar" en la ficha del cliente y recargue el portal. Vuelve a la pantalla de acceso.
 5. Para probar el desbloqueo: falle la contraseña 5 veces con el RUT del usuario. En la pestaña Usuarios aparece "Bloqueado" con el botón "Desbloquear".
 
+### Subir documentos
+
+Con un cliente y sus carpetas ya creados:
+
+1. En la ficha del cliente, pestaña **Documentos**, abra una carpeta.
+2. Elija varios archivos y pulse **Subir documentos**: cada uno muestra su barra de progreso y su resultado. Pruebe también con un archivo inválido (por ejemplo, un `.exe` renombrado a `.pdf`) para ver el motivo del rechazo.
+3. Abra un documento: descargue, use "Ver en pantalla", reemplace el archivo y revise el historial de versiones.
+4. Elimine el documento y restáurelo desde la **Papelera** del cliente.
+
+Los archivos se guardan en el volumen `documentos_datos` de Docker (`/var/app/media` en el contenedor), fuera del código y sin ninguna URL que los sirva: solo se entregan por las vistas de ver y descargar, que exigen sesión y dejan un evento de auditoría.
+
+### Probar el almacenamiento S3 sin un bucket real
+
+El desarrollo diario usa el almacenamiento local. Para revisar a mano la descarga con URL firmada hay un emulador opcional de S3 (`moto`), que usa la misma imagen y unos 50 MB de memoria:
+
+```powershell
+docker compose --profile s3 up -d s3
+docker compose run --rm -e DOCUMENTOS_ALMACENAMIENTO=s3 -e S3_BUCKET=documentos-dev -e S3_ENDPOINT_URL=http://s3:5000 -e S3_REGION=us-east-1 -e S3_ACCESS_KEY_ID=desarrollo -e S3_SECRET_ACCESS_KEY=desarrollo web python manage.py comprobar_almacenamiento --crear-bucket
+docker compose --profile s3 down
+```
+
+El emulador guarda todo en memoria y lo pierde al detenerse. No valida firmas ni vencimientos, así que no reemplaza la comprobación contra el bucket real, que se hace antes de cargar documentos con `python manage.py comprobar_almacenamiento --firma` (tarda unos 2 minutos; ver `docs/SEGURIDAD.md`).
+
 La guía de uso para el profesional está en [`docs/MANUAL_ADMIN.md`](docs/MANUAL_ADMIN.md).
 
 ## Comandos
@@ -60,7 +83,7 @@ La guía de uso para el profesional está en [`docs/MANUAL_ADMIN.md`](docs/MANUA
 | Levantar | `docker compose up -d --wait` |
 | Ver registros | `docker compose logs -f web` |
 | Detener | `docker compose down` |
-| Detener y borrar la base de datos local | `docker compose down -v` |
+| Detener y borrar la base de datos y los documentos locales | `docker compose down -v` |
 | Reconstruir tras cambiar dependencias | `docker compose up -d --build --wait` |
 | Ejecutar un comando de Django | `docker compose run --rm web python manage.py <comando>` |
 | Crear migraciones | `docker compose run --rm web python manage.py makemigrations` |
@@ -69,6 +92,9 @@ La guía de uso para el profesional está en [`docs/MANUAL_ADMIN.md`](docs/MANUA
 | Restablecer el 2FA de un administrador | `docker compose run --rm web python manage.py restablecer_2fa <rut>` |
 | Desbloquear un RUT o una IP | `docker compose run --rm web python manage.py desbloquear_acceso --rut <rut>` (o `--ip <ip>`) |
 | Borrar la auditoría más antigua que la retención | `docker compose run --rm web python manage.py depurar_auditoria` |
+| Borrar definitivamente lo que lleva más de 30 días en la papelera | `docker compose run --rm web python manage.py purgar_papelera` |
+| Comprobar el almacenamiento de documentos configurado | `docker compose run --rm web python manage.py comprobar_almacenamiento` |
+| Levantar el emulador de S3 | `docker compose --profile s3 up -d s3` |
 | Recompilar el CSS al guardar | `docker compose --profile css up -d` |
 
 Sin el perfil `css`, el CSS se compila una vez al arrancar `web`; después de cambiar plantillas o estilos, `docker compose restart web` lo vuelve a compilar.
@@ -83,7 +109,9 @@ docker compose run --rm web ruff check .
 docker compose run --rm web ruff format --check .
 ```
 
-Las pruebas usan PostgreSQL real (el servicio `db`) e informan la cobertura. La CI de GitHub Actions ejecuta lo mismo, audita las dependencias con `pip-audit` y comprueba que `docker compose up` levante la aplicación desde cero.
+En un equipo con poca memoria, detenga antes el servidor para no tener dos contenedores `web` a la vez: `docker compose stop web`.
+
+Las pruebas usan PostgreSQL real (el servicio `db`) e informan la cobertura. Los archivos de prueba se generan en memoria y se guardan en una carpeta temporal; el almacenamiento S3 se prueba contra `moto`, un emulador que corre dentro del mismo proceso, sin red. La CI de GitHub Actions ejecuta lo mismo, audita las dependencias con `pip-audit` y comprueba que `docker compose up` levante la aplicación desde cero.
 
 ## Dependencias
 
@@ -104,17 +132,18 @@ core/          RUT, validadores, IP de confianza, mixins de rol, correo, logs y 
 cuentas/       Usuario, acceso, bloqueo, enlaces de un solo uso, recuperación y 2FA
 empresas/      Empresas (clientes) y sus carpetas
 auditoria/     Registro de eventos (solo se agregan), filtros y retención
-portal/        Vistas del cliente (por ahora, el inicio)
-panel/         Vistas del administrador: inicio, clientes, usuarios, carpetas y auditoría
+documentos/    Documentos y versiones, validación de archivos, almacenamiento (local y S3) y papelera
+portal/        Vistas del cliente (por ahora, el inicio y los endpoints de ver y descargar)
+panel/         Vistas del administrador: inicio, clientes, usuarios, carpetas, documentos y auditoría
 templates/     Plantillas base, componentes, íconos y páginas 404 y 500
-static/        HTMX, fuentes y JavaScript propios (sin CDN)
+static/        HTMX, fuentes y JavaScript propios (sin CDN), incluida la subida con progreso
 static_src/    Entrada de Tailwind con los tokens de diseño
 docker/        Script de arranque de desarrollo
-docs/          Especificación, plan, decisiones, trazabilidad, seguridad y manual del administrador
+docs/          Especificación, plan, arquitectura, decisiones, trazabilidad, seguridad y manual del administrador
 ```
 
 ## Configuración
 
-Todas las variables están documentadas en [`.env.example`](.env.example). La configuración de producción (`config.settings.prod`) se niega a arrancar si faltan `SECRET_KEY`, `ALLOWED_HOSTS`, `DATABASE_URL`, `SITIO_URL` (con https) o `PROXY_CONFIANZA_REDES` (puede ir vacía), o si `SECRET_KEY` es la clave de ejemplo.
+Todas las variables están documentadas en [`.env.example`](.env.example). La configuración de producción (`config.settings.prod`) se niega a arrancar si faltan `SECRET_KEY`, `ALLOWED_HOSTS`, `DATABASE_URL`, `SITIO_URL` (con https), `PROXY_CONFIANZA_REDES` (puede ir vacía) o `DOCUMENTOS_ALMACENAMIENTO` (`local` o `s3`), o si `SECRET_KEY` es la clave de ejemplo. `python manage.py check` falla si el almacenamiento está mal configurado: carpeta de documentos dentro de una ruta de estáticos, o `s3` sin bucket o sin credenciales.
 
 El admin de Django solo se publica si `DJANGO_ADMIN_RUTA` está definida. Si agrega variables nuevas a `.env.example`, cópielas también a su `.env`.

@@ -184,6 +184,8 @@ def test_la_pagina_de_la_carpeta_carga_el_script_de_subida_sin_codigo_en_linea(
     pagina = cliente_http_admin.get(_carpeta(carpeta_a)).content.decode()
     assert '<script src="/static/js/subida.js" defer></script>' in pagina
     assert 'data-subida="subida-resultados"' in pagina
+    # Al terminar, el script vuelve a cargar este bloque de la misma página.
+    assert 'data-refresca="lista-documentos"' in pagina and 'id="lista-documentos"' in pagina
     assert f'data-maximo="{25 * 1024 * 1024}"' in pagina
     assert 'id="subida-resultados"' in pagina and "style=" not in pagina
 

@@ -21,7 +21,7 @@
   <div class="mt-4">
     {% url 'panel:documento_subir' empresa.pk carpeta.pk as url_subir %}
     {% url 'panel:carpeta' empresa.pk carpeta.pk as url_carpeta %}
-    {% include "componentes/zona_subida.html" with accion=url_subir url_lista=url_carpeta %}
+    {% include "componentes/zona_subida.html" with accion=url_subir url_lista=url_carpeta refresca="lista-documentos" %}
   </div>
   <ul class="lista-filas mt-4" id="subida-resultados" aria-live="polite" aria-label="Resultado de la subida"{% if not resultados %} hidden{% endif %}>
     {% include "panel/_resultados_subida.html" %}
@@ -30,7 +30,7 @@
 
 <section class="mt-8" aria-labelledby="documentos-titulo">
   <h2 class="text-lg" id="documentos-titulo">Documentos</h2>
-  <div class="mt-3">
+  <div class="mt-3" id="lista-documentos">
     {% if pagina.object_list %}
     <ul class="lista-filas">
       {% for documento in pagina %}

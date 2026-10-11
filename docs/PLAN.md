@@ -11,7 +11,7 @@ Plan de la Etapa 0 (sección 11 de `ESPECIFICACION.md`). Se actualiza al avanzar
 | — | Ajuste visual (tokens azul marino, Inter y componentes del mockup) | Terminado el 09-10-2026; pendiente de aprobación del responsable |
 | 2 | Cuentas y acceso | Aprobada por el responsable el 11-10-2026 |
 | 3 | Empresas, usuarios y carpetas | Aprobada por el responsable el 11-10-2026, tras probar el flujo en el navegador |
-| 4 | Documentos | Pendiente |
+| 4 | Documentos | Terminada el 11-10-2026; pendiente de aprobación del responsable |
 | 5 | Portal del cliente | Pendiente |
 | 6 | Sitio público y solicitudes | Pendiente |
 | 7 | Endurecimiento y calidad | Pendiente |
@@ -56,7 +56,7 @@ web-seba/
 ├─ core/        # RUT, validadores, mixins de rol, componentes, errores, /salud/
 ├─ cuentas/     # Usuario, backend de autenticación, activación, recuperación, 2FA
 ├─ empresas/    # Empresa, Carpeta
-├─ documentos/  # Documento, VersionDocumento, almacenamiento, descargas
+├─ documentos/  # Documento, VersionDocumento, validación, almacenamiento, descargas y papelera
 ├─ portal/  panel/  sitio/  solicitudes/  auditoria/
 ├─ templates/   # base.html, base_publica.html, base_aplicacion.html (portal y panel), componentes/, iconos/, 404.html, 500.html
 ├─ static_src/css/app.css     # entrada de Tailwind con los tokens de la sección 9
@@ -67,18 +67,18 @@ web-seba/
 
 - Cada app: `models.py`, `querysets.py`, `services.py`, `forms.py`, `views.py`, `urls.py`, `templates/<app>/`, `tests/` y `management/commands/`, según lo que necesite.
 - Las apps se crean en la etapa que las implementa (R1: nada vacío ni simulado). La Etapa 1 crea `config`, `core`, `cuentas` y `empresas` (ver D2).
-- Archivos subidos en desarrollo (desde la Etapa 4): volumen Docker montado en `/var/app/media`, fuera de `static/` y sin URL que lo sirva.
+- Archivos subidos en desarrollo: volumen Docker `documentos_datos` montado en `/var/app/media`, fuera de `static/` y sin URL que lo sirva.
 - El CSS compilado queda fuera del código, en `/opt/estaticos` dentro del contenedor; se genera en el build y al arrancar.
-- Compose: `web` (Django) y `db` (PostgreSQL 18), con límites de memoria. `tailwind --watch` es un perfil opcional (`--profile css`).
+- Compose: `web` (Django) y `db` (PostgreSQL 18), con límites de memoria. Perfiles opcionales: `tailwind --watch` (`--profile css`) y el emulador de S3 (`--profile s3`).
 - Pruebas y comandos se ejecutan dentro del contenedor: `docker compose run --rm web pytest`.
 
 ## 3. Dependencias
 
 El detalle y el motivo de cada una están en `DECISIONES.md`.
 
-- **Ejecución, instaladas:** Django 6.1.2, psycopg 3.3.6, argon2-cffi 25.1.0, WhiteNoise 6.12.0, django-otp 1.7.4 y segno 1.6.6.
-- **Ejecución, por agregar:** django-storages + boto3 (Etapa 4) y Gunicorn (Etapa 8).
-- **Desarrollo y CI:** pytest, pytest-django, pytest-cov, ruff, pip-audit.
+- **Ejecución, instaladas:** Django 6.1.2, psycopg 3.3.6, argon2-cffi 25.1.0, WhiteNoise 6.12.0, django-otp 1.7.4, segno 1.6.6 y boto3 1.43.111.
+- **Ejecución, por agregar:** Gunicorn (Etapa 8).
+- **Desarrollo y CI:** pytest, pytest-django, pytest-cov, ruff, pip-audit, y moto (con flask y flask-cors) como emulador de S3.
 - **Estáticos propios:** Tailwind CLI standalone, HTMX, Inter, Lucide.
 
 ## 4. Supuestos
@@ -105,7 +105,8 @@ Aprobadas por el responsable el 09-10-2026.
 ## 6. Riesgos conocidos
 
 - **Equipo de desarrollo con poca memoria** (6,8 GB; ≈ 430 MB libres con Docker Desktop abierto). Mitigación: imágenes livianas y, si hace falta, limitar la memoria de WSL2 en `.wslconfig`. El plan B (Django en local contra el PostgreSQL 16 instalado) requiere autorización previa del responsable.
-- **`django-storages` no declara soporte para Django 6.x.** Se prueba en la Etapa 4; alternativa: backend propio delgado sobre `boto3`.
+- **El almacenamiento S3 solo se probó contra un emulador** (`moto`), que no valida firmas ni vencimientos. Falta el bucket real, con `comprobar_almacenamiento --firma`, antes de producción (Etapa 8). Se descartó `django-storages`, que no declara soporte para Django 6.x (DEC-96).
+- **Con el versionado del bucket, purgar la papelera no borra el archivo al instante** (ver `SEGURIDAD.md`). Importa para las solicitudes de eliminación de datos.
 - **Contadores de bloqueo en caché de base de datos** no atómicos; aceptable para este volumen. Documentado en `SEGURIDAD.md`, junto con las demás limitaciones de la Etapa 2.
 - **Un RUT = una cuenta = una empresa.** Una persona que trabaje para dos empresas cliente no puede tener dos cuentas (multiempresa está fuera de alcance, sección 16).
 - **Django 6.1 no es LTS.** Hay que migrar a 6.2 LTS cuando se publique.
@@ -135,16 +136,18 @@ Aprobadas por el responsable el 09-10-2026.
 - Texto de la política de privacidad y revisión legal de la Ley 19.628 y la Ley 21.719 (responsable del negocio).
 - Hosting, correo y almacenamiento: propuesta comparada en la Etapa 8, incluida la VM única.
 - Migración a Django 6.2 LTS cuando se publique.
-- Reevaluar HTMX 4.x antes de la Etapa 4 (DEC-21).
 - Etapa 6: agregar a la página 404 el enlace al inicio, cuando exista (DEC-25).
-- Etapa 4: comprobar que una carpeta no tenga documentos, papelera incluida, antes de eliminarla (DEC-88); indicador de documentos en el inicio del panel; documentos dentro de la pestaña Documentos de cada cliente.
 - Etapa 6: Solicitudes y Contenido del sitio en el menú del panel; indicadores y tabla de solicitudes y avisos de notificaciones y de contenido en el inicio (ADM-02).
-- Etapa 8: programar `depurar_auditoria` una vez al mes.
+- Etapa 8: programar `depurar_auditoria` una vez al mes y `purgar_papelera` a diario.
+- Etapa 8: comprobar el almacenamiento contra un bucket de prueba real con `comprobar_almacenamiento --firma`, incluido que el objeto no se lea sin firma (prueba 11); credenciales con permisos mínimos; versionado del bucket con expiración de versiones antiguas, y el procedimiento para una solicitud de eliminación de datos.
+- Etapa 8: límite de tamaño de subida en el servidor web y el proxy (SEG-07) y tiempos de espera para 25 MB (RNF-02).
+- Etapa 5: pantallas del portal que listan, buscan y enlazan los documentos; con ellas se cierran las pruebas 2 y 4 y los escenarios E3 y E5.
+- Etapa 7: "Ver en pantalla" con `Content-Security-Policy: sandbox` en Firefox y Safari (en Edge ya se comprobó).
+- Revisión del responsable: recorrer E3, E4 y E5 en el navegador con un administrador real.
 - Revisión del responsable: recorrer E2 y E6 en el navegador con un administrador real y su 2FA, y probar el botón "Copiar enlace".
 - Etapa 6: fotografía con velo en el bloque inferior de la pantalla de acceso; marca en esa pantalla cuando exista el nombre comercial; `noindex` del admin de Django (SEG-13).
 - Etapa 7: repetir en staging la medición de tiempos de `SEGURIDAD.md`.
 - Etapa 8: valor de `PROXY_CONFIANZA_REDES` según el hosting; formato de los logs de Gunicorn y del proxy sin el token de los enlaces; proveedor SMTP.
-- Etapa 4: zona de subida con progreso.
 - Etapa 6: fotografías con licencia y `docs/FOTOS.md` (PUB-08); modelos `Servicio`, `DatosNegocio` y `Solicitud` con la forma de la especificación actualizada (DEC-50).
 - Etapa 7: revisión de accesibilidad con lector de pantalla y teclado sobre pantallas reales.
 
@@ -221,3 +224,28 @@ Lo que todavía no existe: documentos (Etapa 4), portal completo (Etapa 5), soli
 - Respuestas del responsable al cierre (11-10-2026): el menú "Acciones" por usuario queda como está; "Pendiente" en ámbar queda aprobado (DEC-84); para desbloquear a un administrador basta con el comando (DEC-85).
 - La revisión visual se hizo con Edge sin interfaz sobre una base de datos temporal (DEC-94), con una sesión de administrador creada para ese fin. No se recorrió el ingreso con un código 2FA real: queda para la revisión del responsable.
 
+## 13. Etapa 4: qué quedó construido
+
+Requisitos DOC-01 a DOC-09, ADM-08 y ADM-09, el cierre de ADM-07 y el indicador de documentos de ADM-02, con sus eventos de auditoría. Decisiones DEC-95 a DEC-113. El flujo completo está en `ARQUITECTURA.md`.
+
+- **App `documentos`**: `Documento` y `VersionDocumento` (las versiones solo se agregan), consultas `visibles_para`, servicios y validación.
+- **Validación en el servidor**: lista blanca de formatos, tipo real por firma de bytes, estructura OOXML, rechazo de macros, tamaño y archivo vacío. Cada rechazo lleva su motivo.
+- **Almacenamiento intercambiable**: local (volumen fuera del código) y S3 (`boto3`), con la clave `docs/<uuid_empresa>/<uuid_version>`.
+- **Ver y descargar**: por vistas con sesión, con evento de auditoría. Local: transmisión con `nosniff` y CSP `sandbox`. S3: redirección a una URL firmada de 120 segundos.
+- **Panel**: página de cada carpeta con la subida de varios archivos (progreso y resultado por archivo), ficha del documento (editar, mover, reemplazar, historial, eliminar) y papelera por cliente (restaurar).
+- **Portal**: solo los endpoints de ver y descargar la versión vigente. Sus pantallas son de la Etapa 5.
+- **Carpetas**: una carpeta con documentos, también en la papelera, no se elimina.
+- **Inicio del panel**: indicador de documentos subidos en los últimos 30 días.
+- **Comandos**: `purgar_papelera` y `comprobar_almacenamiento`.
+- **Página 400 propia** y `docs/ARQUITECTURA.md`.
+
+Lo que todavía no existe: las pantallas del portal (Etapa 5), solicitudes y contenido del sitio (Etapa 6), y la verificación del almacenamiento contra un bucket real (Etapa 8).
+
+### Diferencias con el plan aprobado de la etapa
+
+- Agregados pedidos por el responsable al aprobar el plan: `Content-Security-Policy: sandbox` en la entrega local (DEC-103), el motivo propio para Office antiguo o con contraseña (DEC-102) y la nota sobre la purga con el versionado del bucket (`SEGURIDAD.md`).
+- Se instala `moto[s3]` con `flask` y `flask-cors`, no `moto[s3,server]`: el extra `server` arrastra paquetes que el emulador de S3 no usa (DEC-97).
+- `comprobar_almacenamiento` sumó dos opciones: `--crear-bucket`, para el emulador, y `--firma`, para el bucket real. La segunda nació de un hallazgo: el emulador no valida la firma ni el vencimiento de las URL.
+- Tras subir, la lista de documentos se actualiza sola (DEC-113); el plan no lo decía y la revisión en el navegador mostró que hacía falta.
+- El reemplazo de un archivo usa un formulario normal, sin barra de progreso.
+- Se corrigió un error detectado por una prueba de la Etapa 3: al contar documentos por carpeta, la lista perdía su orden.

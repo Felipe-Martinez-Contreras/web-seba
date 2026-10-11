@@ -3,10 +3,11 @@ Zona de subida con progreso (ADM-08). Con JavaScript (static/js/subida.js) enví
 por petición y muestra una barra <progress> por archivo; sin JavaScript, el formulario se
 envía completo y la página muestra el resultado de cada archivo.
 Parámetros: accion (URL del POST); formatos (texto para la ayuda); extensiones (atributo
-accept); maximo_mb; maximo_bytes; url_lista (página que muestra la lista actualizada).
+accept); maximo_mb; maximo_bytes; url_lista (página que muestra la lista actualizada);
+refresca (opcional: id del bloque de esa página que se vuelve a cargar al terminar).
 El bloque de resultados lo llena quien la incluye, con componentes/resultado_subida.html.
 {% endcomment %}
-<form class="flex flex-col gap-4" method="post" action="{{ accion }}" enctype="multipart/form-data" data-subida="subida-resultados" data-maximo="{{ maximo_bytes }}" data-maximo-mb="{{ maximo_mb }}" data-lista="{{ url_lista }}">
+<form class="flex flex-col gap-4" method="post" action="{{ accion }}" enctype="multipart/form-data" data-subida="subida-resultados" data-maximo="{{ maximo_bytes }}" data-maximo-mb="{{ maximo_mb }}" data-lista="{{ url_lista }}"{% if refresca %} data-refresca="{{ refresca }}"{% endif %}>
   {% csrf_token %}
   <div class="campo">
     <label class="campo-etiqueta" for="subida-archivos">Archivos</label>

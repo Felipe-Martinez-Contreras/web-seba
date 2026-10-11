@@ -116,6 +116,17 @@ class AlmacenS3:
             ),
         )
 
+    def crear_bucket(self):
+        """Solo para el emulador de desarrollo: en producción el bucket ya existe y las
+        credenciales, de permisos mínimos, no pueden crear uno (SEG-08)."""
+        from botocore.exceptions import ClientError
+
+        try:
+            self._cliente.create_bucket(Bucket=self.bucket)
+        except ClientError as error:
+            if error.response["Error"]["Code"] != "BucketAlreadyOwnedByYou":
+                raise
+
     def guardar(self, clave, archivo, tipo_mime):
         """Sube en flujo (por partes si es grande). Sin metadatos: ni nombre original ni RUT."""
         self._cliente.upload_fileobj(

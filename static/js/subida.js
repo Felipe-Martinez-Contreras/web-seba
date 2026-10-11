@@ -1,6 +1,7 @@
 // Subida de documentos con progreso (ADM-08). Envía un archivo por petición, uno tras otro,
 // con XMLHttpRequest (único camino con eventos de progreso de subida confiables), y muestra
 // por cada archivo una barra <progress> y luego el resultado que responde el servidor.
+// Al terminar vuelve a cargar la lista de documentos de la página.
 // Sin este script el formulario se envía completo y la página muestra los mismos resultados.
 // La validación de aquí es solo una ayuda: la que decide es la del servidor.
 document.addEventListener("submit", function (evento) {
@@ -36,14 +37,40 @@ document.addEventListener("submit", function (evento) {
       boton.removeAttribute("aria-busy");
       boton.removeAttribute("aria-disabled");
     });
-    var cierre = document.createElement("li");
-    cierre.className = "fila text-sm";
-    var enlace = document.createElement("a");
-    enlace.className = "enlace";
-    enlace.href = formulario.dataset.lista || window.location.href;
-    enlace.textContent = "Ver la lista de documentos actualizada";
-    cierre.appendChild(enlace);
-    lista.appendChild(cierre);
+    lista.dataset.terminada = "si";
+    refrescar();
+  }
+
+  // Trae la página de nuevo y cambia solo el bloque de la lista. Si no se puede, queda un
+  // enlace para recargarla: la lista nunca se muestra desactualizada sin aviso.
+  function refrescar() {
+    var bloque = formulario.dataset.refresca && document.getElementById(formulario.dataset.refresca);
+    if (!bloque) {
+      return;
+    }
+    function ofrecerEnlace() {
+      var cierre = document.createElement("li");
+      cierre.className = "fila text-sm";
+      var enlace = document.createElement("a");
+      enlace.className = "enlace";
+      enlace.href = formulario.dataset.lista || window.location.href;
+      enlace.textContent = "Ver la lista de documentos actualizada";
+      cierre.appendChild(enlace);
+      lista.appendChild(cierre);
+    }
+    var consulta = new XMLHttpRequest();
+    consulta.open("GET", formulario.dataset.lista || window.location.href);
+    consulta.responseType = "document";
+    consulta.addEventListener("load", function () {
+      var nuevo = consulta.status === 200 && consulta.response && consulta.response.getElementById(bloque.id);
+      if (nuevo) {
+        bloque.replaceWith(document.importNode(nuevo, true));
+      } else {
+        ofrecerEnlace();
+      }
+    });
+    consulta.addEventListener("error", ofrecerEnlace);
+    consulta.send();
   }
 
   function subir(indice) {

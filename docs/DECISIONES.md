@@ -26,7 +26,7 @@ Decisiones técnicas y dependencias, con su motivo. Cada dependencia indica para
 | DEC-18 | 09-10-2026 | Hosting, correo y almacenamiento se deciden en la Etapa 8 | No hay nada elegido. Se evaluará la opción de una VM única (e2-micro) frente a los supuestos de la sección 0 |
 | DEC-19 | 09-10-2026 | Python 3.13.16 (`python:3.13.16-slim-trixie`) | Django 6.1 admite 3.12, 3.13 y 3.14; la serie 3.13 tiene soporte hasta 10-2029 |
 | DEC-20 | 09-10-2026 | PostgreSQL 18.6 (`postgres:18-alpine`, fijada por digest) | Cumple "16 o superior" y la imagen ya estaba descargada en el equipo de desarrollo |
-| DEC-21 | 09-10-2026 | HTMX 2.0.10 y no 4.0.0 | La 4.0.0 salió el 28-08-2026 y no se pudo confirmar que conserve los eventos de progreso de subida que necesita ADM-08. **Pendiente: reevaluar antes de la Etapa 4** |
+| DEC-21 | 09-10-2026 | HTMX 2.0.10 y no 4.0.0 | La 4.0.0 salió el 28-08-2026 y no se pudo confirmar que conserve los eventos de progreso de subida que necesita ADM-08. Reevaluada y cerrada en DEC-95 |
 | DEC-22 | 09-10-2026 | Gunicorn se agrega en la Etapa 8, con la imagen de producción | En la Etapa 1 no se usa. `django-otp` y `segno` entraron en la Etapa 2; `django-storages`, en la 4 |
 | DEC-23 | 09-10-2026 | `django.contrib.admin` no se instala hasta la Etapa 2 | ADM-12 exige ruta por variable de entorno y 2FA; antes de eso quedaría un admin sin proteger |
 | DEC-24 | 09-10-2026 | CSP nativa activa desde la Etapa 1, con política estricta | Ninguna plantilla nace con estilos o scripts en línea. La verificación formal de SEG-02 sigue en la Etapa 7 |
@@ -93,13 +93,32 @@ Decisiones técnicas y dependencias, con su motivo. Cada dependencia indica para
 | DEC-85 | 11-10-2026 | El desbloqueo pasa a `/panel/clientes/<empresa>/usuarios/<usuario>/desbloquear/` y solo alcanza a usuarios de esa empresa. A un administrador se le desbloquea con el comando `desbloquear_acceso` | Todo lo de un cliente cuelga de su UUID y se busca dentro de él. Cierra DEC-56. Aprobada por el responsable: para los administradores basta con el comando |
 | DEC-86 | 11-10-2026 | `Carpeta` usa UUID como clave primaria, `PROTECT` hacia la empresa y nombre único por empresa sin distinguir mayúsculas, como restricción de la base | Sección 6. La restricción vale aunque se salte el formulario |
 | DEC-87 | 11-10-2026 | Las carpetas se ordenan con botones "subir" y "bajar", cada uno un POST | Funciona con teclado y sin JavaScript; arrastrar exigiría una librería o código propio |
-| DEC-88 | 11-10-2026 | "Eliminar carpeta solo si no tiene documentos" (ADM-07) se completa en la Etapa 4 | `Documento` aún no existe: hoy toda carpeta está vacía. En la Etapa 4 la relación será `PROTECT` y el servicio lo comprobará, papelera incluida |
+| DEC-88 | 11-10-2026 | "Eliminar carpeta solo si no tiene documentos" (ADM-07) se completa en la Etapa 4 | `Documento` aún no existe: hoy toda carpeta está vacía. En la Etapa 4 la relación será `PROTECT` y el servicio lo comprobará, papelera incluida. Completada en DEC-107 |
 | DEC-89 | 11-10-2026 | Desactivar una cuenta revoca sus enlaces sin usar | Un enlace entregado antes no debe revivir al reactivar la cuenta |
 | DEC-90 | 11-10-2026 | La retención borra eventos con `EventoAuditoria.objects.depurar()`, que solo usa el comando `depurar_auditoria`, y deja un evento "Depuración de la auditoría". Los meses son de calendario | AUD-03: único borrado permitido, con acceso al servidor y con su propio rastro |
 | DEC-91 | 11-10-2026 | Un filtro inválido en la auditoría no muestra ningún evento | Mostrar todo sugeriría que el filtro se aplicó |
 | DEC-92 | 11-10-2026 | Las tablas con muchas columnas (usuarios y eventos) siguen como lista hasta los 1.280 px | Entre 768 y 1.279 px el contenido mide unos 720 px: la tabla de usuarios desbordaba 24 px a 768 px. Detectado en la revisión visual |
 | DEC-93 | 11-10-2026 | "Configuración" es un grupo de la barra lateral, sin enlace propio, con "Mi cuenta" dentro | ADM-01. "Contenido del sitio" se suma al grupo en la Etapa 6 |
 | DEC-94 | 11-10-2026 | La revisión visual de pantallas privadas se hace contra una base de datos temporal, que se borra al terminar | Los datos de muestra y sus eventos de auditoría no quedan en la base de desarrollo |
+| DEC-95 | 11-10-2026 | HTMX se queda en 2.0.10. La subida con progreso no usa HTMX: `static/js/subida.js` envía con `XMLHttpRequest` y `upload.onprogress` | Cierra DEC-21. htmx 4 usa `fetch()` y elimina `htmx:xhr:progress` sin reemplazo; su propia documentación recomienda `XMLHttpRequest` para un progreso confiable (verificado el 11-10-2026 en `four.htmx.org`, aún "en construcción"). Así una migración futura a la 4 no depende de la subida. Aprobada por el responsable |
+| DEC-96 | 11-10-2026 | Almacenamiento con una interfaz propia (`documentos/almacenamiento.py`) y dos implementaciones: local y S3 sobre `boto3`. Sin `django-storages` | `django-storages` sigue en 1.14.6 (abril 2025) y no declara soporte para Django 6.1. Solo se necesitan guardar, abrir, borrar, existe, listar y URL firmada. Aprobada por el responsable |
+| DEC-97 | 11-10-2026 | `moto` como emulador de S3: dentro del proceso en las pruebas y, opcional, como servidor en el perfil `s3` de Compose. Se instala `moto[s3]` más `flask` y `flask-cors`, no el extra `server` | Sin contenedor permanente ni imagen nueva en un equipo con poca memoria. El extra `server` arrastra más de diez paquetes que el servidor de S3 no usa. Aprobada por el responsable; el cambio de extra es una diferencia con el plan |
+| DEC-98 | 11-10-2026 | Un documento en la papelera no lo descarga nadie, tampoco un administrador: primero se restaura | Lectura literal de DOC-04; la opción más simple y segura. Aprobada por el responsable |
+| DEC-99 | 11-10-2026 | Los endpoints de ver y descargar del cliente (`/portal/documentos/<uuid>/…`) se construyen en la Etapa 4, sin pantallas que los enlacen | DOC-04 es de esta etapa y las pruebas 2 y 4 los necesitan. Las pantallas son de la Etapa 5. Aprobada por el responsable |
+| DEC-100 | 11-10-2026 | Clave de almacenamiento `docs/<uuid_empresa>/<uuid_version>`, sin extensión. La forma la exigen el almacenamiento y una `CheckConstraint` de la base | DOC-03. La base rechaza una clave con nombre o RUT aunque se salte el servicio |
+| DEC-101 | 11-10-2026 | `VersionDocumento` no lleva `actualizado_en` y rechaza editar y borrar; solo la borra la purga | Sección 6: las versiones solo se agregan. Mismo criterio que `EventoAuditoria` (DEC-70) |
+| DEC-102 | 11-10-2026 | Orden de la validación: vacío, tamaño, firma OLE2, extensión, firma de bytes y estructura OOXML. La firma se exige en el byte 0 | Un `.doc`, `.xls` o `.ppt`, o un `.docx` con contraseña, recibe un motivo que dice qué hacer en vez de "formato no permitido" (pedido por el responsable) |
+| DEC-103 | 11-10-2026 | La entrega local responde con `Content-Security-Policy: sandbox` y `nosniff`, sin relajar la CSP de la aplicación | Pedido por el responsable: un PDF o una imagen nunca ejecuta nada en el dominio de la aplicación. El visor de PDF de Edge funciona con `sandbox` (comprobado el 11-10-2026) |
+| DEC-104 | 11-10-2026 | La subida envía un archivo por petición, en secuencia. Sin JavaScript, el formulario completo, con un tope por petición de 4 archivos del tamaño máximo, aplicado antes de leer el cuerpo | Progreso y resultado por archivo (ADM-08) y un solo archivo en tránsito a la vez. El tope responde con la página 400 propia |
+| DEC-105 | 11-10-2026 | Un archivo aceptado queda publicado de inmediato; su título inicial es el nombre del archivo sin la extensión | La especificación no define borradores ni estados de publicación. La pantalla lo dice antes de subir |
+| DEC-106 | 11-10-2026 | Auditoría de documentos: el detalle lleva el título y la versión; "Ver" de un formato que no se abre en el navegador se registra como descarga; la purga no tiene actor | El evento dice lo que ocurrió y sigue siendo legible cuando el documento ya no existe |
+| DEC-107 | 11-10-2026 | Una carpeta con documentos no se elimina: `PROTECT` en la base, comprobación en el servicio con la fila bloqueada, y el botón solo en carpetas vacías. Cuentan los de la papelera | ADM-07. Cierra DEC-88 |
+| DEC-108 | 11-10-2026 | Restaurar se rechaza pasados los `PAPELERA_DIAS`, aunque `purgar_papelera` todavía no haya corrido | ADM-09: el plazo es de 30 días, no "hasta la próxima limpieza" |
+| DEC-109 | 11-10-2026 | Producción exige declarar `DOCUMENTOS_ALMACENAMIENTO`. `manage.py check` falla con una carpeta de documentos dentro de una ruta de estáticos, con `s3` sin bucket o credenciales, o con un formato que la validación no sabe comprobar | SEG-07: no se cae al disco local por omisión ni se publica una carpeta por descuido |
+| DEC-110 | 11-10-2026 | Comando `comprobar_almacenamiento`: guarda, lee, lista, descarga por URL firmada, comprueba que sin firma responda 403 y borra. Con `--firma`, además, que una firma alterada y una URL vencida se rechacen | Sección 11: el S3 real se verifica antes de producción. El emulador no valida firmas ni vencimientos, así que esa parte solo se prueba contra el bucket real |
+| DEC-111 | 11-10-2026 | El indicador "Documentos subidos en los últimos 30 días" cuenta archivos subidos o reemplazados, sin los de la papelera | ADM-02 no lo precisa; un reemplazo también es un documento que el cliente recibe |
+| DEC-112 | 11-10-2026 | Al reemplazar, el archivo nuevo puede ser de otro formato permitido; el título no cambia | Un Word puede pasar a PDF. El nombre del archivo queda en cada versión |
+| DEC-113 | 11-10-2026 | Tras subir, `subida.js` vuelve a pedir la página y cambia solo el bloque de la lista de documentos | Detectado en la revisión en el navegador: la lista decía "sin documentos" junto a tres archivos aceptados |
 
 ## Dependencias de ejecución
 
@@ -110,7 +129,7 @@ Decisiones técnicas y dependencias, con su motivo. Cada dependencia indica para
 | argon2-cffi 25.1.0 | Argon2id como hasher principal (AUT-05) | PBKDF2 nativo: no cumple el requisito |
 | django-otp 1.7.4 | TOTP, códigos de recuperación y 2FA en el admin de Django (AUT-10, ADM-12) | TOTP propio: riesgo de seguridad innecesario. `django-two-factor-auth`: trae vistas, plantillas y más dependencias |
 | segno 1.6.6 | Código QR del enrolamiento TOTP, generado en el servidor como SVG | Sin QR: enrolamiento poco usable. Servicio externo de QR: expondría el secreto |
-| django-storages + boto3 (Etapa 4) | Almacenamiento S3 privado y URL firmadas (desde la Etapa 4) | Backend S3 propio. Queda como alternativa si no funciona con Django 6.1 |
+| boto3 1.43.111 | Cliente de S3: subida en flujo y URL firmadas (DOC-03, DOC-04). Se importa solo con `DOCUMENTOS_ALMACENAMIENTO=s3` | `django-storages`: no declara soporte para Django 6.1 (DEC-96). Firmar a mano las peticiones: riesgo de seguridad innecesario |
 | WhiteNoise 6.12.0 | Estáticos, en desarrollo y en producción | Servirlos con Django: no apto para producción |
 | Gunicorn (Etapa 8) | Servidor WSGI | `runserver`: no es de producción |
 
@@ -122,6 +141,8 @@ Decisiones técnicas y dependencias, con su motivo. Cada dependencia indica para
 | pytest-cov 7.1.0 | Cobertura mínima del 85 % | Ninguna nativa |
 | ruff 0.16.10 | Lint y formato (RNF-04) | Ninguna nativa |
 | pip-audit 2.10.1 (solo CI) | Vulnerabilidades de dependencias en CI (SEG-09) | Ninguna nativa |
+| moto 5.2.3 (extra `s3`) | Emulador de S3 para las pruebas, dentro del proceso (DEC-97) | Un contenedor MinIO: más memoria y otra imagen. Sustituir `boto3` con dobles a mano: no prueba las llamadas reales |
+| flask 3.1.3, flask-cors 6.0.5 | Solo para `moto_server`, el emulador del perfil opcional `s3` de Compose | El extra `server` de moto: instala además más de diez paquetes que S3 no usa |
 
 ## Herramientas del build
 
@@ -189,9 +210,11 @@ El paquete de Inter coincide además con el `shasum` SHA-1 que publica el regist
 | `templates/iconos/pencil.svg` | lucide-static: `package/icons/pencil.svg` | `f8acff8aeb59ae50ce8de4a9151e595774463d1e362d8b1f9eec26d9fe7cee37` |
 | `templates/iconos/plus.svg` | lucide-static: `package/icons/plus.svg` | `88616829bc4eaeb711fea7564f7db19871de5cce4cd832ad261caa926df289de` |
 | `templates/iconos/trash-2.svg` | lucide-static: `package/icons/trash-2.svg` | `39a05b8b1e6631650ffb22077e27c12748b22dc17d3121d7e448e921d3ee99ef` |
+| `templates/iconos/upload.svg` | lucide-static: `package/icons/upload.svg` | `4db8eda8e39632c83749f32f2582096ac6c5b7a143e51e46cffc8f9ed6b04652` |
+| `templates/iconos/rotate-ccw.svg` | lucide-static: `package/icons/rotate-ccw.svg` | `33e03e50f8e1c91c4576c6376debcada525542e09a430b0f0d583ba82283d59e` |
 | `templates/iconos/LICENCIA-lucide.txt` | lucide-static: `package/LICENSE` | `b495047bd93a9b06913511076f504daba17d5bbeb3e0650f3bb53a4220329c57` |
 
-Los ocho íconos de la Etapa 3 (flechas, copiar, historial, candado abierto, lápiz, más y papelera) se extrajeron el 11-10-2026 del mismo paquete, descargado de nuevo y con el mismo sha256.
+Los ocho íconos de la Etapa 3 (flechas, copiar, historial, candado abierto, lápiz, más y papelera) y los dos de la Etapa 4 (subir y restaurar) se extrajeron el 11-10-2026 del mismo paquete, descargado de nuevo y con el mismo sha256.
 
 Los archivos se copiaron sin modificar; todos tienen fin de línea LF, que es como el repositorio guarda el texto (`.gitattributes`).
 
@@ -199,4 +222,4 @@ Retirado el 09-10-2026: IBM Plex Sans (`@ibm/plex-sans` 1.1.0), reemplazada por 
 
 ## Dependencias descartadas
 
-`django-environ`, `dj-database-url`, `python-magic`, `filetype`, `django-axes`, `django-ratelimit`, `django-csp`, `django-htmx`, `factory-boy`, `python-json-logger`, `mypy` y `django-debug-toolbar`: lo que aportan se resuelve con Django o con la biblioteca estándar. El servicio de errores opcional (RNF-05) se decide en la Etapa 7.
+`django-storages` (DEC-96), `django-environ`, `dj-database-url`, `python-magic`, `filetype`, `django-axes`, `django-ratelimit`, `django-csp`, `django-htmx`, `factory-boy`, `python-json-logger`, `mypy` y `django-debug-toolbar`: lo que aportan se resuelve con Django o con la biblioteca estándar. El servicio de errores opcional (RNF-05) se decide en la Etapa 7.
