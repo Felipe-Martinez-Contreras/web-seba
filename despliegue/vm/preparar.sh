@@ -50,6 +50,9 @@ echo "== Swap comprimida en memoria (zram), antes que la del disco =="
 # El disco estándar rinde muy pocas lecturas por segundo: lo que va a parar a su swap tarda
 # minutos en volver. La zram guarda esas páginas comprimidas en la propia memoria; el
 # archivo del disco queda solo como rebalse, con menos prioridad.
+zram_activa() {
+    swapon --show=NAME --noheadings | grep -qx /dev/zram0
+}
 zram=no
 if modinfo zram > /dev/null 2>&1; then
     # Antes de instalar el paquete, para que el dispositivo nazca con esta configuración.
@@ -61,11 +64,19 @@ swap-priority = 100
 FIN
     apt-get install --yes --quiet systemd-zram-generator
     systemctl daemon-reload
-    if ! swapon --show=NAME --noheadings | grep -qx /dev/zram0; then
+    if ! zram_activa; then
         modprobe zram || true
         systemctl start systemd-zram-setup@zram0.service || true
     fi
-    if swapon --show=NAME --noheadings | grep -qx /dev/zram0; then
+    # systemd crea el dispositivo y lo activa por su cuenta, y puede tardar unos segundos:
+    # decidir de inmediato dejaba los ajustes de "sin zram" con la zram ya en marcha.
+    for _ in $(seq 1 30); do
+        if zram_activa; then
+            break
+        fi
+        sleep 1
+    done
+    if zram_activa; then
         zram=si
     else
         echo "AVISO: no se pudo activar la zram; queda solo la swap del disco." >&2
@@ -106,12 +117,24 @@ systemctl enable --now unattended-upgrades
 
 echo "== Carpetas y archivos de configuración =="
 install -d -m 700 /etc/web-seba /var/backups/web-seba
+por_completar=""
 for nombre in compose web; do
     destino="/etc/web-seba/$nombre.env"
     if [ ! -f "$destino" ]; then
         install -m 600 "$raiz/despliegue/$nombre.env.example" "$destino"
         echo "Creado $destino: falta completarlo."
     fi
+    # Los valores sin los que nada arranca. Solo se mira si están vacíos, no qué dicen.
+    case "$nombre" in
+        compose) obligatorias="POSTGRES_PASSWORD TUNNEL_TOKEN" ;;
+        *) obligatorias="SECRET_KEY ALLOWED_HOSTS SITIO_URL" ;;
+    esac
+    for variable in $obligatorias; do
+        if ! grep -q "^$variable=..*" "$destino"; then
+            por_completar="$por_completar $destino"
+            break
+        fi
+    done
 done
 
 echo "== Herramientas de Google Cloud (para subir los respaldos) =="
@@ -126,5 +149,9 @@ free -m
 swapon --show
 sysctl vm.swappiness vm.page-cluster
 echo
-echo "Siga con docs/DESPLIEGUE.md: complete /etc/web-seba/compose.env y /etc/web-seba/web.env"
-echo "y ejecute despliegue/vm/desplegar.sh <commit>."
+if [ -n "$por_completar" ]; then
+    echo "Siga con docs/DESPLIEGUE.md: complete$por_completar"
+    echo "y ejecute despliegue/vm/desplegar.sh <commit>."
+else
+    echo "Los archivos de /etc/web-seba ya estaban completos: no se tocaron."
+fi

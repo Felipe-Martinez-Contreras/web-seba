@@ -406,7 +406,9 @@ Un commit con las mejoras gratuitas (DEC-193 a DEC-199):
 - **`medir.sh`:** la misma medición antes y después.
 - **Guía:** paso 3 del simulacro corregido, purga rediseñada para probarse en minutos, recuperación de un documento purgado, y plan B (VM con disco equilibrado), solo documentado.
 
-**La etapa sigue sin terminar.** Las mediciones de estas mejoras son locales. Falta aplicarlas en la VM y medir con `medir.sh`, y sigue pendiente lo demás de `TRAZABILIDAD.md`.
+**Medido en la VM el 12-10-2026: resuelto.** Tras un despliegue, el inicio responde en 0,12 a 0,18 s (antes 28 y 44 s) y los sondeos salen sanos. El plan B no hace falta por ahora; su criterio de activación está en `DESPLIEGUE.md` §7. Un commit posterior corrigió `preparar.sh`: esperaba poco a la zram y pedía completar archivos ya completos.
+
+**La etapa sigue sin terminar:** queda pendiente lo demás de `TRAZABILIDAD.md`.
 
 ### Diferencias con lo pedido
 
@@ -415,4 +417,4 @@ Un commit con las mejoras gratuitas (DEC-193 a DEC-199):
 - **Las tareas programadas ya usaban el contenedor en marcha** (`exec`). Lo que se agregó es no cargar la aplicación cuando no hay notificaciones pendientes.
 - **`check --deploy` corre antes de reiniciar**, no después: un error deja la versión anterior en marcha.
 - **`vfs_cache_pressure` no se tocó**: nada de lo medido lo justifica.
-- **El minuto de CPU al 90 % sigue sin explicar**: depende del diagnóstico en la VM.
+- **El minuto de CPU al 90 % quedó sin explicar**: no volvió a aparecer tras las mejoras y el diagnóstico no se ejecutó.

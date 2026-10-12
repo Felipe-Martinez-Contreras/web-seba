@@ -2,7 +2,7 @@
 
 Cómo se publica y se mantiene la aplicación. Las decisiones están en `DECISIONES.md` (DEC-164 en adelante) y sus riesgos en `SEGURIDAD.md` §8.
 
-**Estado al 12-10-2026.** La aplicación corre en staging, en `https://seba.fmartinez.xyz`. El primer despliegue real (commit `da83509`) dejó seis fallos; el commit `a46c641` los corrigió y, ya desplegado, las correcciones quedaron comprobadas en la VM. El simulacro de restauración y la vuelta atrás también se hicieron ese día. Quedó a la vista un problema de rendimiento: la máquina se vuelve muy lenta después de cada despliegue (sección 12, "Problemas conocidos" y bitácora). Las mejoras para eso están en el código, pero **su efecto en la VM todavía no está medido**.
+**Estado al 12-10-2026.** La aplicación corre en staging, en `https://seba.fmartinez.xyz`. El primer despliegue real (commit `da83509`) dejó seis fallos; el commit `a46c641` los corrigió y, ya desplegado, las correcciones quedaron comprobadas en la VM. El simulacro de restauración y la vuelta atrás también se hicieron ese día. Quedó a la vista un problema de rendimiento, la máquina muy lenta después de cada despliegue, que el commit `3851c7b` resolvió: medido en la VM, el inicio pasó de 28 y 44 s a menos de 0,2 s (bitácora de la sección 12).
 
 Convenciones de esta guía:
 
@@ -187,10 +187,14 @@ sudo /opt/web-seba/despliegue/vm/preparar.sh
 **Se puede volver a ejecutar en una VM ya instalada**, con el sitio en marcha: así se aplican los cambios de este guion. No toca `compose.env` ni `web.env` si ya existen, ni los contenedores, ni las tareas programadas, ni los datos. Para comprobar cómo quedó la memoria:
 
 ```bash
-zramctl                                # el dispositivo /dev/zram0, con zstd
-swapon --show                          # /dev/zram0 con prioridad 100 y /swapfile con prioridad negativa
-sysctl vm.swappiness vm.page-cluster   # 100 y 0 con zram; 60 y 3 si el núcleo no la trae
+sudo zramctl                                # el dispositivo /dev/zram0, con zstd
+sudo swapon --show                          # /dev/zram0 con prioridad 100 y /swapfile con prioridad negativa
+sudo sysctl vm.swappiness vm.page-cluster   # 100 y 0 con zram; 60 y 3 si el núcleo no la trae
 ```
+
+Van con `sudo`: esos comandos están en `/usr/sbin`, fuera de la ruta de un usuario normal, y sin él responden "command not found".
+
+Verificado en la VM el 12-10-2026: zram de 482 MB con `zstd` y prioridad 100, `/swapfile` con prioridad -2, `vm.swappiness` en 100 y `vm.page-cluster` en 0.
 
 Si el núcleo de la VM no trae el módulo `zram`, el guion lo avisa y deja solo la swap del disco.
 
@@ -245,6 +249,7 @@ El guion deja el código de despliegue en ese commit, baja la imagen, respalda l
 | Local, misma prueba, con el cambio (DEC-189) | Unos 20 s |
 | VM, commit `a46c641`, con el cambio (12-10-2026) | **Unos 5 s**: el contenedor partió a las 21:06:05 UTC y el primer sondeo sano fue a las 21:06:10 |
 | VM, misma versión, justo después de restaurar la base o de cambiar de versión (12-10-2026) | **De 80 a 85 s**: la máquina venía de leer y escribir mucho en el disco |
+| VM, commit `3851c7b`, con las mejoras de memoria (12-10-2026) | Redespliegue de la misma versión con `medir.sh`: `desplegar.sh` completo en 34 s y los cinco sondeos sanos. El arranque tras cambiar de versión no se anotó |
 
 La prueba local no reproduce el disco ni la memoria de la e2-micro: sirvió para comparar antes y después, no para predecir la VM, donde la mejora fue mayor. Los 5 s son con la máquina tranquila; con la memoria y el disco ocupados vuelve a ser más de un minuto (última fila). Qué cambió con DEC-189: Gunicorn carga la aplicación una sola vez, antes de crear sus dos procesos (antes cada proceso importaba todo por su cuenta), y el plazo de arranque del healthcheck pasó de 120 a 300 s. Ese plazo no retrasa nada: mientras dura, Docker sondea cada 5 s y marca el contenedor sano con la primera respuesta 200 de `/salud/`, que consulta la base. Con 120 s, el segundo arranque lo superó y el sondeo pasó a ser cada 30 s. Si a los 300 s sigue sin responder, tres fallos seguidos lo marcan como no sano y `desplegar.sh` termina con error.
 
@@ -266,6 +271,8 @@ sudo /opt/web-seba/despliegue/vm/medir.sh
 ```
 
 Vuelve a desplegar la versión que ya está en uso, sin recrear la aplicación, mientras `vmstat` anota la memoria y el disco cada 2 s durante 3 minutos. Después muestra los sondeos del healthcheck, espera 120 s y visita tres veces el inicio por la dirección pública. Termina con un resumen: `wa` máximo (espera de disco), cuántas muestras pasaron de 40 %, lo que entró y salió de la swap (`si`, `so`) y el mínimo de `buff`. Son siempre los mismos pasos: sirve para comparar un antes y un después. Los resultados van en la bitácora de la sección 12.
+
+Referencia del 12-10-2026 con el commit `3851c7b`: `desplegar.sh` en 34 s; precalentamiento de 32 a 67 ms por página; tres visitas al inicio en 0,179, 0,135 y 0,121 s; `wa` máximo de 55 %, con 10 de 90 muestras sobre 40 %, todas durante el despliegue. Antes de las mejoras, las tres visitas tardaron 28,0, 44,3 y 2,0 s.
 
 **Volver atrás:** el mismo comando con el commit anterior (el guion lo muestra al terminar: "antes: …"). Si la versión nueva aplicó una migración que la anterior no entiende, además hay que restaurar el respaldo que el guion dejó en `/var/backups/web-seba/` (sección 7).
 
@@ -428,7 +435,16 @@ Lo comprobado hasta ahora, en local el 11-10-2026 con la imagen de producción: 
 
 ### Plan B: una VM nueva con disco equilibrado
 
-**Documentado, no ejecutado.** Es el paso siguiente si, con las mejoras de memoria ya aplicadas, `medir.sh` sigue mostrando esperas de disco largas (sección 12).
+**Documentado, no ejecutado, y por ahora no hace falta:** con las mejoras de memoria aplicadas, la medición del 12-10-2026 quedó bien (sección 12).
+
+**Cuándo activarlo.** Si cualquiera de estas cosas se repite varios días, con la zram activa (`sudo swapon --show`):
+
+- una visita al inicio tarda más de 2 s **fuera de un despliegue**, una restauración o el respaldo de las 02:30;
+- `vmstat 2 30` muestra `wa` sobre 40 % de forma sostenida fuera de esos momentos;
+- el monitor avisa caídas que coinciden con sondeos del healthcheck fallidos (`salida` distinta de 0 en `docker inspect`);
+- `medir.sh` vuelve a dar visitas de varios segundos 120 s después del despliegue.
+
+Una espera de disco alta **durante** un despliegue es normal en este disco y no es motivo.
 
 El disco estándar es gratuito, pero rinde muy pocas operaciones por segundo. Un disco persistente **equilibrado** (`pd-balanced`) de 10 GB rinde muchas más y cuesta cerca de **1 USD al mes** (unos 0,10 USD por GB; confirme el precio vigente de `us-east1` antes de crearlo). El tipo de un disco de arranque no se cambia en el lugar: lo más simple es una VM nueva. El costo mensual pasaría de unos 3,65 a unos 4,65 USD; ajuste la alerta de presupuesto (paso 3.1).
 
@@ -543,7 +559,7 @@ Estado tras el primer despliegue real (commit `da83509`), según lo informado po
 | Simulacro de restauración | Sección 7 | SEG-11 | Verificado en la VM el 12-10-2026, desde el bucket de respaldos: mismos conteos, base y bucket coherentes, mismo SHA-256, 2FA sin enrolar de nuevo, 236 s (tabla de la sección 7). Pendiente: el paso 8, purgar un documento y recuperarlo de las versiones del bucket |
 | Estáticos desde la caché de Cloudflare | `cf-cache-status: HIT` en la segunda petición | — | Verificado el 12-10-2026: el CSS con `HIT` y el HTML con `DYNAMIC` |
 | Lighthouse móvil y tiempos de respuesta | Contra la URL pública | RNF-06, RNF-02 | Pendiente |
-| Memoria y swap bajo uso | `free -m`, `docker stats`, `medir.sh` | RNF-02 | **Con problemas, 12-10-2026:** en reposo alcanza (`web` 98 MB, `db` 26 MB, `cloudflared` 28 MB, 350 MB disponibles), pero tras un despliegue la máquina queda minutos esperando al disco y el inicio tardó 28 y 44 s. Mejoras hechas en el código (DEC-193 a DEC-196 y DEC-198); **pendiente medirlas en la VM** con `medir.sh` |
+| Memoria y swap bajo uso | `free -m`, `docker stats`, `medir.sh` | RNF-02 | Verificado en la VM el 12-10-2026 con el commit `3851c7b`: tras un despliegue, el inicio responde en 0,12 a 0,18 s (antes 28 y 44 s), los sondeos salen sanos y quedan 381 MB disponibles, con la zram activa (DEC-193 a DEC-196 y DEC-198; bitácora). Pendiente: medirlo con varios usuarios a la vez |
 | Logs sin el token de los enlaces | `dc logs web` tras usar un enlace de activación | SEG-10 | Pendiente |
 
 Filas nuevas de la Fase B:
@@ -565,7 +581,8 @@ Filas nuevas de la Fase B:
 - **Rutas que no responden a HEAD (405), a propósito** (DEC-188): ver y descargar un documento (dejarían un evento de descarga que no ocurrió), `/acceso/2fa/configurar/` (crea el dispositivo del segundo factor) y `/solicitud-recibida/` (consume el mensaje de confirmación).
 - **Dos sesiones de enrolamiento del 2FA a la vez.** Abrir `/acceso/2fa/configurar/` crea el dispositivo pendiente de esa sesión y descarta el que hubiera quedado a medias en otra. Si un administrador tiene abierta esa pantalla en dos navegadores, el código QR del primero deja de valer al abrir el segundo: basta recargar la pantalla y escanear el código nuevo. Solo ocurre durante el enrolamiento, que exige haber usado un enlace de activación o de restablecimiento. Se deja así por decisión del responsable (DEC-192).
 
-- **La VM queda muy lenta después de un despliegue, una restauración o un respaldo.** Medido el 12-10-2026 (bitácora): minutos con la CPU esperando al disco, el inicio en 28 y 44 s, sondeos del healthcheck sin terminar. No hay robo de CPU: es falta de memoria sobre un disco de muy pocas operaciones por segundo, con la swap en ese mismo disco. Mejoras ya en el código: swap comprimida en memoria, un solo proceso de Gunicorn, Argon2 con menos memoria, menos procesos por despliegue y por tarea, y un healthcheck liviano. **Su efecto en la VM no está medido.** Mientras tanto: despliegue en horas de poco uso y espere unos minutos antes de juzgar la velocidad. Si no alcanza, el plan B de la sección 7.
+- **La VM quedaba muy lenta después de un despliegue. Resuelto el 12-10-2026** con el commit `3851c7b` (bitácora). Era falta de memoria sobre un disco de muy pocas operaciones por segundo, con la swap en ese mismo disco. Lo que queda: **durante** un despliegue la CPU todavía espera al disco (`wa` hasta 55 %), unos segundos cada vez. Si la lentitud vuelve fuera de los despliegues, el criterio y el plan B están en la sección 7.
+- **`preparar.sh` podía avisar que la zram no se activó, y sí estaba activa.** En su primera ejecución en la VM (12-10-2026) revisó antes de que systemd terminara de crear el dispositivo, y dejó `swappiness=60` y `page-cluster=3`. Al repetirlo quedó bien. Desde el commit siguiente espera hasta 30 s antes de decidir.
 
 ### Bitácora de la Fase B
 
@@ -638,14 +655,23 @@ Lo que se cambió (un commit, sin desplegar al escribir esto):
 | Despliegue: `migrate`, `createcachetable` y `check --deploy` en un proceso; precalentamiento de 5 páginas. Tarea de reintentos: consulta liviana antes de cargar la aplicación | Un arranque de la aplicación en vez de tres por despliegue. La tarea sin pendientes: 1,3 s de CPU y 38 MB, contra 2,4 s y 68 MB | DEC-196 |
 | Argon2id con 19 MiB, 2 pasadas y 1 hilo | Un acceso: de 4,2 s y 118 MB a 0,31 s y 38 MB. Cuatro a la vez: de 37 s y 415 MB a 1,7 s y 87 MB | DEC-198 |
 
-**Falta lo que importa: repetir la medición en la VM.** Orden: `preparar.sh`, `desplegar.sh <commit>`, esperar unos minutos y `medir.sh`. El resultado se anota aquí, junto a la línea base. Tampoco se ha identificado el minuto de CPU al 90 %: los comandos de diagnóstico se entregaron al responsable.
+**12-10-2026. Las mejoras, medidas en la VM: resuelto.** Commit `3851c7b`, aplicado con `preparar.sh`, `desplegar.sh` y `medir.sh`. Informado por el responsable.
+
+- **Memoria:** zram de 482 MB con `zstd` y prioridad 100; `/swapfile` con prioridad -2; `vm.swappiness` 100 y `vm.page-cluster` 0; 381 MB disponibles después de la medición.
+- **Precalentamiento:** de 32 a 67 ms por página.
+- **Healthcheck:** los cinco sondeos con `salida=0`.
+- **El minuto de CPU al 90 % no volvió a aparecer:** ninguna muestra con `us` de 80 % o más. El diagnóstico previo no se ejecutó porque dejó de hacer falta; su origen quedó sin identificar.
+- **`si` y `so` suman más que antes y no es un problema:** ahora la swap es memoria comprimida, no disco. Lo que importa es `wa` y el tiempo de respuesta.
+- **Plan B:** no es necesario por ahora. Queda documentado, con el criterio para activarlo, en la sección 7.
 
 | Fecha | Versión | `desplegar.sh` | `wa` máximo y muestras sobre 40 % | Suma `si` / `so` | `buff` mínimo | Sondeos fallidos | Tres visitas al inicio |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 12-10-2026, antes | `a46c641` | Sin anotar | 76 %; "durante minutos" | Máximos de 534 / 1.036 por muestra | 244 | 4 | 28,0 s, 44,3 s y 2,0 s |
-| *Pendiente, después* | | | | | | | |
+| 12-10-2026, después | `3851c7b` | 34 s | 55 %; 10 de 90 muestras, todas durante el despliegue | Sumas de 8.693 / 25.128, hacia la zram | 1.840 | 0 | 0,179 s, 0,135 s y 0,121 s |
 
-Pendiente de la etapa, sin ejecutar todavía: la medición de rendimiento en la VM, el paso 8 del simulacro (purga y recuperación del bucket), la subida de 24,9 MB, los logs sin el token, la IP real en la auditoría, los avisos de error, SPF, DKIM y DMARC en un correo recibido, y Lighthouse.
+Las dos filas no son comparables columna por columna en `si` y `so`: la primera anota máximos por muestra y la segunda, sumas. En la segunda, la cola `r` llegó a 8 (antes 23) y `st` siguió en 0.
+
+Pendiente de la etapa, sin ejecutar todavía: el paso 8 del simulacro (purga y recuperación del bucket), la subida de 24,9 MB, los logs sin el token, la IP real en la auditoría, los avisos de error, SPF, DKIM y DMARC en un correo recibido, y Lighthouse.
 
 ## 13. Solicitud de eliminación de datos
 
