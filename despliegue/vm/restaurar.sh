@@ -48,5 +48,7 @@ inicio=$(date +%s)
 # Si el respaldo es de una versión anterior del código, aquí se sabe: faltarían migraciones.
 "$dc" exec -T web python manage.py migrate --check \
     || echo "AVISO: hay migraciones sin aplicar. Ejecute: dc exec web python manage.py migrate" >&2
-"$dc" exec -T web python docker/salud.py
+"$dc" exec -T web python -I -S docker/salud.py
+"$dc" exec -T web python -I -S docker/salud.py / /servicios/ /contacto/ /cotizacion/ /acceso/ \
+    || echo "AVISO: el precalentamiento falló; la aplicación sí responde." >&2
 echo "Restauración terminada en $(( $(date +%s) - inicio )) segundos."

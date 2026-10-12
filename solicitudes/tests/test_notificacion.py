@@ -2,10 +2,12 @@
 
 import datetime
 import io
+import runpy
 
 import pytest
 from django.core import mail
 from django.core.management import call_command
+from django.db import connection
 from django.test import Client
 from django.utils import timezone
 
@@ -248,6 +250,47 @@ def test_sol_11_reintentar_notificaciones_envia_las_fallidas_y_las_olvidadas(db,
 
     assert "No hay notificaciones por reintentar." in _reintentar_notificaciones()
     assert len(mail.outbox) == 3
+
+
+def test_sol_11_la_consulta_liviana_cuenta_lo_mismo_que_la_tarea(db, settings, monkeypatch):
+    """`docker/pendientes.py` decide si vale la pena cargar la aplicación: si contara de
+    menos, una notificación fallida se quedaría sin reintentar."""
+    guion = runpy.run_path(str(settings.BASE_DIR / "docker" / "pendientes.py"))
+
+    def segun_el_guion():
+        with connection.cursor() as cursor:
+            cursor.execute(guion["CONSULTA"], {"maximo": guion["maximo_de_intentos"]()})
+            return cursor.fetchone()[0]
+
+    def segun_la_tarea():
+        return Solicitud.objects.por_reintentar(
+            maximo_intentos=settings.NOTIFICACIONES_INTENTOS_MAXIMOS,
+            ahora=timezone.now(),
+            correo_configurado=True,
+        ).count()
+
+    monkeypatch.delenv("NOTIFICACIONES_INTENTOS_MAXIMOS", raising=False)
+    assert guion["SIN_PENDIENTES"] == 3
+    assert segun_el_guion() == segun_la_tarea() == 0
+
+    _solicitud(notificacion=Notificacion.ENVIADA, notificacion_intentos=1)
+    _solicitud()  # recién llegada: todavía es de su hilo
+    _solicitud(notificacion=Notificacion.FALLIDA, notificacion_intentos=5)  # agotada
+    assert segun_el_guion() == segun_la_tarea() == 0
+
+    _solicitud(notificacion=Notificacion.FALLIDA, notificacion_intentos=4)
+    assert segun_el_guion() == segun_la_tarea() == 1
+    olvidada = _solicitud()
+    Solicitud.objects.filter(pk=olvidada.pk).update(
+        creado_en=timezone.now() - datetime.timedelta(minutes=30)
+    )
+    _solicitud(notificacion=Notificacion.NO_CONFIGURADA)
+    assert segun_el_guion() == segun_la_tarea() == 3
+
+    # El máximo de intentos sale de la misma variable de entorno que usa la aplicación.
+    monkeypatch.setenv("NOTIFICACIONES_INTENTOS_MAXIMOS", "2")
+    settings.NOTIFICACIONES_INTENTOS_MAXIMOS = 2
+    assert segun_el_guion() == segun_la_tarea() == 2
 
 
 def test_sol_11_el_maximo_de_intentos_es_configurable_y_cada_fallo_cuenta(db, settings):

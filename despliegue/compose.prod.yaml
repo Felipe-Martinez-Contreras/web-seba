@@ -48,9 +48,12 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "docker/salud.py"]
-      interval: 30s
-      timeout: 10s
+      # Solo el socket, sin cargar el entorno de Python: el sondeo corre cada minuto.
+      test: ["CMD", "python", "-I", "-S", "docker/salud.py"]
+      interval: 60s
+      # Con la máquina ocupada (un despliegue, un respaldo) la respuesta puede tardar: un
+      # plazo corto marcaba como caída una aplicación que solo estaba lenta.
+      timeout: 30s
       retries: 3
       # Amplio a propósito: no retrasa el estado sano. Mientras dura, el sondeo es cada 5 s
       # y un fallo no cuenta; el primer arranque en la VM tardó más de 120 s.

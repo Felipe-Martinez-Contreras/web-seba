@@ -11,4 +11,14 @@ case "${1:-}" in
         ;;
 esac
 
-exec "$(dirname "$0")/dc" exec -T web python manage.py "$1"
+dc="$(dirname "$0")/dc"
+
+# Corre cada 15 minutos y casi nunca tiene trabajo: una consulta liviana lo averigua sin
+# cargar la aplicación entera. Ante cualquier duda (código distinto de 3) se ejecuta completa.
+if [ "$1" = reintentar_notificaciones ]; then
+    estado=0
+    "$dc" exec -T web python docker/pendientes.py || estado=$?
+    [ "$estado" -ne 3 ] || exit 0
+fi
+
+exec "$dc" exec -T web python manage.py "$1"

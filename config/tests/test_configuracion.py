@@ -123,7 +123,7 @@ def test_fechas_con_formato_chileno_y_textos_en_espanol():
 
 
 def test_contrasenas_con_argon2_y_minimo_de_12_caracteres():
-    assert settings.PASSWORD_HASHERS[0] == "django.contrib.auth.hashers.Argon2PasswordHasher"
+    assert settings.PASSWORD_HASHERS == ["cuentas.hashers.Argon2idAcotado"]
     minimo = next(
         validador["OPTIONS"]["min_length"]
         for validador in settings.AUTH_PASSWORD_VALIDATORS

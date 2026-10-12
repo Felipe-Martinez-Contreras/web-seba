@@ -1,6 +1,8 @@
 #!/bin/bash
 # Prepara una máquina Debian recién creada: zona horaria, swap, Docker, parches automáticos
-# y los archivos de configuración vacíos. Se puede ejecutar más de una vez.
+# y los archivos de configuración vacíos. Se puede ejecutar más de una vez, también con el
+# sitio en marcha: no toca los archivos de /etc/web-seba que ya existen, ni los contenedores,
+# ni las tareas programadas, ni los datos.
 # Uso: sudo /opt/web-seba/despliegue/vm/preparar.sh
 set -euo pipefail
 
@@ -25,9 +27,6 @@ if ! swapon --show=NAME --noheadings | grep -qx /swapfile; then
     swapon /swapfile
 fi
 grep -q '^/swapfile ' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
-# El swap es para los picos (la verificación de contraseñas), no para el uso normal.
-echo 'vm.swappiness=10' > /etc/sysctl.d/60-web-seba.conf
-sysctl --quiet --load /etc/sysctl.d/60-web-seba.conf
 
 echo "== Docker Engine y Compose, desde el repositorio de Docker =="
 apt-get update --quiet
@@ -46,6 +45,50 @@ if ! command -v docker > /dev/null; then
     apt-get install --yes --quiet docker-ce docker-ce-cli containerd.io docker-compose-plugin
 fi
 systemctl enable --now docker
+
+echo "== Swap comprimida en memoria (zram), antes que la del disco =="
+# El disco estándar rinde muy pocas lecturas por segundo: lo que va a parar a su swap tarda
+# minutos en volver. La zram guarda esas páginas comprimidas en la propia memoria; el
+# archivo del disco queda solo como rebalse, con menos prioridad.
+zram=no
+if modinfo zram > /dev/null 2>&1; then
+    # Antes de instalar el paquete, para que el dispositivo nazca con esta configuración.
+    cat > /etc/systemd/zram-generator.conf << 'FIN'
+[zram0]
+zram-size = ram / 2
+compression-algorithm = zstd
+swap-priority = 100
+FIN
+    apt-get install --yes --quiet systemd-zram-generator
+    systemctl daemon-reload
+    if ! swapon --show=NAME --noheadings | grep -qx /dev/zram0; then
+        modprobe zram || true
+        systemctl start systemd-zram-setup@zram0.service || true
+    fi
+    if swapon --show=NAME --noheadings | grep -qx /dev/zram0; then
+        zram=si
+    else
+        echo "AVISO: no se pudo activar la zram; queda solo la swap del disco." >&2
+    fi
+else
+    echo "AVISO: este núcleo no trae el módulo zram; queda solo la swap del disco." >&2
+fi
+
+echo "== Ajustes de memoria del núcleo =="
+if [ "$zram" = si ]; then
+    # Con la swap en memoria, desalojar memoria de los procesos es barato: se prefiere a
+    # botar el caché de archivos, que hay que volver a leer del disco. Sin lectura
+    # anticipada: en la zram cada página se descomprime por separado.
+    printf 'vm.swappiness=100
+vm.page-cluster=0
+' > /etc/sysctl.d/60-web-seba.conf
+else
+    # El valor del núcleo. Con 10, la máquina botaba casi todo el caché de archivos antes
+    # de usar la swap, y cada proceso nuevo releía sus programas desde el disco.
+    printf 'vm.swappiness=60
+' > /etc/sysctl.d/60-web-seba.conf
+fi
+sysctl --quiet --load /etc/sysctl.d/60-web-seba.conf
 
 echo "== Parches de seguridad automáticos, con reinicio de madrugada si hace falta =="
 cat > /etc/apt/apt.conf.d/20auto-upgrades << 'FIN'
@@ -80,6 +123,8 @@ fi
 echo
 echo "Listo. Memoria y swap:"
 free -m
+swapon --show
+sysctl vm.swappiness vm.page-cluster
 echo
 echo "Siga con docs/DESPLIEGUE.md: complete /etc/web-seba/compose.env y /etc/web-seba/web.env"
 echo "y ejecute despliegue/vm/desplegar.sh <commit>."

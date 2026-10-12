@@ -172,7 +172,8 @@ AUDITORIA_RETENCION_MESES = env.entero("AUDITORIA_RETENCION_MESES", 24)
 TAREAS_SINCRONAS = False
 TAREAS_ESPERA_SEGUNDOS = 2
 
-PASSWORD_HASHERS = ["django.contrib.auth.hashers.Argon2PasswordHasher"]
+# Argon2id con el costo acotado a la memoria del servidor (cuentas/hashers.py).
+PASSWORD_HASHERS = ["cuentas.hashers.Argon2idAcotado"]
 
 AUTH_PASSWORD_VALIDATORS = [
     {

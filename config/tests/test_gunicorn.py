@@ -102,8 +102,15 @@ def test_los_errores_de_gunicorn_tambien_salen_en_json(registro_de_gunicorn):
     assert entrada["mensaje"] == "Fallo en /activar/[oculto]/"
 
 
-def test_gunicorn_carga_la_aplicacion_una_vez_y_reparte_dos_procesos_de_dos_hilos(configuracion):
-    """DEC-189: la aplicación se carga antes de crear los procesos. La cantidad de procesos
-    y de hilos no cambió (DEC-173)."""
+def test_gunicorn_carga_la_aplicacion_una_vez_y_usa_un_proceso_de_cuatro_hilos(
+    configuracion, monkeypatch
+):
+    """DEC-189: la aplicación se carga antes de crear los procesos. DEC-194: un proceso de
+    cuatro hilos, que ocupa menos memoria que dos de dos; se puede cambiar por entorno."""
     assert configuracion["preload_app"] is True
-    assert (configuracion["workers"], configuracion["threads"]) == (2, 2)
+    assert (configuracion["workers"], configuracion["threads"]) == (1, 4)
+
+    monkeypatch.setenv("GUNICORN_PROCESOS", "2")
+    monkeypatch.setenv("GUNICORN_HILOS", "2")
+    otra = runpy.run_path(str(settings.BASE_DIR / "config" / "gunicorn.py"))
+    assert (otra["workers"], otra["threads"]) == (2, 2)

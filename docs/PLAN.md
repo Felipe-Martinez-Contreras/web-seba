@@ -390,3 +390,29 @@ Seis fallos, corregidos en un solo commit (DEC-186 a DEC-191):
 - **El tiempo de arranque** se midió en la VM después del commit: unos 5 s. La medición local previa (de 30 a 20 s) solo comparaba antes y después.
 - **`/acceso/2fa/configurar/` no cambia** (DEC-192): que su GET cree y reemplace el dispositivo pendiente queda como comportamiento conocido.
 
+
+## 19. Etapa 8, Fase B: simulacro, vuelta atrás y rendimiento de la VM
+
+El 12-10-2026 el responsable hizo el simulacro de restauración desde el bucket (correcto, 236 s) y la vuelta atrás a `da83509` con regreso a `a46c641` (correcta). Quedó a la vista que la VM se vuelve muy lenta tras cada despliegue: el inicio tardó 28 y 44 s, con la CPU esperando al disco. La causa es la memoria justa sobre un disco estándar de muy pocas operaciones por segundo, con la swap en ese mismo disco.
+
+Un commit con las mejoras gratuitas (DEC-193 a DEC-199):
+
+- **Memoria del sistema:** swap comprimida en memoria (zram) antes que la del disco, y `swappiness` de 10 a 100 (60 si no hay zram).
+- **Gunicorn:** 1 proceso de 4 hilos. Unos 25 MB menos con la misma latencia.
+- **Argon2id acotado** a 19 MiB, 2 pasadas y 1 hilo: un acceso pasa de 4,2 s y 118 MB a 0,31 s y 38 MB.
+- **Healthcheck** por socket, cada 60 s y con plazo de 30 s.
+- **Despliegue:** `preparar_despliegue` (un proceso en vez de tres) y precalentamiento de las páginas principales.
+- **Reintentos:** consulta liviana antes de cargar la aplicación.
+- **`medir.sh`:** la misma medición antes y después.
+- **Guía:** paso 3 del simulacro corregido, purga rediseñada para probarse en minutos, recuperación de un documento purgado, y plan B (VM con disco equilibrado), solo documentado.
+
+**La etapa sigue sin terminar.** Las mediciones de estas mejoras son locales. Falta aplicarlas en la VM y medir con `medir.sh`, y sigue pendiente lo demás de `TRAZABILIDAD.md`.
+
+### Diferencias con lo pedido
+
+- **`swappiness` ya estaba en `preparar.sh`**, en 10, y era parte del problema: se cambió el valor.
+- **zram** no estaba en la lista: es lo que saca la swap del disco. No se pudo probar fuera de la VM.
+- **Las tareas programadas ya usaban el contenedor en marcha** (`exec`). Lo que se agregó es no cargar la aplicación cuando no hay notificaciones pendientes.
+- **`check --deploy` corre antes de reiniciar**, no después: un error deja la versión anterior en marcha.
+- **`vfs_cache_pressure` no se tocó**: nada de lo medido lo justifica.
+- **El minuto de CPU al 90 % sigue sin explicar**: depende del diagnóstico en la VM.

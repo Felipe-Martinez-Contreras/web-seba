@@ -11,10 +11,13 @@ bind = "0.0.0.0:8000"
 
 # Hilos: una subida lenta de 25 MB ocupa un hilo y no un proceso entero.
 worker_class = "gthread"
-workers = int(os.environ.get("GUNICORN_PROCESOS", "2"))
-threads = int(os.environ.get("GUNICORN_HILOS", "2"))
-# La aplicación se carga una vez, antes de crear los procesos: en una máquina chica, que cada
-# proceso importara Django por su cuenta alargaba el arranque. Nada abre conexiones al importar.
+# Un proceso con cuatro hilos atiende las mismas cuatro peticiones a la vez que dos procesos
+# de dos hilos, con unos 25 MB menos: en la máquina de 1 GB la memoria es lo escaso, y con
+# una fracción de CPU dos procesos no rinden más que uno (DEC-194).
+workers = int(os.environ.get("GUNICORN_PROCESOS", "1"))
+threads = int(os.environ.get("GUNICORN_HILOS", "4"))
+# La aplicación se carga una vez, antes de crear el proceso que atiende: al renovarlo
+# (max_requests) el nuevo nace con todo cargado. Nada abre conexiones al importar.
 preload_app = True
 # Con hilos, este plazo es el del latido del proceso, no el de cada petición.
 timeout = 120

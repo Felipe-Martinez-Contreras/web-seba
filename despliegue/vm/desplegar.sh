@@ -17,6 +17,7 @@ principal() {
     fi
 
     local raiz entorno anterior
+    local -a precalentar=(/salud/ / /servicios/ /contacto/ /cotizacion/ /acceso/)
     raiz="$(cd "$(dirname "$0")/../.." && pwd)"
     entorno="${WEB_SEBA_COMPOSE_ENV:-/etc/web-seba/compose.env}"
     anterior="$(sed -n 's/^WEB_SEBA_VERSION=//p' "$entorno")"
@@ -40,13 +41,15 @@ principal() {
         # Si una migración de esta versión sale mal, este es el punto al que se vuelve.
         "$raiz/despliegue/vm/respaldar.sh" --solo-local
     fi
-    "$dc" run --rm --no-deps web python manage.py migrate --noinput
-    "$dc" run --rm --no-deps web python manage.py createcachetable
+    # Migraciones, tabla de caché y check --deploy en un solo proceso: en esta máquina cada
+    # arranque de la aplicación cuesta memoria y disco. Si falla, lo que corre no se toca.
+    "$dc" run --rm --no-deps web python manage.py preparar_despliegue
 
     echo "== Aplicación y túnel =="
+    # --wait ya exige que la aplicación esté sana: /salud/ respondió 200.
     "$dc" up --detach --wait --remove-orphans
-    "$dc" exec -T web python docker/salud.py
-    "$dc" exec -T web python manage.py check --deploy
+    # La primera visita a cada página carga plantillas y código: que no la pague un visitante.
+    "$dc" exec -T web python -I -S docker/salud.py "${precalentar[@]}"         || echo "AVISO: el precalentamiento falló; la aplicación sí quedó sana." >&2
 
     echo "== Tareas programadas =="
     install -m 644 "$raiz"/despliegue/systemd/* /etc/systemd/system/

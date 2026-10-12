@@ -129,11 +129,17 @@ jobs:
       - name: Levantar la base y la aplicación como en el servidor
         run: |
           despliegue/vm/dc up --detach --wait db
-          despliegue/vm/dc run --rm --no-deps web python manage.py migrate --noinput
-          despliegue/vm/dc run --rm --no-deps web python manage.py createcachetable
+          despliegue/vm/dc run --rm --no-deps web python manage.py preparar_despliegue
           despliegue/vm/dc up --detach --wait --wait-timeout 180 db web
       - name: Responde por Gunicorn y llega a la base de datos
-        run: despliegue/vm/dc exec -T web python docker/salud.py
+        run: |
+          despliegue/vm/dc exec -T web python -I -S docker/salud.py
+          despliegue/vm/dc exec -T web python -I -S docker/salud.py /salud/ / /acceso/
+      - name: Sin notificaciones pendientes, la tarea de reintentos no carga la aplicación
+        run: |
+          despliegue/vm/tarea.sh reintentar_notificaciones | tee tarea.txt
+          grep --quiet --fixed-strings "Notificaciones por reintentar: 0" tarea.txt
+          test "$(wc -l < tarea.txt)" = "1"
       - name: HEAD responde 200 y sin cuerpo, por Gunicorn
         run: |
           despliegue/vm/dc exec -T web python docker/head.py /salud/
@@ -142,7 +148,7 @@ jobs:
         run: |
           ruta="$(despliegue/vm/dc exec -T web python -c "import json; print('/static/' + json.load(open('staticfiles/staticfiles.json'))['paths']['css/app.css'])")"
           echo "$ruta" | grep --quiet --extended-regexp '^/static/css/app\.[0-9a-f]+\.css$'
-          despliegue/vm/dc exec -T web python docker/salud.py "$ruta" > /dev/null
+          despliegue/vm/dc exec -T web python -I -S docker/salud.py "$ruta" > /dev/null
           despliegue/vm/dc exec -T web grep --quiet --fixed-strings -e "--color-primario:" "staticfiles${ruta#/static}"
       - name: check --deploy con la configuración de producción
         run: despliegue/vm/dc exec -T web python manage.py check --deploy
