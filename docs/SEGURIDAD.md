@@ -115,6 +115,7 @@ La medición es local y sobre un equipo de desarrollo. Repetirla en staging est�
 
 ## 4. Limitaciones conocidas
 
+- **Dos sesiones de enrolamiento del 2FA se pisan.** Mostrar `/acceso/2fa/configurar/` crea el dispositivo TOTP pendiente de esa sesión y borra el que otra sesión del mismo administrador hubiera dejado a medias, porque su clave ya se mostró. Con la pantalla abierta en dos navegadores, el código QR del primero deja de valer; se recarga y se escanea el nuevo. No lo alcanza un tercero: exige la sesión del administrador y el permiso que da un enlace de un solo uso. Sin cambio, por decisión del responsable (DEC-192); la ruta no responde a HEAD (DEC-188).
 - **Un correo de recuperación puede perderse.** El envío ocurre en un hilo del mismo proceso, entre 2 y 4 segundos después de la petición. Si el proceso se reinicia en ese intervalo o durante el envío, el correo no sale y nadie lo reintenta. Cómo queda registrado:
     - Siempre existe el evento "Recuperación solicitada".
     - Si el reinicio ocurre antes de crear el enlace, no hay enlace ni evento "Correo de recuperación".

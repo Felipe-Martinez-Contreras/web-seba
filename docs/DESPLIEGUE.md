@@ -2,7 +2,7 @@
 
 Cómo se publica y se mantiene la aplicación. Las decisiones están en `DECISIONES.md` (DEC-164 en adelante) y sus riesgos en `SEGURIDAD.md` §8.
 
-**Estado al 12-10-2026.** La aplicación corre en staging, en `https://seba.fmartinez.xyz`, desde el primer despliegue real (commit `da83509`): VM, buckets, túnel y correo existen y funcionan. Ese despliegue dejó seis fallos, corregidos en el commit siguiente; lo verificado, lo que falló y lo que sigue pendiente están en la sección 12, con su bitácora.
+**Estado al 12-10-2026.** La aplicación corre en staging, en `https://seba.fmartinez.xyz`. El primer despliegue real (commit `da83509`) dejó seis fallos; el commit `a46c641` los corrigió y, ya desplegado, las correcciones quedaron comprobadas en la VM. Lo verificado y lo que sigue pendiente (el simulacro de restauración, entre otros) están en la sección 12, con su bitácora.
 
 Convenciones de esta guía:
 
@@ -224,9 +224,9 @@ El guion deja el código de despliegue en ese commit, baja la imagen, respalda l
 | VM, commit `da83509` (12-10-2026) | Unos 106 s la primera vez y unos 144 s después |
 | Local, imagen de producción limitada a 0,25 CPU y 450 MB, antes del cambio | Unos 30 s |
 | Local, misma prueba, con el cambio (DEC-189) | Unos 20 s |
-| VM, con el cambio | **Sin medir.** Se espera menos que antes, del orden de 1 a 2 minutos; el número se anota aquí tras el próximo despliegue |
+| VM, commit `a46c641`, con el cambio (12-10-2026) | **Unos 5 s**: el contenedor partió a las 21:06:05 UTC y el primer sondeo sano fue a las 21:06:10 |
 
-La prueba local no reproduce el disco ni la memoria de la e2-micro: sirve para comparar antes y después, no para predecir la VM. Qué cambió: Gunicorn carga la aplicación una sola vez, antes de crear sus dos procesos (antes cada proceso importaba todo por su cuenta), y el plazo de arranque del healthcheck pasó de 120 a 300 s. Ese plazo no retrasa nada: mientras dura, Docker sondea cada 5 s y marca el contenedor sano con la primera respuesta 200 de `/salud/`, que consulta la base. Con 120 s, el segundo arranque lo superó y el sondeo pasó a ser cada 30 s. Si a los 300 s sigue sin responder, tres fallos seguidos lo marcan como no sano y `desplegar.sh` termina con error.
+La prueba local no reproduce el disco ni la memoria de la e2-micro: sirvió para comparar antes y después, no para predecir la VM, donde la mejora fue mayor. Es una sola medición en la VM; si un arranque posterior tarda mucho más, anótelo aquí. Qué cambió: Gunicorn carga la aplicación una sola vez, antes de crear sus dos procesos (antes cada proceso importaba todo por su cuenta), y el plazo de arranque del healthcheck pasó de 120 a 300 s. Ese plazo no retrasa nada: mientras dura, Docker sondea cada 5 s y marca el contenedor sano con la primera respuesta 200 de `/salud/`, que consulta la base. Con 120 s, el segundo arranque lo superó y el sondeo pasó a ser cada 30 s. Si a los 300 s sigue sin responder, tres fallos seguidos lo marcan como no sano y `desplegar.sh` termina con error.
 
 Para medirlo en la **VM**, justo después de desplegar:
 
@@ -400,24 +400,24 @@ Estado tras el primer despliegue real (commit `da83509`), según lo informado po
 | `check --deploy` | Lo ejecuta `desplegar.sh` | SEG-01 | Verificado el 12-10-2026: `desplegar.sh` terminó bien. `security.W005` y `W021` son las esperadas |
 | La VM no acepta conexiones | Lista de reglas de firewall; prueba de conexión al puerto 22 y al 443 de su IP | — | Pendiente |
 | La auditoría registra la IP real | Un acceso fallido desde su red; mirar el evento en el panel | AUT-04 | Pendiente |
-| Bucket: sin firma 403, firma alterada y URL vencida rechazadas | `comprobar_almacenamiento --firma` | DOC-03, DOC-04, prueba 11 | **Falló** el 12-10-2026 (bitácora). Corregido en el código; pendiente repetirlo con el commit de la corrección |
+| Bucket: sin firma 403, firma alterada y URL vencida rechazadas | `comprobar_almacenamiento --firma` | DOC-03, DOC-04, prueba 11 | Verificado el 12-10-2026 con el commit `a46c641`, sin las variables `AWS_*` en `web.env`: terminó con "El almacenamiento funciona." La URL vencida respondió 400. El primer intento, con `da83509`, había fallado (bitácora) |
 | Subida de 24,9 MB y descarga con el mismo SHA-256 | Por el panel | RNF-02, SEG-07 | Pendiente |
 | Correo: llega una cotización con `Reply-To`; SPF, DKIM y DMARC en "pass" | Ver el original del mensaje recibido | SOL-08 | Parcial, 12-10-2026: el aviso de una consulta pública llegó por Resend y la solicitud quedó como enviada. Pendiente: `Reply-To` y SPF, DKIM y DMARC en "pass" |
 | Aviso de error 500 y de tarea fallida | `avisar_fallo prueba`; un error provocado | RNF-05 | Pendiente |
-| Tareas programadas | `systemctl list-timers 'webseba-*'`, `journalctl -u 'webseba-*'` | SOL-11, ADM-09, AUD-03 | Parcial, 12-10-2026: los cinco temporizadores `webseba-*` están activos. Pendiente: revisar en el journal una ejecución de cada uno |
+| Tareas programadas | `systemctl list-timers 'webseba-*'`, `journalctl -u 'webseba-*'` | SOL-11, ADM-09, AUD-03 | Parcial, 12-10-2026: los cinco temporizadores `webseba-*` están activos, también tras el segundo despliegue. Pendiente: revisar en el journal una ejecución de cada uno |
 | Simulacro de restauración | Sección 7 | SEG-11 | Pendiente. Sí se hizo un respaldo manual, que quedó en el bucket de respaldos (12-10-2026) |
 | Estáticos desde la caché de Cloudflare | `cf-cache-status: HIT` en la segunda petición | — | Verificado el 12-10-2026: el CSS con `HIT` y el HTML con `DYNAMIC` |
 | Lighthouse móvil y tiempos de respuesta | Contra la URL pública | RNF-06, RNF-02 | Pendiente |
 | Memoria y swap bajo uso | `free -m`, `docker stats` | RNF-02 | Parcial, 12-10-2026, sin carga: `web` 104 MB, `cloudflared` 25 MB, `db` 9 MB. Pendiente: bajo uso |
 | Logs sin el token de los enlaces | `dc logs web` tras usar un enlace de activación | SEG-10 | Pendiente |
 
-Filas nuevas de la Fase B, pendientes de comprobar en la VM con el commit de las correcciones:
+Filas nuevas de la Fase B:
 
 | Qué | Cómo | Requisito | Estado |
 | --- | --- | --- | --- |
-| HEAD responde como GET, sin cuerpo | `curl -sI` a `/`, `/servicios/`, `/contacto/`, `/salud/` y `/privacidad/`: 200. `dc exec -T web python docker/head.py /` | — | Pendiente. En local, contra Gunicorn: verificado el 12-10-2026 |
-| Tiempo de arranque de `web` | Sección 5 | RNF-02 | Pendiente |
-| Inicio con la base vacía | Antes de `cargar_demo`: "Sitio en preparación" y el botón Acceso clientes | PUB-05 | Pendiente. En local: verificado el 12-10-2026 |
+| HEAD responde como GET, sin cuerpo | `curl -sI` a `/`, `/servicios/`, `/contacto/`, `/salud/` y `/privacidad/`: 200. `dc exec -T web python docker/head.py /` | — | Verificado en la VM el 12-10-2026: 200 en `/`, `/servicios/`, `/contacto/`, `/salud/`, `/privacidad/` y `/acceso/`; `/portal/` redirige a `/acceso/?next=/portal/`; `OPTIONS /salud/` y `HEAD /solicitud-recibida/` dan 405; `docker/head.py` informa "200 OK (0 bytes de cuerpo)" |
+| Tiempo de arranque de `web` | Sección 5 | RNF-02 | Verificado en la VM el 12-10-2026: unos 5 s (antes, 106 y 144 s) |
+| Inicio con la base vacía | Antes de `cargar_demo`: "Sitio en preparación" y el botón Acceso clientes | PUB-05 | Pendiente en la VM: se ve durante el simulacro de restauración (sección 7). En local: verificado el 12-10-2026 |
 
 ### Problemas conocidos
 
@@ -426,6 +426,7 @@ Filas nuevas de la Fase B, pendientes de comprobar en la VM con el commit de las
 - **Borrar un objeto que no existe: 404 en Google, 204 en Amazon.** El almacenamiento lo trata igual en ambos: no es un error. Antes, si la subida de prueba fallaba, la limpieza respondía `NoSuchKey` y tapaba el error real.
 - **`curl -X POST` a una página devuelve 403, no 405.** La comprobación de CSRF va antes que la del método. Para ver un 405 use un método que no modifica nada, por ejemplo `curl -s -o /dev/null -w '%{http_code}\n' -X OPTIONS https://seba.fmartinez.xyz/salud/`.
 - **Rutas que no responden a HEAD (405), a propósito** (DEC-188): ver y descargar un documento (dejarían un evento de descarga que no ocurrió), `/acceso/2fa/configurar/` (crea el dispositivo del segundo factor) y `/solicitud-recibida/` (consume el mensaje de confirmación).
+- **Dos sesiones de enrolamiento del 2FA a la vez.** Abrir `/acceso/2fa/configurar/` crea el dispositivo pendiente de esa sesión y descarta el que hubiera quedado a medias en otra. Si un administrador tiene abierta esa pantalla en dos navegadores, el código QR del primero deja de valer al abrir el segundo: basta recargar la pantalla y escanear el código nuevo. Solo ocurre durante el enrolamiento, que exige haber usado un enlace de activación o de restablecimiento. Se deja así por decisión del responsable (DEC-192).
 
 ### Bitácora de la Fase B
 
@@ -457,7 +458,16 @@ Falló, y se corrigió en el commit siguiente:
 
 Los nombres de los temporizadores y sus comandos se repasaron contra `despliegue/systemd/`: son `webseba-*` en todos los comandos de esta guía. `web-seba` (con guion) es el nombre del proyecto de Compose, de las carpetas `/opt/web-seba`, `/etc/web-seba` y `/var/backups/web-seba`, del volumen `web-seba_db_datos` y del contenedor `web-seba-web-1`: esos no cambian.
 
-Pendiente de esta fase: desplegar el commit de las correcciones y repetir `comprobar_almacenamiento --firma`, las filas nuevas de arriba y las que siguen pendientes en la tabla.
+**12-10-2026. Segundo despliegue**, commit `a46c641`, con las seis correcciones. Informado por el responsable: todo bien.
+
+- **Arranque de `web`:** el contenedor partió a las 21:06:05 UTC y el primer sondeo sano fue a las 21:06:10: unos 5 s, contra 106 y 144 s.
+- **Bucket:** con `web.env` ya sin las variables `AWS_*` ni `DEMO_PERMITIDO`, `comprobar_almacenamiento --firma` terminó con "El almacenamiento funciona.": la URL vencida respondió 400, aceptado, y el paso Borrar salió correcto. La corrección de las sumas de verificación queda confirmada contra Google Cloud Storage real.
+- **HEAD:** 200 en `/`, `/servicios/`, `/contacto/`, `/salud/`, `/privacidad/` y `/acceso/`; `/portal/` responde 302 hacia `/acceso/?next=/portal/`; `OPTIONS /salud/` da 405 y `HEAD /solicitud-recibida/` da 405; `docker/head.py` informa "200 OK (0 bytes de cuerpo)".
+- **Temporizadores:** los cinco `webseba-*` siguen activos.
+
+Con esto quedan cerrados en la VM los puntos 1 a 4 y el 6 de la tabla de arriba. El punto 5 (inicio con la base vacía) se ve durante el simulacro de restauración.
+
+Pendiente de la etapa, sin ejecutar todavía: el simulacro de restauración, una vuelta atrás a la versión anterior, la subida de 24,9 MB, los logs sin el token, la IP real en la auditoría, los avisos de error, SPF, DKIM y DMARC en un correo recibido, y Lighthouse.
 
 ## 13. Solicitud de eliminación de datos
 

@@ -379,7 +379,7 @@ Seis fallos, corregidos en un solo commit (DEC-186 a DEC-191):
 - **Inicio sin contenido**: estado "Sitio en preparación" con el acceso de clientes.
 - **`DESPLIEGUE.md`**: orden de `crear_administrador` y `cargar_demo`, `DEMO_PERMITIDO` fuera de `web.env`, problemas conocidos y lista de paso a producción con HSTS.
 
-**La etapa sigue sin terminar.** Falta desplegar ese commit y repetir en la VM lo que falló, medir el arranque, y lo que nunca se ejecutó: el simulacro de restauración, la subida de 24,9 MB, Lighthouse, los logs sin el token, la IP real en la auditoría y los avisos de error (`TRAZABILIDAD.md`, pendientes de la Etapa 8).
+**La etapa sigue sin terminar.** El commit de las correcciones (`a46c641`) se desplegó el 12-10-2026 y todo lo que había fallado quedó comprobado en la VM: el bucket real con `comprobar_almacenamiento --firma`, HEAD, y el arranque de `web` en unos 5 s. Falta lo que nunca se ejecutó: el simulacro de restauración, una vuelta atrás, la subida de 24,9 MB, Lighthouse, los logs sin el token, la IP real en la auditoría, los avisos de error y SPF, DKIM y DMARC en un correo recibido (`TRAZABILIDAD.md`, pendientes de la Etapa 8).
 
 ### Diferencias con lo pedido
 
@@ -387,5 +387,6 @@ Seis fallos, corregidos en un solo commit (DEC-186 a DEC-191):
 - **`AlmacenS3.borrar`** se corrigió en el almacén, no solo en el comando: era la causa del `NoSuchKey`.
 - **`docker/head.py`**, nuevo: comprueba contra Gunicorn que HEAD no lleva cuerpo. Lo usa la CI y sirve en la VM.
 - **Una prueba anterior cambió** porque cambió, por pedido, lo que afirmaba: `test_pub_05_con_todo_en_completar_*` decía que el inicio vacío no tenía portada.
-- **El tiempo de arranque en la VM no está medido** con el cambio; la medición local solo compara antes y después.
+- **El tiempo de arranque** se midió en la VM después del commit: unos 5 s. La medición local previa (de 30 a 20 s) solo comparaba antes y después.
+- **`/acceso/2fa/configurar/` no cambia** (DEC-192): que su GET cree y reemplace el dispositivo pendiente queda como comportamiento conocido.
 
