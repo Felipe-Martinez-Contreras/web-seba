@@ -129,7 +129,7 @@ class ClienteEstado(VistaDeCliente, View):
 class Cliente(VistaDeCliente, View):
     """Entrada de la ficha: lleva a su primera pestaña."""
 
-    http_method_names = ["get"]
+    http_method_names = ["get", "head"]
 
     def get(self, request, **kwargs):
         return redirect(self.url_ficha())

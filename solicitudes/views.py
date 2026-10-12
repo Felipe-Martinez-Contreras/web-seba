@@ -21,7 +21,7 @@ class _Formulario(PaginaPublica, FormView):
     contacto registrado y un envío hecho a mano responde 404 (SEG-12).
     """
 
-    http_method_names = ["get", "post"]
+    http_method_names = ["get", "head", "post"]
 
     def post(self, request, *args, **kwargs):
         if not self.formularios:
@@ -93,6 +93,8 @@ class Recibida(PaginaPublica, TemplateView):
 
     template_name = "solicitudes/recibida.html"
     nombre_de_pagina = "Solicitud recibida"
+    # Sin HEAD: mostrar la página consume el mensaje de confirmación de la sesión.
+    http_method_names = ["get"]
 
     def get(self, request, *args, **kwargs):
         confirmaciones = [

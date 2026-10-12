@@ -31,8 +31,13 @@ def test_salud_sin_base_de_datos_responde_503_sin_detalles(client):
 
 
 @pytest.mark.django_db
-def test_salud_solo_admite_get(client):
+def test_salud_solo_admite_get_y_head(client):
     assert client.post("/salud/").status_code == 405
+    assert client.put("/salud/").status_code == 405
+    respuesta = client.head("/salud/")
+    assert respuesta.status_code == 200 and respuesta.content == b""
+    assert respuesta["Content-Type"] == "application/json"
+    assert "no-store" in respuesta["Cache-Control"]
 
 
 def test_el_favicon_de_la_raiz_lleva_al_archivo_estatico(client):

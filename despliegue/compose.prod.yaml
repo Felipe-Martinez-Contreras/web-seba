@@ -52,7 +52,9 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 120s
+      # Amplio a propósito: no retrasa el estado sano. Mientras dura, el sondeo es cada 5 s
+      # y un fallo no cuenta; el primer arranque en la VM tardó más de 120 s.
+      start_period: 300s
       start_interval: 5s
     restart: unless-stopped
     mem_limit: 450m

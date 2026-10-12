@@ -365,3 +365,27 @@ Comprobado en local con la imagen de producción el 11-10-2026: `/salud/`, redir
 - La rotación de logs queda en el Compose de producción, no en la configuración del servicio Docker.
 - Correcciones del responsable al aprobar: Resend admite hasta 3 dominios (el del cliente se agrega sin reemplazar el provisional) y la vigencia de la Ley 21.719 queda sujeta al proyecto que la posterga (DEC-169, DEC-172).
 - El guion `dc` no funciona desde Git Bash en Windows (rutas); en el equipo de desarrollo se llama a `docker compose` directamente. En Linux, que es donde se usa, corre en la CI.
+
+## 18. Etapa 8, Fase B: primer despliegue en staging y sus correcciones
+
+El 12-10-2026 el responsable hizo el primer despliegue real (commit `da83509`) en `https://seba.fmartinez.xyz` y lo verificó. Funcionó lo principal: despliegue, temporizadores, respaldo, caché de Cloudflare, encabezados, acceso con 2FA, activación, validación de archivos, correo por Resend, descarga y aislamiento entre empresas. La bitácora completa está en `DESPLIEGUE.md` §12.
+
+Seis fallos, corregidos en un solo commit (DEC-186 a DEC-191):
+
+- **Sumas de verificación de `boto3`** que Google Cloud Storage rechaza: el cliente S3 las calcula solo cuando se requieren.
+- **`comprobar_almacenamiento --firma`**: acepta 400 o 403 para la URL vencida, borra siempre el objeto de prueba e informa el error original. Borrar en S3 lo que no existe ya no falla.
+- **HEAD** respondía 405 en todas las rutas: ahora responde como GET, sin cuerpo, en toda vista con GET, salvo seis rutas cuyo GET tiene efectos.
+- **Arranque de `web`**: Gunicorn carga la aplicación una vez y el healthcheck sondea cada 5 s durante todo el arranque.
+- **Inicio sin contenido**: estado "Sitio en preparación" con el acceso de clientes.
+- **`DESPLIEGUE.md`**: orden de `crear_administrador` y `cargar_demo`, `DEMO_PERMITIDO` fuera de `web.env`, problemas conocidos y lista de paso a producción con HSTS.
+
+**La etapa sigue sin terminar.** Falta desplegar ese commit y repetir en la VM lo que falló, medir el arranque, y lo que nunca se ejecutó: el simulacro de restauración, la subida de 24,9 MB, Lighthouse, los logs sin el token, la IP real en la auditoría y los avisos de error (`TRAZABILIDAD.md`, pendientes de la Etapa 8).
+
+### Diferencias con lo pedido
+
+- **Rutas sin HEAD.** Además de las cuatro de entrega, quedaron en 405 `/acceso/2fa/configurar/` (su GET crea el dispositivo TOTP pendiente y descarta el de otra sesión) y `/solicitud-recibida/` (su GET consume el mensaje de confirmación). Los enlaces de activación y de restablecimiento sí responden a HEAD: su GET solo consulta.
+- **`AlmacenS3.borrar`** se corrigió en el almacén, no solo en el comando: era la causa del `NoSuchKey`.
+- **`docker/head.py`**, nuevo: comprueba contra Gunicorn que HEAD no lleva cuerpo. Lo usa la CI y sirve en la VM.
+- **Una prueba anterior cambió** porque cambió, por pedido, lo que afirmaba: `test_pub_05_con_todo_en_completar_*` decía que el inicio vacío no tenía portada.
+- **El tiempo de arranque en la VM no está medido** con el cambio; la medición local solo compara antes y después.
+

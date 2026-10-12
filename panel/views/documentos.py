@@ -240,6 +240,7 @@ class DocumentoRestaurar(VistaDeDocumento, View):
 class _EntregaDeVersion(VistaDeDocumento, View):
     """Entrega una versión, vigente o anterior, de un documento que no está en la papelera."""
 
+    # Sin HEAD: cada petición registra una vista o una descarga en la auditoría y firma una URL.
     http_method_names = ["get"]
     ver = False
 

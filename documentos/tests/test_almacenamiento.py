@@ -141,6 +141,69 @@ def test_la_base_rechaza_una_clave_con_otra_forma(documento_a, administrador, cl
         )
 
 
+def test_el_cliente_de_s3_calcula_sumas_de_verificacion_solo_cuando_se_requieren(almacen_s3):
+    """DEC-186: con las sumas que boto3 agrega por omisión desde la versión 1.36, Google Cloud
+    Storage rechaza la subida ("SignatureDoesNotMatch"). El resto de la configuración sigue."""
+    configuracion = almacen_s3._cliente.meta.config
+    assert configuracion.request_checksum_calculation == "when_required"
+    assert configuracion.response_checksum_validation == "when_required"
+    assert configuracion.signature_version == "s3v4"
+    assert configuracion.s3 == {"addressing_style": "auto"}
+    # botocore guarda los 3 reintentos como 4 intentos en total.
+    assert configuracion.retries == {"total_max_attempts": 4, "mode": "standard"}
+    assert (configuracion.connect_timeout, configuracion.read_timeout) == (5, 30)
+
+
+def test_el_cliente_de_s3_no_toma_las_sumas_de_verificacion_del_entorno(monkeypatch):
+    """Lo fija el código: no depende de que el servidor defina las variables `AWS_*`, y un
+    valor distinto en el entorno no lo cambia."""
+    monkeypatch.setenv("AWS_REQUEST_CHECKSUM_CALCULATION", "when_supported")
+    monkeypatch.setenv("AWS_RESPONSE_CHECKSUM_VALIDATION", "when_supported")
+    almacen = almacenamiento.AlmacenS3(
+        bucket="un-bucket",
+        endpoint_url="https://storage.googleapis.com",
+        region="auto",
+        access_key_id="clave-de-prueba",
+        secret_access_key="secreto-de-prueba",
+    )
+    configuracion = almacen._cliente.meta.config
+    assert configuracion.request_checksum_calculation == "when_required"
+    assert configuracion.response_checksum_validation == "when_required"
+    assert configuracion.s3 == {"addressing_style": "path"}
+    assert almacen._cliente.meta.endpoint_url == "https://storage.googleapis.com"
+
+
+def _error_de_s3(codigo, estado):
+    from botocore.exceptions import ClientError
+
+    respuesta = {
+        "Error": {"Code": codigo, "Message": codigo},
+        "ResponseMetadata": {"HTTPStatusCode": estado},
+    }
+    return ClientError(respuesta, "DeleteObject")
+
+
+def test_borrar_en_s3_lo_que_no_existe_no_falla_aunque_el_servicio_responda_404(
+    almacen_s3, monkeypatch
+):
+    """Amazon S3 responde 204 al borrar un objeto que no existe; Google Cloud Storage, 404
+    (NoSuchKey). El contrato es el mismo: la purga se puede reintentar."""
+    from botocore.exceptions import ClientError
+
+    def borrar_como(error):
+        def delete_object(**kwargs):
+            raise error
+
+        monkeypatch.setattr(almacen_s3._cliente, "delete_object", delete_object)
+
+    borrar_como(_error_de_s3("NoSuchKey", 404))
+    almacen_s3.borrar(_clave())
+    # Cualquier otro rechazo, como uno de permisos, sí se informa.
+    borrar_como(_error_de_s3("AccessDenied", 403))
+    with pytest.raises(ClientError, match="AccessDenied"):
+        almacen_s3.borrar(_clave())
+
+
 def test_la_url_firmada_dura_120_segundos_y_fija_tipo_y_disposicion(almacen_s3, settings):
     clave = _clave()
     almacen_s3.guardar(clave, io.BytesIO(archivos.BYTES_PDF), "application/pdf")
@@ -327,3 +390,81 @@ def test_comprobar_almacenamiento_con_firma_exige_que_el_bucket_valide_firma_y_v
     with pytest.raises(CommandError, match="Con la firma alterada no se puede leer"):
         call_command("comprobar_almacenamiento", firma=True)
     assert almacen_s3.claves() == []
+
+
+@pytest.mark.parametrize(("estado_vencida", "aceptado"), [(403, True), (400, True), (200, False)])
+def test_comprobar_almacenamiento_acepta_400_o_403_para_la_url_vencida(
+    almacen_s3, monkeypatch, capsys, estado_vencida, aceptado
+):
+    """DEC-187: Google Cloud Storage responde 400 ("Request has expired") y Amazon S3, 403.
+    Cualquier respuesta que entregue el archivo sigue siendo un fallo."""
+    from documentos.management.commands import comprobar_almacenamiento as comando
+
+    esperas = []
+    original = None
+
+    def respuesta_simulada(url):
+        nonlocal original
+        consulta = parse_qs(urlsplit(url).query)
+        if "X-Amz-Signature" not in consulta:
+            return 403, {}, b""
+        original = original or url
+        if url != original:
+            return 403, {}, b""
+        if esperas and estado_vencida != 200:
+            return estado_vencida, {}, b""
+        encabezados = {
+            "Content-Type": consulta["response-content-type"][0],
+            "Content-Disposition": consulta["response-content-disposition"][0],
+        }
+        return 200, encabezados, comando._CONTENIDO
+
+    monkeypatch.setattr(comando, "_estado", respuesta_simulada)
+    monkeypatch.setattr(comando.time, "sleep", esperas.append)
+    if aceptado:
+        call_command("comprobar_almacenamiento", firma=True)
+        salida = capsys.readouterr().out
+        assert f"Vencida, la URL ya no sirve (respondió {estado_vencida}): correcto" in salida
+        assert "El almacenamiento funciona." in salida
+    else:
+        with pytest.raises(CommandError, match="Vencida, la URL ya no sirve"):
+            call_command("comprobar_almacenamiento", firma=True)
+    # El objeto de prueba se borra siempre, también cuando una verificación falla.
+    assert almacen_s3.claves() == []
+
+
+def test_comprobar_almacenamiento_informa_el_error_original_si_la_subida_falla(
+    almacen_s3, monkeypatch, capsys
+):
+    """Lo ocurrido en staging: la subida falló y, como el objeto nunca existió, el borrado de
+    limpieza respondió NoSuchKey, que era lo único que se veía."""
+    from botocore.exceptions import ClientError
+
+    def subida_rechazada(*args, **kwargs):
+        raise _error_de_s3("SignatureDoesNotMatch", 403)
+
+    def borrado_de_lo_que_no_existe(**kwargs):
+        raise _error_de_s3("NoSuchKey", 404)
+
+    monkeypatch.setattr(almacen_s3._cliente, "upload_fileobj", subida_rechazada)
+    monkeypatch.setattr(almacen_s3._cliente, "delete_object", borrado_de_lo_que_no_existe)
+    with pytest.raises(ClientError, match="SignatureDoesNotMatch"):
+        call_command("comprobar_almacenamiento")
+    assert "NoSuchKey" not in capsys.readouterr().err
+
+
+def test_comprobar_almacenamiento_avisa_si_no_pudo_borrar_el_objeto_de_prueba(
+    almacen_s3, monkeypatch, capsys
+):
+    """Si además falla la limpieza, se avisa con la clave, pero el error sigue siendo el de la
+    comprobación."""
+    monkeypatch.setattr(type(almacen_s3), "existe", lambda self, clave: False)
+
+    def borrado_rechazado(**kwargs):
+        raise _error_de_s3("AccessDenied", 403)
+
+    monkeypatch.setattr(almacen_s3._cliente, "delete_object", borrado_rechazado)
+    with pytest.raises(CommandError, match="Falló: Guardar"):
+        call_command("comprobar_almacenamiento")
+    aviso = capsys.readouterr().err
+    assert "No se pudo borrar el objeto de prueba docs/" in aviso and "ClientError" in aviso

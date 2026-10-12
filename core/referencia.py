@@ -6,7 +6,7 @@ from django import forms
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.shortcuts import redirect, render
-from django.views.decorators.http import require_GET, require_http_methods
+from django.views.decorators.http import require_http_methods, require_safe
 
 from core.validators import validar_rut
 
@@ -32,7 +32,7 @@ class FormularioDeReferencia(forms.Form):
     )
 
 
-@require_http_methods(["GET", "POST"])
+@require_http_methods(["GET", "HEAD", "POST"])
 def componentes(request):
     if request.method == "POST" and request.headers.get("X-Subida") == "fragmento":
         # Destino de la zona de subida de muestra: responde un resultado y no guarda nada.
@@ -112,11 +112,11 @@ def componentes(request):
     return render(request, "core/referencia/componentes.html", contexto)
 
 
-@require_GET
+@require_safe
 def error_404(request):
     return render(request, "404.html", status=404)
 
 
-@require_GET
+@require_safe
 def error_500(request):
     return render(request, "500.html", status=500)

@@ -3,7 +3,7 @@ lo que no está registrado no se muestra."""
 
 from django.shortcuts import render
 from django.urls import reverse
-from django.views.decorators.http import require_GET
+from django.views.decorators.http import require_safe
 from django.views.generic import TemplateView
 
 from sitio import fotos, pendientes
@@ -23,12 +23,17 @@ class Inicio(PaginaPublica, TemplateView):
 
     def get_context_data(self, **kwargs):
         contexto = super().get_context_data(**kwargs)
+        titular = pendientes.disponible(self.datos.titular)
+        servicios = list(Servicio.objects.activos())
         contexto.update(
-            titular=pendientes.disponible(self.datos.titular),
+            titular=titular,
             bajada=pendientes.disponible(self.datos.bajada),
-            servicios=list(Servicio.objects.activos()),
+            servicios=servicios,
             foto_portada=fotos.PORTADA,
             foto_contacto=fotos.CONTACTO,
+            # Sin nada que mostrar, la página quedaba en blanco entre el encabezado y el pie
+            # y parecía un error: se muestra un estado neutro, sin datos del negocio.
+            en_preparacion=not (titular or servicios or self.formularios or self.contacto.hay),
         )
         if self.formularios:
             contexto.update(
@@ -72,14 +77,14 @@ class Privacidad(PaginaPublica, TemplateView):
         return contexto
 
 
-@require_GET
+@require_safe
 def sitemap(request):
     """Solo las páginas públicas con contenido. Nunca portal, panel, acceso ni admin."""
     urls = [url_absoluta(reverse(nombre)) for nombre in paginas_indexables(DatosNegocio.cargar())]
     return render(request, "sitio/sitemap.xml", {"urls": urls}, content_type="application/xml")
 
 
-@require_GET
+@require_safe
 def robots(request):
     """No enumera rutas privadas (SEG-13): esas llevan `noindex`, que un buscador solo puede
     leer si no se le prohíbe la página."""

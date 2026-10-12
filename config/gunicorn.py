@@ -13,6 +13,9 @@ bind = "0.0.0.0:8000"
 worker_class = "gthread"
 workers = int(os.environ.get("GUNICORN_PROCESOS", "2"))
 threads = int(os.environ.get("GUNICORN_HILOS", "2"))
+# La aplicación se carga una vez, antes de crear los procesos: en una máquina chica, que cada
+# proceso importara Django por su cuenta alargaba el arranque. Nada abre conexiones al importar.
+preload_app = True
 # Con hilos, este plazo es el del latido del proceso, no el de cada petición.
 timeout = 120
 graceful_timeout = 30

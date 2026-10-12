@@ -47,7 +47,7 @@ class PaginaPublica:
 
     nombre_de_pagina = ""
     descripcion_generica = ""
-    http_method_names = ["get"]
+    http_method_names = ["get", "head"]
 
     @cached_property
     def datos(self):

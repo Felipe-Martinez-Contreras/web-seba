@@ -2,7 +2,7 @@
 
 Toda consulta parte de `visibles_para(request.user)`: ninguna vista recibe la empresa por
 parámetro, y lo ajeno o lo que está en la papelera responde 404 igual que lo que no existe
-(DOC-06). Ninguna vista admite otro método que GET (CLI-05).
+(DOC-06). Ninguna vista admite otro método que GET y, salvo las de entrega, HEAD (CLI-05).
 """
 
 import datetime
@@ -40,7 +40,7 @@ def marcar_nuevos(documentos):
 
 
 class VistaDelPortal(ClienteMixin, TemplateView):
-    http_method_names = ["get"]
+    http_method_names = ["get", "head"]
 
     def documentos(self):
         return Documento.objects.visibles_para(self.request.user).con_vigente()
@@ -167,6 +167,7 @@ class _Entrega(ClienteMixin, View):
     una versión anterior.
     """
 
+    # Sin HEAD: cada petición registra una vista o una descarga en la auditoría y firma una URL.
     http_method_names = ["get"]
     ver = False
 

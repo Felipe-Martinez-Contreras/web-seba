@@ -134,6 +134,10 @@ jobs:
           despliegue/vm/dc up --detach --wait --wait-timeout 180 db web
       - name: Responde por Gunicorn y llega a la base de datos
         run: despliegue/vm/dc exec -T web python docker/salud.py
+      - name: HEAD responde 200 y sin cuerpo, por Gunicorn
+        run: |
+          despliegue/vm/dc exec -T web python docker/head.py /salud/
+          despliegue/vm/dc exec -T web python docker/head.py /
       - name: Sirve los estáticos recolectados, con nombre con hash
         run: |
           ruta="$(despliegue/vm/dc exec -T web python -c "import json; print('/static/' + json.load(open('staticfiles/staticfiles.json'))['paths']['css/app.css'])")"

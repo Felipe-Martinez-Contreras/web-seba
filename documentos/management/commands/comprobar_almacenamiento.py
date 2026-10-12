@@ -78,10 +78,23 @@ class Command(BaseCommand):
                 self._comprobar_url(url, disposicion)
                 if opciones["firma"]:
                     self._comprobar_firma(url)
-        finally:
-            destino.borrar(clave)
+        except BaseException:
+            # El objeto de prueba no queda en el bucket, y el error que se informa es el de
+            # la comprobación que falló, no el de esta limpieza.
+            self._limpiar(destino, clave)
+            raise
+        destino.borrar(clave)
         self._paso("Borrar", not destino.existe(clave))
         self.stdout.write(self.style.SUCCESS("El almacenamiento funciona."))
+
+    def _limpiar(self, destino, clave):
+        try:
+            destino.borrar(clave)
+        except Exception as error:
+            self.stderr.write(
+                f"No se pudo borrar el objeto de prueba {clave} ({type(error).__name__}): "
+                "bórrelo a mano."
+            )
 
     def _comprobar_url(self, url, disposicion):
         estado, encabezados, cuerpo = _estado(url)
@@ -110,7 +123,9 @@ class Command(BaseCommand):
         self.stdout.write(f"  Esperando {espera} segundos a que venza la URL...")
         time.sleep(espera)
         estado, _, _ = _estado(url)
-        self._paso(f"Vencida, la URL ya no sirve (respondió {estado})", estado == 403)
+        # Amazon S3 responde 403 a una URL vencida; Google Cloud Storage, 400 ("Request has
+        # expired"). En ninguno de los dos casos se entrega el archivo.
+        self._paso(f"Vencida, la URL ya no sirve (respondió {estado})", estado in (400, 403))
 
     def _paso(self, nombre, correcto):
         if not correcto:

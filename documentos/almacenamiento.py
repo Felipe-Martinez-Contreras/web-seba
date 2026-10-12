@@ -113,6 +113,11 @@ class AlmacenS3:
                 retries={"max_attempts": 3, "mode": "standard"},
                 connect_timeout=5,
                 read_timeout=30,
+                # Desde boto3 1.36 cada subida lleva una suma de verificación que Google
+                # Cloud Storage rechaza ("SignatureDoesNotMatch"). Solo cuando la operación
+                # la exija, que es lo que entienden los servicios compatibles con S3.
+                request_checksum_calculation="when_required",
+                response_checksum_validation="when_required",
             ),
         )
 
@@ -148,7 +153,15 @@ class AlmacenS3:
         return True
 
     def borrar(self, clave):
-        self._cliente.delete_object(Bucket=self.bucket, Key=_comprobar(clave))
+        """Borra el objeto. Que ya no exista no es un error, como en el almacenamiento local:
+        S3 responde 204 en ese caso, pero Google Cloud Storage responde 404 (NoSuchKey)."""
+        from botocore.exceptions import ClientError
+
+        try:
+            self._cliente.delete_object(Bucket=self.bucket, Key=_comprobar(clave))
+        except ClientError as error:
+            if error.response["ResponseMetadata"]["HTTPStatusCode"] != 404:
+                raise
 
     def claves(self):
         paginas = self._cliente.get_paginator("list_objects_v2").paginate(Bucket=self.bucket)

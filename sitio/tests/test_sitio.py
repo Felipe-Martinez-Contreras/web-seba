@@ -121,8 +121,9 @@ def test_pub_04_las_redes_sociales_solo_aparecen_si_estan_registradas(client, ne
 
 
 def test_pub_05_con_todo_en_completar_el_sitio_no_muestra_secciones_ni_marcadores(client, db):
-    """Con los datos del negocio vacíos: navegación y pie, sin portada, servicios ni
-    formularios, y sin ningún marcador a la vista."""
+    """Con los datos del negocio vacíos: navegación y pie, sin servicios ni formularios, y
+    sin ningún marcador a la vista. El inicio muestra el estado "Sitio en preparación"
+    (DEC-190), que no lleva ningún dato del negocio."""
     assert DatosNegocio.objects.count() == 1 and not Servicio.objects.exists()
     for ruta in PAGINAS:
         respuesta = client.get(ruta)
@@ -135,7 +136,7 @@ def test_pub_05_con_todo_en_completar_el_sitio_no_muestra_secciones_ni_marcadore
         assert '<meta name="robots" content="noindex">' in contenido, ruta
 
     inicio = client.get("/").content.decode()
-    assert "portada-titular" not in inicio and "Nuestros servicios" not in inicio
+    assert "Nuestros servicios" not in inicio
     assert 'id="contacto"' not in inicio and "portada.webp" not in _principal(inicio)
     assert _principal(inicio).strip(" \n>") == "" or "<section" not in _principal(inicio)
     # La navegación y el pie sí están, con sus enlaces.
@@ -170,6 +171,66 @@ def test_un_dato_con_el_marcador_completar_se_trata_como_ausente(client, negocio
     inicio = client.get("/").content.decode()
     assert "COMPLETAR" not in inicio and "portada-titular" not in inicio
     assert "contacto@prevencion-de-prueba.cl" in inicio
+
+
+def test_el_inicio_sin_contenido_muestra_sitio_en_preparacion_y_el_acceso(client, db):
+    """DEC-190: con la base vacía el inicio quedaba en blanco entre el encabezado y el pie.
+    Muestra la portada con la fotografía, un texto neutro y el acceso de clientes, sin
+    inventar datos del negocio."""
+    assert not Servicio.objects.exists()
+    respuesta = client.get("/")
+    contenido = respuesta.content.decode()
+    portada = contenido.split('id="contenido"')[0]
+    assert (
+        '<h1 class="text-3xl font-bold md:text-4xl" id="portada-titular">Sitio en preparación</h1>'
+        in portada
+    )
+    assert 'src="/static/img/portada.webp"' in portada and 'class="velo ' in portada
+    assert '<link rel="preload" as="image" href="/static/img/portada.webp"' in contenido
+    # El encabezado va sobre la fotografía y el botón de la portada lleva al acceso.
+    assert '<header class="sobre-primario text-blanco">' in portada
+    seccion = portada.split("<section")[1]
+    assert re.search(
+        r'<a class="boton boton-contorno-claro" href="/acceso/">\s*<span>Acceso clientes</span>',
+        seccion,
+    )
+    assert seccion.count("<a ") == 1 and "Solicitar cotización" not in contenido
+    # Nada del negocio, ningún marcador, y la página no se indexa ni entra al sitemap.
+    assert "COMPLETAR" not in contenido and "<form" not in contenido
+    assert "<section" not in _principal(contenido)
+    assert respuesta["X-Robots-Tag"] == "noindex"
+    assert '<meta name="robots" content="noindex">' in contenido
+    assert "<loc>" not in client.get("/sitemap.xml").content.decode()
+    # Las demás páginas no cambian.
+    assert "Sitio en preparación" not in client.get("/servicios/").content.decode()
+
+
+def test_sitio_en_preparacion_desaparece_con_cualquier_contenido(client, db):
+    """Solo cubre la página que quedaría en blanco: un servicio, un dato de contacto o el
+    titular bastan para que el inicio muestre lo que hay, como antes."""
+    servicio = Servicio.objects.create(
+        nombre="Servicio de prueba", slug="servicio-de-prueba", icono="hard-hat", orden=1
+    )
+    inicio = client.get("/").content.decode()
+    assert "Sitio en preparación" not in inicio and "portada-titular" not in inicio
+    assert "Nuestros servicios" in inicio
+
+    servicio.delete()
+    datos = DatosNegocio.cargar()
+    datos.telefono = "+56 9 8765 4321"
+    datos.save()
+    inicio = client.get("/").content.decode()
+    assert "Sitio en preparación" not in inicio and 'id="contacto"' in inicio
+
+    datos.telefono = ""
+    datos.titular = "Titular de prueba"
+    datos.save()
+    inicio = client.get("/").content.decode()
+    assert "Sitio en preparación" not in inicio and "Titular de prueba" in inicio
+
+    datos.titular = "[COMPLETAR]"
+    datos.save()
+    assert "Sitio en preparación" in client.get("/").content.decode()
 
 
 # --- Servicios (PUB-03) y política de privacidad (SEG-12) ------------------------------

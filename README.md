@@ -200,7 +200,9 @@ El primer despliegue es staging, con datos DEMO. El responsable decide el paso a
 
 1. `contenido_pendiente --estricto` termina sin pendientes, con una política de privacidad real que mencione el almacenamiento en EE. UU.
 2. El simulacro de restauración está hecho y anotado en `docs/DESPLIEGUE.md`, sección 7.
-3. El responsable lo aprueba de forma explícita.
+3. HSTS a un año (`SECURE_HSTS_SECONDS=31536000`); en staging está en una hora.
+4. Decidido si se activa `SECURE_HSTS_INCLUDE_SUBDOMAINS`, según el dominio real del cliente.
+5. El responsable lo aprueba de forma explícita.
 
 La revisión legal por el traslado de datos a EE. UU. es una recomendación documentada (`docs/DESPLIEGUE.md`, sección 14), no un requisito de esta lista.
 

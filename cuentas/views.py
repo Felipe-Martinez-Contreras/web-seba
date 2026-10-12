@@ -8,7 +8,7 @@ from django.urls import reverse, reverse_lazy
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
 from django.views.decorators.debug import sensitive_post_parameters
-from django.views.decorators.http import require_http_methods, require_POST
+from django.views.decorators.http import require_http_methods, require_POST, require_safe
 from django.views.generic import FormView
 
 from core import limites, navegacion
@@ -80,7 +80,7 @@ def _requiere_administrador_con_sesion(request):
 
 @sensitive_post_parameters("contrasena")
 @never_cache
-@require_http_methods(["GET", "POST"])
+@require_http_methods(["GET", "HEAD", "POST"])
 def acceso(request):
     if request.user.is_authenticated:
         return _continuar(request, request.user)
@@ -110,7 +110,7 @@ def salir(request):
 
 
 @never_cache
-@require_http_methods(["GET", "POST"])
+@require_http_methods(["GET", "HEAD", "POST"])
 def verificacion(request):
     rechazo = _requiere_administrador_con_sesion(request)
     if rechazo:
@@ -138,6 +138,8 @@ def verificacion(request):
     )
 
 
+# Sin HEAD: mostrar la pantalla crea el dispositivo TOTP pendiente, descarta el de otra sesión
+# y lo anota en la sesión.
 @never_cache
 @require_http_methods(["GET", "POST"])
 def configurar_2fa(request):
@@ -168,7 +170,7 @@ def configurar_2fa(request):
 
 
 @never_cache
-@require_http_methods(["GET", "POST"])
+@require_http_methods(["GET", "HEAD", "POST"])
 def codigos_2fa(request):
     rechazo = _requiere_administrador_con_sesion(request)
     if rechazo:
@@ -188,7 +190,7 @@ def codigos_2fa(request):
 
 
 @never_cache
-@require_http_methods(["GET", "POST"])
+@require_http_methods(["GET", "HEAD", "POST"])
 def recuperar(request):
     formulario = FormularioRecuperacion(request.POST or None)
     if request.method == "POST" and formulario.is_valid():
@@ -198,14 +200,14 @@ def recuperar(request):
 
 
 @never_cache
-@require_http_methods(["GET"])
+@require_safe
 def recuperar_enviado(request):
     return render(request, "cuentas/recuperar_enviado.html")
 
 
 @sensitive_post_parameters()
 @never_cache
-@require_http_methods(["GET", "POST"])
+@require_http_methods(["GET", "HEAD", "POST"])
 def definir_contrasena(request, token, tipo):
     """Activación y restablecimiento: mismo flujo, con otro enlace y otros textos.
 

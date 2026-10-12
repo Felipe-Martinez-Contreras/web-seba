@@ -530,3 +530,141 @@ def test_la_subida_con_progreso_envia_el_token_csrf_del_formulario():
     guion = (settings.BASE_DIR / "static" / "js" / "subida.js").read_text(encoding="utf-8")
     assert "formulario.querySelector('input[name=\"csrfmiddlewaretoken\"]')" in guion
     assert 'peticion.setRequestHeader("X-CSRFToken", token.value)' in guion
+
+
+# --- HEAD (DEC-188) --------------------------------------------------------------------
+
+# Rutas cuyo GET tiene efectos y que por eso no responden a HEAD. Las de entrega registran
+# una vista o una descarga en la auditoría y firman una URL; la del enrolamiento crea el
+# dispositivo TOTP pendiente; la de confirmación consume su mensaje de la sesión.
+SIN_HEAD = {
+    "portal:documento_ver",
+    "portal:documento_descargar",
+    "panel:version_ver",
+    "panel:version_descargar",
+    "cuentas:configurar_2fa",
+    "solicitudes:recibida",
+}
+
+
+def _head_como_get(cliente, nombre, ruta):
+    """HEAD responde lo mismo que GET, sin cuerpo; lo que no admite GET tampoco admite HEAD."""
+    con_get = cliente.get(ruta)
+    con_head = cliente.head(ruta)
+    assert con_head.status_code == con_get.status_code, (nombre, ruta, con_head.status_code)
+    assert con_head.content == b"", nombre
+    assert con_head.get("Location") == con_get.get("Location"), nombre
+    assert con_head.get("Content-Type") == con_get.get("Content-Type"), nombre
+    return con_get.status_code
+
+
+@pytest.mark.parametrize(
+    "ruta",
+    ["/", "/servicios/", "/contacto/", "/cotizacion/", "/privacidad/", "/salud/", "/acceso/"],
+)
+def test_head_responde_como_get_y_sin_cuerpo_en_las_rutas_publicas(client, negocio, ruta):
+    assert client.get(ruta).content != b""
+    assert _head_como_get(client, ruta, ruta) == 200
+    # Los métodos que la ruta no admite siguen rechazados.
+    assert client.put(ruta).status_code == 405
+    assert client.delete(ruta).status_code == 405
+
+
+@pytest.mark.parametrize("ruta", ["/portal/", "/panel/", "/cuenta/"])
+def test_head_sin_sesion_en_una_ruta_privada_redirige_al_acceso_como_get(client, db, ruta):
+    respuesta = client.head(ruta)
+    assert respuesta.status_code == 302
+    assert respuesta["Location"] == f"/acceso/?next={ruta}"
+    assert respuesta["Location"] == client.get(ruta)["Location"]
+
+
+def test_toda_ruta_que_acepta_get_responde_a_head_salvo_las_que_tienen_efectos(
+    urls, cliente_a_activo, carpeta_a, documento_a, administrador_activo, totp
+):
+    """Guarda de DEC-188: una vista nueva que declare solo GET hace fallar esta prueba, salvo
+    que su GET tenga efectos y se sume a `SIN_HEAD`."""
+    assert {nombre for nombre, _, _ in urls} >= SIN_HEAD
+    empresa = cliente_a_activo.empresa
+    del_portal = Client()
+    del_portal.force_login(cliente_a_activo)
+    del_panel = verificar_segundo_factor(Client(), administrador_activo, totp)
+    sin_segundo_factor = Client()
+    sin_segundo_factor.force_login(administrador_activo)
+    recorridos = [
+        (Client(), [(nombre, ruta) for nombre, ruta, _ in urls]),
+        (del_portal, _rutas_del_portal(empresa, cliente_a_activo, carpeta_a, documento_a)),
+        (del_panel, _rutas_del_panel(empresa, cliente_a_activo, carpeta_a, documento_a)),
+        # Las pantallas de la cuenta y del segundo factor, con y sin el segundo factor.
+        (del_portal, [(n, r) for n, r, _ in urls if n.startswith("cuentas:")]),
+        (del_panel, [(n, r) for n, r, _ in urls if n.startswith("cuentas:")]),
+        (sin_segundo_factor, [(n, r) for n, r, _ in urls if n.startswith("cuentas:")]),
+    ]
+    con_get = set()
+    for cliente, rutas in recorridos:
+        for nombre, ruta in rutas:
+            if nombre in SIN_HEAD:
+                continue
+            if _head_como_get(cliente, nombre, ruta) != 405:
+                con_get.add(nombre)
+    # El recorrido sí pasó por las páginas: no se limitó a comparar rechazos.
+    assert {"sitio:inicio", "core:salud", "cuentas:acceso", "cuentas:mi_cuenta"} <= con_get
+    assert {"portal:inicio", "portal:documento", "panel:inicio", "panel:cliente"} <= con_get
+    # Lo que solo admite POST sigue rechazando HEAD.
+    assert Client().head("/salir/").status_code == 405
+    solo_post = f"/panel/clientes/{empresa.pk}/estado/"
+    assert del_panel.head(solo_post).status_code == del_panel.get(solo_post).status_code == 405
+
+
+def test_las_rutas_cuyo_get_tiene_efectos_rechazan_head_y_no_dejan_rastro(
+    cliente_a_activo, carpeta_a, documento_a, administrador_activo, totp
+):
+    empresa = cliente_a_activo.empresa
+    del_portal = Client()
+    del_portal.force_login(cliente_a_activo)
+    del_panel = verificar_segundo_factor(Client(), administrador_activo, totp)
+    rutas = [
+        (del_portal, nombre, ruta)
+        for nombre, ruta in _rutas_del_portal(empresa, cliente_a_activo, carpeta_a, documento_a)
+    ] + [
+        (del_panel, nombre, ruta)
+        for nombre, ruta in _rutas_del_panel(empresa, cliente_a_activo, carpeta_a, documento_a)
+    ]
+    rutas += [
+        (del_panel, "cuentas:configurar_2fa", "/acceso/2fa/configurar/"),
+        (Client(), "cuentas:configurar_2fa", "/acceso/2fa/configurar/"),
+        (Client(), "solicitudes:recibida", "/solicitud-recibida/"),
+    ]
+    antes = _foto_de_la_base()
+    probadas = set()
+    for cliente, nombre, ruta in rutas:
+        if nombre in SIN_HEAD:
+            assert cliente.head(ruta).status_code == 405, nombre
+            probadas.add(nombre)
+    assert probadas == SIN_HEAD
+    assert _foto_de_la_base() == antes
+    # Con GET, las de entrega sí responden y dejan su evento.
+    for nombre, ruta in _rutas_del_portal(empresa, cliente_a_activo, carpeta_a, documento_a):
+        if nombre in SIN_HEAD:
+            assert del_portal.get(ruta).status_code == 200, nombre
+    assert EventoAuditoria.objects.count() == antes["eventos"] + 2
+
+
+def test_head_en_un_enlace_de_activacion_no_lo_consume_ni_lo_marca(client, cliente_a):
+    """Los filtros de correo visitan el enlace, con HEAD o con GET, antes que la persona."""
+    from cuentas import services as cuentas
+
+    enlace, token = cuentas.generar_enlace(cliente_a, EnlaceAcceso.Tipo.ACTIVACION)
+    antes = (
+        list(EnlaceAcceso.objects.values()),
+        EventoAuditoria.objects.count(),
+        list(Usuario.objects.filter(pk=cliente_a.pk).values()),
+    )
+    for _ in range(3):
+        assert client.head(f"/activar/{token}/").status_code == 200
+        assert client.get(f"/activar/{token}/").status_code == 200
+    assert antes == (
+        list(EnlaceAcceso.objects.values()),
+        EventoAuditoria.objects.count(),
+        list(Usuario.objects.filter(pk=cliente_a.pk).values()),
+    )
+    assert cuentas.enlace_vigente(EnlaceAcceso.Tipo.ACTIVACION, token) == enlace

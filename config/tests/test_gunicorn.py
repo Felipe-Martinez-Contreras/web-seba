@@ -100,3 +100,10 @@ def test_los_errores_de_gunicorn_tambien_salen_en_json(registro_de_gunicorn):
     entrada = json.loads(salida.getvalue())
     assert entrada["nivel"] == "ERROR" and entrada["origen"] == "gunicorn.error"
     assert entrada["mensaje"] == "Fallo en /activar/[oculto]/"
+
+
+def test_gunicorn_carga_la_aplicacion_una_vez_y_reparte_dos_procesos_de_dos_hilos(configuracion):
+    """DEC-189: la aplicación se carga antes de crear los procesos. La cantidad de procesos
+    y de hilos no cambió (DEC-173)."""
+    assert configuracion["preload_app"] is True
+    assert (configuracion["workers"], configuracion["threads"]) == (2, 2)

@@ -2,7 +2,7 @@
 
 Cómo se publica y se mantiene la aplicación. Las decisiones están en `DECISIONES.md` (DEC-164 en adelante) y sus riesgos en `SEGURIDAD.md` §8.
 
-**Estado al 11-10-2026.** Lo del repositorio (imagen, Compose, guiones, tareas) está construido y probado en local y en la CI. **Nada de lo que depende de las consolas está hecho todavía**: no existe la VM, ni los buckets, ni el túnel, ni el dominio de correo. Cada verificación de staging figura como pendiente en la sección 12 y se completa con su fecha y su resultado cuando se ejecute.
+**Estado al 12-10-2026.** La aplicación corre en staging, en `https://seba.fmartinez.xyz`, desde el primer despliegue real (commit `da83509`): VM, buckets, túnel y correo existen y funcionan. Ese despliegue dejó seis fallos, corregidos en el commit siguiente; lo verificado, lo que falló y lo que sigue pendiente están en la sección 12, con su bitácora.
 
 Convenciones de esta guía:
 
@@ -41,7 +41,7 @@ Memoria de la VM (1 GB de RAM y 2 GB de swap):
 | `db` | `shared_buffers=64MB`, `max_connections=20` | 300 MB |
 | `cloudflared` | sin actualización automática | 96 MB |
 
-Medido en local el 11-10-2026, en reposo: `web` 127 MB y `db` 37 MB. Cada verificación de contraseña (Argon2) usa unos 100 MB mientras dura; para eso está el swap. Los números reales se miden en la VM (sección 12).
+Medido en la VM el 12-10-2026, con todo corriendo y sin carga: `web` unos 104 MB, `cloudflared` unos 25 MB y `db` unos 9 MB. Cada verificación de contraseña (Argon2) usa unos 100 MB mientras dura; para eso está el swap. Falta medirlo bajo uso (sección 12).
 
 **Costo esperado: unos 3,65 USD al mes, no cero.** La IP externa en uso de la VM se cobra a 0,005 USD por hora; el nivel gratuito cubre solo una hora al mes (verificado por el responsable en la página de precios de VPC el 11-10-2026, y aceptado: DEC-184). Lo demás se mantiene en planes gratuitos mientras no se superen sus límites.
 
@@ -52,7 +52,8 @@ Medido en local el 11-10-2026, en reposo: `web` 127 MB y `db` 37 MB. Cada verifi
 | Archivo | Para qué |
 | --- | --- |
 | `Dockerfile` (target `prod`) | Imagen de producción: sin dependencias de desarrollo, estáticos recolectados, usuario sin privilegios, configuración de producción fija |
-| `config/gunicorn.py` | Servidor: TCP, hilos, logs en JSON sin el token de los enlaces |
+| `config/gunicorn.py` | Servidor: TCP, hilos, aplicación cargada antes de crear los procesos, logs en JSON sin el token de los enlaces |
+| `docker/salud.py`, `docker/head.py` | Comprobaciones desde dentro del contenedor: `/salud/` responde 200, y HEAD responde sin cuerpo |
 | `despliegue/compose.prod.yaml` | Los tres contenedores, sin puertos publicados |
 | `despliegue/compose.env.example`, `web.env.example` | Plantillas de los dos archivos de variables del servidor |
 | `despliegue/vm/preparar.sh` | Prepara la VM: swap, Docker, parches automáticos |
@@ -191,13 +192,18 @@ Complételos con `sudo nano /etc/web-seba/compose.env` y `sudo nano /etc/web-seb
 
 No cambie `PROXY_CONFIANZA_REDES`, `PROXY_CONFIANZA_ENCABEZADO` ni `PROXY_HTTPS_ENCABEZADO`: hacen que la aplicación acepte la IP del visitante solo del contenedor del túnel (comprobado en local el 11-10-2026: desde esa dirección la auditoría registra la IP de `CF-Connecting-IP`; desde otro contenedor de la misma red, la ignora).
 
-Después, el primer despliegue (sección 5) y, ya con la aplicación arriba:
+Después, el primer despliegue (sección 5) y, ya con la aplicación arriba, **en este orden**:
 
 ```bash
 sudo /opt/web-seba/despliegue/vm/dc exec web python manage.py comprobar_almacenamiento --firma
 sudo /opt/web-seba/despliegue/vm/dc exec web python manage.py crear_administrador
-sudo /opt/web-seba/despliegue/vm/dc exec web python manage.py cargar_demo        # solo en staging
+# Solo en staging, y después de crear_administrador:
+sudo /opt/web-seba/despliegue/vm/dc exec -e DEMO_PERMITIDO=true web python manage.py cargar_demo
 ```
+
+`cargar_demo` necesita que ya exista un administrador: los documentos de demostración quedan a su nombre. El permiso `DEMO_PERMITIDO=true` se pasa solo a ese comando, con `-e`; **no se escribe en `web.env`**, así el servidor nunca queda habilitado para cargar datos de demostración.
+
+Antes de `crear_administrador`, el inicio del sitio muestra "Sitio en preparación" con el botón de acceso: es el estado previsto para una base sin contenido, no un error.
 
 ## 5. Desplegar una versión
 
@@ -209,7 +215,27 @@ sudo /opt/web-seba/despliegue/vm/dc exec web python manage.py cargar_demo       
 sudo /opt/web-seba/despliegue/vm/desplegar.sh <commit>
 ```
 
-El guion deja el código de despliegue en ese commit, baja la imagen, respalda la base en la máquina, aplica las migraciones, reinicia, comprueba `/salud/` y `check --deploy`, y programa las tareas. El sitio se corta unos segundos mientras reinicia. Si la imagen no existe, no cambia nada.
+El guion deja el código de despliegue en ese commit, baja la imagen, respalda la base en la máquina, aplica las migraciones, reinicia, comprueba `/salud/` y `check --deploy`, y programa las tareas. Si la imagen no existe, no cambia nada.
+
+**El sitio no responde mientras `web` arranca**: el túnel espera a que la aplicación esté sana. Cuánto dura:
+
+| Dónde | Cuánto tardó `web` en quedar sano |
+| --- | --- |
+| VM, commit `da83509` (12-10-2026) | Unos 106 s la primera vez y unos 144 s después |
+| Local, imagen de producción limitada a 0,25 CPU y 450 MB, antes del cambio | Unos 30 s |
+| Local, misma prueba, con el cambio (DEC-189) | Unos 20 s |
+| VM, con el cambio | **Sin medir.** Se espera menos que antes, del orden de 1 a 2 minutos; el número se anota aquí tras el próximo despliegue |
+
+La prueba local no reproduce el disco ni la memoria de la e2-micro: sirve para comparar antes y después, no para predecir la VM. Qué cambió: Gunicorn carga la aplicación una sola vez, antes de crear sus dos procesos (antes cada proceso importaba todo por su cuenta), y el plazo de arranque del healthcheck pasó de 120 a 300 s. Ese plazo no retrasa nada: mientras dura, Docker sondea cada 5 s y marca el contenedor sano con la primera respuesta 200 de `/salud/`, que consulta la base. Con 120 s, el segundo arranque lo superó y el sondeo pasó a ser cada 30 s. Si a los 300 s sigue sin responder, tres fallos seguidos lo marcan como no sano y `desplegar.sh` termina con error.
+
+Para medirlo en la **VM**, justo después de desplegar:
+
+```bash
+sudo docker inspect --format '{{.State.StartedAt}}{{range .State.Health.Log}}{{"\n"}}{{.Start}} salida={{.ExitCode}}{{end}}' web-seba-web-1
+sudo /opt/web-seba/despliegue/vm/dc logs web | head -n 12
+```
+
+La primera línea es la hora de inicio del contenedor; las siguientes, los últimos sondeos (`salida=0` es sano). El tiempo de arranque es la diferencia entre el inicio y el primer sondeo con `salida=0`. Docker guarda solo los cinco últimos, así que hay que mirarlo antes de que pasen unos minutos.
 
 **Volver atrás:** el mismo comando con el commit anterior (el guion lo muestra al terminar: "antes: …"). Si la versión nueva aplicó una migración que la anterior no entiende, además hay que restaurar el respaldo que el guion dejó en `/var/backups/web-seba/` (sección 7).
 
@@ -218,6 +244,8 @@ Comandos útiles, **VM**:
 ```bash
 sudo /opt/web-seba/despliegue/vm/dc ps
 sudo /opt/web-seba/despliegue/vm/dc logs --tail 100 web
+sudo /opt/web-seba/despliegue/vm/dc exec -T web python docker/salud.py     # /salud/ responde 200
+sudo /opt/web-seba/despliegue/vm/dc exec -T web python docker/head.py /    # HEAD: 200 y sin cuerpo
 free -m ; sudo docker stats --no-stream
 ```
 
@@ -346,7 +374,9 @@ Lo decide el responsable cuando se cumple esta lista (también en el README):
 
 1. `contenido_pendiente --estricto` termina sin pendientes, con una política de privacidad real que mencione el almacenamiento en EE. UU.
 2. El simulacro de restauración está hecho y anotado en la sección 7.
-3. El responsable lo aprueba de forma explícita.
+3. HSTS a un año: `SECURE_HSTS_SECONDS=31536000` en `web.env`. Hoy, en staging, la respuesta lleva `max-age=3600`.
+4. Decidido qué hacer con `SECURE_HSTS_INCLUDE_SUBDOMAINS`, según el dominio real del cliente: se activa solo si todos sus subdominios sirven únicamente HTTPS, porque no se deshace rápido. Mientras siga apagado, `check --deploy` muestra `security.W005` y `security.W021`: en staging son las dos advertencias esperadas (`SEGURIDAD.md` §5).
+5. El responsable lo aprueba de forma explícita.
 
 La revisión legal (sección 13) es una recomendación documentada, no un requisito de esta lista.
 
@@ -354,39 +384,80 @@ Procedimiento, **VM**:
 
 1. Respalde por última vez el staging: `sudo respaldar.sh`.
 2. Borre los datos DEMO: `sudo dc down`, `sudo docker volume rm web-seba_db_datos` y vacíe el bucket de documentos con todas sus versiones (`gcloud storage rm --all-versions "gs://BUCKET-DE-DOCUMENTOS/**"`, desde su cuenta, en Cloud Shell o con `gcloud` en su equipo).
-3. En `web.env`, borre la línea `DEMO_PERMITIDO`.
+3. Compruebe que `web.env` no tiene la línea `DEMO_PERMITIDO` (`sudo grep -c DEMO_PERMITIDO /etc/web-seba/web.env` debe dar 0). Las instalaciones hechas con la plantilla anterior al 12-10-2026 la traen: bórrela.
 4. `sudo desplegar.sh <commit>`, `comprobar_almacenamiento --firma` y `crear_administrador`.
 5. Cargue el contenido real en el panel y ejecute `contenido_pendiente --estricto`.
-6. Suba HSTS a un año cuando lleve unos días estable.
+6. Suba HSTS a un año (puntos 3 y 4 de la lista) cuando el sitio lleve unos días estable, y aplíquelo con `sudo dc up -d web`.
 
 ## 12. Verificación en staging
 
-Nada de esta tabla está verificado todavía. Se completa al ejecutar cada paso.
+Estado tras el primer despliegue real (commit `da83509`), según lo informado por el responsable el 12-10-2026. Lo que no se informó sigue pendiente. La bitácora está al final de la sección.
 
 | Qué | Cómo | Requisito | Estado |
 | --- | --- | --- | --- |
 | El sitio responde por HTTPS y HTTP redirige | `curl -sI` a ambas | SEG-01 | Pendiente |
-| Encabezados de seguridad en la respuesta real | `curl -sI https://seba.fmartinez.xyz/acceso/` | SEG-01, SEG-02 | Pendiente |
-| `check --deploy` | Lo ejecuta `desplegar.sh` | SEG-01 | Pendiente |
+| Encabezados de seguridad en la respuesta real | `curl -sI https://seba.fmartinez.xyz/acceso/` | SEG-01, SEG-02 | Verificado el 12-10-2026: CSP, `X-Frame-Options`, `Permissions-Policy` y `Referrer-Policy`. HSTS llega con `max-age=3600` (sección 11) |
+| `check --deploy` | Lo ejecuta `desplegar.sh` | SEG-01 | Verificado el 12-10-2026: `desplegar.sh` terminó bien. `security.W005` y `W021` son las esperadas |
 | La VM no acepta conexiones | Lista de reglas de firewall; prueba de conexión al puerto 22 y al 443 de su IP | — | Pendiente |
 | La auditoría registra la IP real | Un acceso fallido desde su red; mirar el evento en el panel | AUT-04 | Pendiente |
-| Bucket: sin firma 403, firma alterada y URL vencida rechazadas | `comprobar_almacenamiento --firma` | DOC-03, DOC-04, prueba 11 | Pendiente |
+| Bucket: sin firma 403, firma alterada y URL vencida rechazadas | `comprobar_almacenamiento --firma` | DOC-03, DOC-04, prueba 11 | **Falló** el 12-10-2026 (bitácora). Corregido en el código; pendiente repetirlo con el commit de la corrección |
 | Subida de 24,9 MB y descarga con el mismo SHA-256 | Por el panel | RNF-02, SEG-07 | Pendiente |
-| Correo: llega una cotización con `Reply-To`; SPF, DKIM y DMARC en "pass" | Ver el original del mensaje recibido | SOL-08 | Pendiente |
+| Correo: llega una cotización con `Reply-To`; SPF, DKIM y DMARC en "pass" | Ver el original del mensaje recibido | SOL-08 | Parcial, 12-10-2026: el aviso de una consulta pública llegó por Resend y la solicitud quedó como enviada. Pendiente: `Reply-To` y SPF, DKIM y DMARC en "pass" |
 | Aviso de error 500 y de tarea fallida | `avisar_fallo prueba`; un error provocado | RNF-05 | Pendiente |
-| Tareas programadas | `systemctl list-timers`, `journalctl` | SOL-11, ADM-09, AUD-03 | Pendiente |
-| Simulacro de restauración | Sección 7 | SEG-11 | Pendiente |
-| Estáticos desde la caché de Cloudflare | `cf-cache-status: HIT` en la segunda petición | — | Pendiente |
+| Tareas programadas | `systemctl list-timers 'webseba-*'`, `journalctl -u 'webseba-*'` | SOL-11, ADM-09, AUD-03 | Parcial, 12-10-2026: los cinco temporizadores `webseba-*` están activos. Pendiente: revisar en el journal una ejecución de cada uno |
+| Simulacro de restauración | Sección 7 | SEG-11 | Pendiente. Sí se hizo un respaldo manual, que quedó en el bucket de respaldos (12-10-2026) |
+| Estáticos desde la caché de Cloudflare | `cf-cache-status: HIT` en la segunda petición | — | Verificado el 12-10-2026: el CSS con `HIT` y el HTML con `DYNAMIC` |
 | Lighthouse móvil y tiempos de respuesta | Contra la URL pública | RNF-06, RNF-02 | Pendiente |
-| Memoria y swap bajo uso | `free -m`, `docker stats` | RNF-02 | Pendiente |
+| Memoria y swap bajo uso | `free -m`, `docker stats` | RNF-02 | Parcial, 12-10-2026, sin carga: `web` 104 MB, `cloudflared` 25 MB, `db` 9 MB. Pendiente: bajo uso |
 | Logs sin el token de los enlaces | `dc logs web` tras usar un enlace de activación | SEG-10 | Pendiente |
 
-Dos resultados posibles que ya están previstos al probar el bucket:
+Filas nuevas de la Fase B, pendientes de comprobar en la VM con el commit de las correcciones:
 
-- Si `boto3` falla al subir a Google Cloud Storage por las sumas de verificación que agrega desde su versión 1.36, el ajuste conocido es declararlas "solo cuando se requieran" en `documentos/almacenamiento.py`.
-- Si la URL vencida responde 400 en vez de 403, `comprobar_almacenamiento --firma` lo informará como fallo. Hay que confirmar en la documentación de Google que ese es su código para una URL vencida y entonces aceptar ambos; el archivo no se entrega en ninguno de los dos casos.
+| Qué | Cómo | Requisito | Estado |
+| --- | --- | --- | --- |
+| HEAD responde como GET, sin cuerpo | `curl -sI` a `/`, `/servicios/`, `/contacto/`, `/salud/` y `/privacidad/`: 200. `dc exec -T web python docker/head.py /` | — | Pendiente. En local, contra Gunicorn: verificado el 12-10-2026 |
+| Tiempo de arranque de `web` | Sección 5 | RNF-02 | Pendiente |
+| Inicio con la base vacía | Antes de `cargar_demo`: "Sitio en preparación" y el botón Acceso clientes | PUB-05 | Pendiente. En local: verificado el 12-10-2026 |
 
-Ninguno de los dos cambios se hace sin ver antes el resultado real.
+### Problemas conocidos
+
+- **Sumas de verificación de `boto3` con Google Cloud Storage.** Desde su versión 1.36, `boto3` agrega a cada subida una suma de verificación que la API compatible con S3 de Google rechaza: `PutObject` falla con `SignatureDoesNotMatch: Invalid argument`. La aplicación crea su cliente con las sumas "solo cuando se requieran" (`documentos/almacenamiento.py`, DEC-186). Las variables `AWS_REQUEST_CHECKSUM_CALCULATION=when_required` y `AWS_RESPONSE_CHECKSUM_VALIDATION=when_required`, que se agregaron a mano a `web.env` para salir del paso, **ya no hacen falta**: pueden quedarse, porque dicen lo mismo, o borrarse.
+- **URL vencida: 400 en Google, 403 en Amazon.** Con la URL firmada vencida, Google Cloud Storage responde 400 ("Request has expired"). `comprobar_almacenamiento --firma` acepta 400 o 403; cualquier respuesta que entregue el archivo sigue siendo un fallo (DEC-187).
+- **Borrar un objeto que no existe: 404 en Google, 204 en Amazon.** El almacenamiento lo trata igual en ambos: no es un error. Antes, si la subida de prueba fallaba, la limpieza respondía `NoSuchKey` y tapaba el error real.
+- **`curl -X POST` a una página devuelve 403, no 405.** La comprobación de CSRF va antes que la del método. Para ver un 405 use un método que no modifica nada, por ejemplo `curl -s -o /dev/null -w '%{http_code}\n' -X OPTIONS https://seba.fmartinez.xyz/salud/`.
+- **Rutas que no responden a HEAD (405), a propósito** (DEC-188): ver y descargar un documento (dejarían un evento de descarga que no ocurrió), `/acceso/2fa/configurar/` (crea el dispositivo del segundo factor) y `/solicitud-recibida/` (consume el mensaje de confirmación).
+
+### Bitácora de la Fase B
+
+**12-10-2026. Primer despliegue real**, commit `da83509`: VM e2-micro de Google Cloud, Cloud Storage con clave HMAC, Cloudflare Tunnel, `https://seba.fmartinez.xyz`. Informado por el responsable.
+
+Funcionó:
+
+- `preparar.sh` y `desplegar.sh`: migraciones, `/salud/` con 200 y respaldo previo.
+- Los cinco temporizadores `webseba-*` activos, y un respaldo manual subido al bucket de respaldos.
+- Caché de Cloudflare: el CSS con `HIT` y el HTML con `DYNAMIC`.
+- Encabezados: CSP, `X-Frame-Options`, `Permissions-Policy` y `Referrer-Policy`.
+- `crear_administrador`, `cargar_demo`, acceso con 2FA del administrador y acceso del cliente, y activación por enlace.
+- Validación de archivos: los válidos se aceptaron y los seis inválidos de la prueba 10 se rechazaron, cada uno con su mensaje.
+- Consulta pública con el aviso recibido por Resend; la bandeja de Solicitudes la muestra como enviada.
+- Descargar y ver en pantalla.
+- Aislamiento entre empresas: la dirección de un documento de la empresa 1 responde 404 al usuario de la empresa 2.
+- Memoria con todo corriendo: `web` unos 104 MB, `cloudflared` unos 25 MB y `db` unos 9 MB.
+
+Falló, y se corrigió en el commit siguiente:
+
+| # | Qué falló | Corrección | Decisión |
+| --- | --- | --- | --- |
+| 1 | `PutObject` contra Google Cloud Storage: `SignatureDoesNotMatch: Invalid argument`. En la VM se resolvió con dos variables `AWS_*` en `web.env` | El cliente S3 se crea con las sumas de verificación "solo cuando se requieran" | DEC-186 |
+| 2 | `comprobar_almacenamiento --firma`: la URL vencida respondió 400 y el comando esperaba 403; y cuando la subida falló, la limpieza lanzó `NoSuchKey` en vez de mostrar el error real | Acepta 400 o 403; borrar lo que no existe no es un error; el objeto de prueba se borra siempre y se informa el error original | DEC-187 |
+| 3 | `curl -I` respondía 405 en `/`, `/servicios/`, `/contacto/`, `/salud/` y `/privacidad/` | Las vistas declaraban solo GET. Ahora toda vista con GET responde a HEAD, salvo las que tienen efectos | DEC-188 |
+| 4 | `web` tardó unos 106 s y después unos 144 s en quedar sano, y el sitio no respondió en ese lapso | Gunicorn carga la aplicación una vez; el plazo de arranque del healthcheck pasa a 300 s (sección 5) | DEC-189 |
+| 5 | Con la base vacía, el inicio quedaba en blanco entre el encabezado y el pie | Estado "Sitio en preparación", con la fotografía y el botón Acceso clientes | DEC-190 |
+| 6 | Esta guía: no decía que `crear_administrador` va antes de `cargar_demo`, y dejaba `DEMO_PERMITIDO` en `web.env` | Secciones 4 y 11; `cargar_demo` recibe el permiso con `-e` | DEC-191 |
+
+Los nombres de los temporizadores y sus comandos se repasaron contra `despliegue/systemd/`: son `webseba-*` en todos los comandos de esta guía. `web-seba` (con guion) es el nombre del proyecto de Compose, de las carpetas `/opt/web-seba`, `/etc/web-seba` y `/var/backups/web-seba`, del volumen `web-seba_db_datos` y del contenedor `web-seba-web-1`: esos no cambian.
+
+Pendiente de esta fase: desplegar el commit de las correcciones y repetir `comprobar_almacenamiento --firma`, las filas nuevas de arriba y las que siguen pendientes en la tabla.
 
 ## 13. Solicitud de eliminación de datos
 
