@@ -16,3 +16,7 @@ node_modules/
 .DS_Store
 # Contenido del sitio exportado con exportar_contenido: trae datos de contacto.
 contenido-sitio*.json
+
+# Logo horizontal: lleva dibujado el nombre del profesional. Vive fuera del repositorio
+# (docs/DISENO.md, sección "Logo").
+logo-horizontal*.svg

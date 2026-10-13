@@ -29,7 +29,28 @@ Donde el mockup muestre algo de esta lista, manda la especificación:
 7. **Navegación pública:** Inicio, Servicios, Contacto y "Acceso clientes", sin menús desplegables. El mockup muestra "Documentos" en el menú público: no existe.
 8. **Servicios y textos** salen de la base de datos (Servicio y DatosNegocio). Los del mockup, como "Capacitación", son de ejemplo.
 9. **Redes sociales** ("Síguenos") solo se muestran si están registradas en DatosNegocio.
-10. **Logo:** el escudo del mockup es de ejemplo. Mientras no exista el logo real, se usa el nombre comercial en texto con un ícono neutro de Lucide, y queda marcado como [COMPLETAR].
+10. **Logo:** el escudo del mockup es de ejemplo. Desde el 13-10-2026 el sitio usa el logo propio del negocio (sección "Logo", DEC-202): el símbolo como imagen y el nombre comercial como texto, que sale de DatosNegocio.
 11. **Fotografías:** de bancos gratuitos con licencia, registradas en `docs/FOTOS.md`, hasta tener fotos reales (PUB-08).
 12. **Trato de "usted"** en todos los textos, aunque el mockup tutee.
 13. **Ejemplo de RUT:** usa uno con dígito verificador válido, como 12.345.678-5.
+
+## Logo
+
+Original, creado para este sitio y entregado por el responsable el 13-10-2026. Sin licencia de terceros. Los archivos están en `static/img/` (DEC-202). A los tres SVG se les quitó el título accesible, que traía el nombre del profesional: **ese nombre no va en el repositorio**, que es público.
+
+| Archivo | Qué es | Dónde se usa |
+| --- | --- | --- |
+| `simbolo-blanco.svg` | El escudo, blanco con el visto azul marino | Encabezado y pie públicos, barras laterales del portal y del panel. 32 px |
+| `simbolo.svg` | El escudo, azul marino con el visto blanco | Pantallas de acceso, sobre blanco. 40 px |
+| `favicon.svg`, `favicon-32.png`, `favicon.ico` | El escudo blanco sobre un cuadro azul marino | Ícono de la pestaña, en todas las páginas |
+| `apple-touch-icon.png` | Lo mismo, a 180 px | Ícono al guardar el sitio en la pantalla de inicio |
+
+Reglas:
+
+- **El nombre es texto.** Junto al símbolo va el nombre comercial de DatosNegocio, como texto HTML: se edita en el panel y lo leen los lectores de pantalla.
+- **El logo horizontal existe fuera del repositorio.** Son dos archivos, `logo-horizontal.svg` y `logo-horizontal-blanco.svg`: escudo, nombre y "PREVENCIÓN DE RIESGOS", con el texto convertido a trazos. Los guarda el responsable para usos externos, como la firma de correo y los documentos. El sitio no los usa, y `.gitignore` y `.dockerignore` impiden subirlos por error.
+- **El símbolo es decorativo.** Va siempre al lado del nombre, así que lleva `alt=""`, y el archivo no trae `<title>`, `aria-label` ni `role`. Sin nombre comercial no se muestra ni el símbolo.
+- **Un solo componente:** `templates/componentes/marca.html`. `marca_tono="oscuro"` elige el símbolo azul marino para fondos blancos.
+- **Contraste**, según WCAG 2.1: blanco sobre azul marino `#1B2D4F`, 13,68:1, en ambas versiones del símbolo y en el favicon. Supera el 4,5:1 del nivel AA.
+- **Reemplazarlo** solo requiere cambiar los archivos, con los mismos nombres. `favicon.ico` es `favicon-32.png` dentro de un contenedor ICO; si cambia el PNG, hay que rehacerlo.
+

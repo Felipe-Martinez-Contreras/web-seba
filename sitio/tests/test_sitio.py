@@ -7,6 +7,7 @@ from xml.etree import ElementTree
 import pytest
 from django.conf import settings
 from django.contrib.staticfiles import finders
+from django.test import Client
 from django.urls import get_resolver
 
 from config.tests.test_urls_privadas import _recorrer
@@ -99,9 +100,16 @@ def test_pub_04_la_navegacion_es_inicio_servicios_contacto_y_acceso_clientes(cli
     # En móvil, el mismo menú dentro de un desplegable nativo.
     movil = encabezado.split("<details")[1]
     assert movil.count('class="menu-enlace') == 4 and "Acceso clientes" in movil
-    # Marca provisional: ícono y nombre comercial en texto, enlazada al inicio.
-    assert re.search(r'<a class="[^"]*" href="/">\s*<span class="icono icono-grande"', encabezado)
-    assert "Prevención de Prueba" in encabezado
+    # Marca: el símbolo, decorativo, y el nombre comercial en texto, enlazada al inicio.
+    assert re.search(
+        r'<a class="[^"]*" href="/">\s*<img class="shrink-0" '
+        r'src="/static/img/simbolo-blanco.svg" alt="" width="32" height="32">\s*'
+        r'<span class="leading-tight">Prevención de Prueba</span>',
+        encabezado,
+    )
+    # El pie repite la marca sobre azul marino, sin enlace.
+    pie = contenido.split("<footer")[1]
+    assert 'src="/static/img/simbolo-blanco.svg" alt=""' in pie and "Prevención de Prueba" in pie
 
 
 def test_pub_04_las_redes_sociales_solo_aparecen_si_estan_registradas(client, negocio):
@@ -459,8 +467,11 @@ def test_las_fotos_llevan_texto_alternativo_y_dimensiones(client, negocio, servi
         assert f'alt="{foto.alt}"' in contenido
         assert f'width="{foto.ancho}" height="{foto.alto}"' in contenido
     assert 'srcset="/static/img/portada-960.webp 960w, /static/img/portada.webp 1920w"' in contenido
-    # La portada es la primera imagen: no se difiere. La de contacto, sí.
-    imagenes = re.findall(r"<img [^>]+>", contenido)
+    # La portada es la primera fotografía: no se difiere. La de contacto, sí. El símbolo de
+    # la marca no cuenta: es un SVG de medio kilobyte.
+    imagenes = [
+        imagen for imagen in re.findall(r"<img [^>]+>", contenido) if "img/simbolo" not in imagen
+    ]
     assert len(imagenes) == 2
     assert 'fetchpriority="high"' in imagenes[0] and 'loading="lazy"' in imagenes[1]
     assert contenido.count('loading="lazy"') == 1
@@ -497,10 +508,29 @@ def test_htmx_no_esta_en_el_proyecto(client, negocio, cliente_a_activo):
 
 
 def test_la_pantalla_de_acceso_lleva_la_marca_cuando_existe_el_nombre_comercial(client, db):
-    assert "icono-grande" not in client.get("/acceso/").content.decode()
+    assert "img/simbolo" not in client.get("/acceso/").content.decode()
     DatosNegocio.objects.update(nombre_comercial="Prevención de Prueba")
     contenido = client.get("/acceso/").content.decode()
-    assert "Prevención de Prueba" in contenido and "icono-grande" in contenido
+    # Sobre blanco va el símbolo azul marino, decorativo, junto al nombre en texto.
+    assert re.search(
+        r'<img class="shrink-0" src="/static/img/simbolo.svg" alt="" width="40" height="40">\s*'
+        r'<span class="leading-tight">Prevención de Prueba</span>',
+        contenido,
+    )
+    assert "simbolo-blanco" not in contenido
+
+
+def test_las_barras_laterales_del_portal_y_del_panel_llevan_el_simbolo_blanco(
+    negocio, cliente_a_activo, cliente_http_admin
+):
+    portal = Client()
+    portal.force_login(cliente_a_activo)
+    for pagina in (portal.get("/portal/"), cliente_http_admin.get("/panel/")):
+        barra = pagina.content.decode().split("<aside")[1].split("</aside>")[0]
+        # Dos veces: la barra fija de escritorio y el menú desplegable de pantallas angostas.
+        assert barra.count('src="/static/img/simbolo-blanco.svg" alt="" width="32"') == 2
+        assert barra.count("Prevención de Prueba") == 2
+        assert "img/simbolo.svg" not in barra
 
 
 def test_la_pagina_404_enlaza_al_inicio(client, db):

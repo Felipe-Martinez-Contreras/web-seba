@@ -12,7 +12,7 @@ El responsable completa esta sección antes de entregar el prompt. Si un dato di
 | Correo que recibe las notificaciones | [COMPLETAR] |
 | Datos de contacto públicos (teléfono, correo, comuna o región, horario) | [COMPLETAR] |
 | Servicios ofrecidos (nombre y descripción breve de cada uno) | [COMPLETAR] |
-| Logo y colores de marca | [COMPLETAR, o "usar la propuesta de la sección 9"] |
+| Logo y colores de marca | Logo propio, entregado por el responsable el 13-10-2026 (`static/img/`, DEC-202). Colores: la propuesta de la sección 9 |
 | Hosting, correo transaccional y almacenamiento ya elegidos | [COMPLETAR, o "proponer opciones en la Etapa 0"] |
 | Identificador de acceso de los clientes | RUT de cada persona |
 | Modo de trabajo | Pausa al final de cada etapa |

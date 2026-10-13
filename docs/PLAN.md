@@ -85,7 +85,7 @@ El detalle y el motivo de cada una están en `DECISIONES.md`.
 
 1. Valen los supuestos por defecto de la sección 0 (1–3 administradores, volumen de diseño, modo "pausa").
 2. Todo dato [COMPLETAR] se trata como desconocido: la interfaz oculta la sección y `contenido_pendiente` lo lista.
-3. Marca: tokens azul marino de la sección 9 y estilo del mockup (`docs/DISENO.md`). El logo sigue pendiente: mientras tanto, ícono neutro y nombre en texto.
+3. Marca: tokens azul marino de la sección 9 y estilo del mockup (`docs/DISENO.md`). El logo propio llegó el 13-10-2026 (sección 21); hasta entonces, ícono neutro y nombre en texto.
 4. Los administradores también entran con su RUT personal por el mismo formulario.
 5. El RUT se guarda normalizado (sin puntos ni guion, K mayúscula) y se muestra como `12.345.678-5`.
 6. Email obligatorio para administradores y opcional para clientes (AUT-07 contempla cuentas sin email; se activan copiando el enlace).
@@ -163,7 +163,7 @@ Sin etapa:
 
 - Revisión legal de la Ley 19.628 y la Ley 21.719 (`DESPLIEGUE.md` §14): recomendación, no bloqueo (DEC-172).
 - Migración a Django 6.2 LTS cuando se publique.
-- Logo real y fotos propias del profesional (DEC-48, DEC-154, `docs/FOTOS.md`).
+- Fotos propias del profesional (`docs/FOTOS.md`). El logo se entregó el 13-10-2026 (DEC-202).
 - Safari y Safari en iOS, con un dispositivo Apple (RNF-03); recorrido de E2 y E6 con un administrador real y su 2FA; el portal en un teléfono real.
 - Lector de pantalla real: el responsable decidió el 11-10-2026 no hacer la pasada con el Narrador (E8 queda con ese pendiente; la lista sigue en el README).
 - HSTS a un año, para subdominios y precarga, cuando el dominio definitivo esté estable.
@@ -439,3 +439,19 @@ Probado con 44 pruebas, con la imagen de producción en local sobre una base vac
 - **Los datos del negocio que sigan con texto DEMO salen vacíos**, y después de importar figuran como "Sin completar".
 - **`importar_contenido` no pisa una base con otro contenido**, ni siquiera el de una importación anterior corregida en el panel. No tiene opción para forzarlo.
 - **El archivo puede quedarse en la carpeta personal de la VM** entre la exportación y la importación: el paso a producción borra la base y el bucket, no esa carpeta. La descarga queda como resguardo.
+
+## 21. Etapa 8, Fase B: logo del sitio
+
+El responsable entregó el logo el 13-10-2026: original, sin licencia de terceros (DEC-202).
+
+- **Marca:** el símbolo reemplaza al ícono de Lucide en el encabezado y el pie públicos, las pantallas de acceso y las barras laterales del portal y del panel. El nombre comercial sigue siendo texto de DatosNegocio.
+- **Íconos:** favicon nuevo (SVG, PNG de 32 px e ICO) y `apple-touch-icon` en todas las páginas.
+- **Logos horizontales:** fuera del repositorio. Llevan dibujado el nombre del profesional; el responsable los guarda para usos externos.
+- **Revisión:** en Edge a 360 y 1280 px, en inicio, servicios, acceso, portal y panel. Sin desborde horizontal y con el símbolo cargado en todas. Contraste en `DISENO.md`, sección "Logo". La revisión se hizo antes de quitar el título de los SVG; el dibujo no cambió.
+
+### Diferencias con lo pedido
+
+- **`favicon.ico` tiene solo 32 px.** El anterior traía 16, 32 y 48; se rehízo con el PNG entregado.
+- **Los SVG no son copia exacta de los originales:** se les quitó el título accesible, que traía el nombre del profesional. En el sitio no cambia nada: el símbolo es decorativo.
+- **Los logos horizontales no se guardaron en `static/`**, como se pidió primero: el repositorio es público y el responsable decidió dejarlos fuera.
+

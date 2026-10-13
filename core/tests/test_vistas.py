@@ -1,10 +1,13 @@
 import json
 import logging
 import re
+import struct
 from pathlib import Path
 from unittest import mock
 
 import pytest
+from django.conf import settings
+from django.contrib.staticfiles import finders
 from django.db import OperationalError
 from django.test import Client
 
@@ -41,22 +44,60 @@ def test_salud_solo_admite_get_y_head(client):
 
 
 def test_el_favicon_de_la_raiz_lleva_al_archivo_estatico(client):
-    from django.contrib.staticfiles import finders
-
     respuesta = client.get("/favicon.ico")
     assert respuesta.status_code == 302
     assert respuesta["Location"] == "/static/img/favicon.ico"
-    # Formato ICO con al menos una imagen, y la versión SVG a su lado.
+    # Formato ICO con al menos una imagen, y las versiones SVG y PNG a su lado.
     ico = Path(finders.find("img/favicon.ico")).read_bytes()
     assert ico[:4] == b"\x00\x00\x01\x00" and ico[4] >= 1
+    for nombre, lado in (("favicon-32.png", 32), ("apple-touch-icon.png", 180)):
+        png = Path(finders.find(f"img/{nombre}")).read_bytes()
+        assert png[:8] == b"\x89PNG\r\n\x1a\n"
+        assert struct.unpack(">II", png[16:24]) == (lado, lado), nombre
     assert finders.find("img/favicon.svg")
+
+
+@pytest.mark.parametrize(
+    "nombre",
+    [
+        "favicon.svg",
+        "simbolo.svg",
+        "simbolo-blanco.svg",
+    ],
+)
+def test_los_svg_del_logo_son_solo_trazos(nombre):
+    """Sin texto que dependa de una tipografía, programas ni recursos de otro origen."""
+    svg = Path(finders.find(f"img/{nombre}")).read_text(encoding="utf-8")
+    assert svg.startswith("<svg ") and "\r" not in svg
+    # Decorativos: sin título ni nombre accesible. El nombre del negocio no va en el
+    # repositorio; sale de DatosNegocio (DEC-202).
+    for nombre_accesible in ("<title", "aria-label", "role="):
+        assert nombre_accesible not in svg, nombre_accesible
+    for prohibido in ("<text", "<script", "<image", "<style", "<foreignObject", "href", "url("):
+        assert prohibido not in svg, prohibido
+    # Solo los dos colores de la marca: azul marino y blanco (contraste 13,68:1).
+    assert set(re.findall(r"#[0-9A-Fa-f]{6}", svg)) == {"#1B2D4F", "#FFFFFF"}
+
+
+def test_el_logo_horizontal_no_puede_subirse_por_error():
+    """Lleva dibujado el nombre del profesional: vive fuera del repositorio y de la imagen."""
+    assert not finders.find("img/logo-horizontal.svg")
+    assert not finders.find("img/logo-horizontal-blanco.svg")
+    for archivo in (".gitignore", ".dockerignore"):
+        lineas = (settings.BASE_DIR / archivo).read_text(encoding="utf-8").splitlines()
+        assert "logo-horizontal*.svg" in lineas, archivo
 
 
 @pytest.mark.django_db
 def test_todas_las_paginas_enlazan_el_favicon(client):
     contenido = client.get("/acceso/").content.decode()
-    assert '<link rel="icon" href="/static/img/favicon.ico" sizes="48x48">' in contenido
+    assert '<link rel="icon" href="/static/img/favicon.ico" sizes="32x32">' in contenido
     assert '<link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">' in contenido
+    assert (
+        '<link rel="icon" href="/static/img/favicon-32.png" type="image/png" sizes="32x32">'
+        in contenido
+    )
+    assert '<link rel="apple-touch-icon" href="/static/img/apple-touch-icon.png">' in contenido
 
 
 @pytest.mark.django_db
@@ -149,7 +190,11 @@ def test_la_referencia_muestra_los_componentes(client):
 @pytest.mark.urls("core.tests.urls_prueba")
 def test_la_portada_no_lleva_imagen_mientras_no_haya_fotografias(client):
     contenido = client.get("/_referencia/componentes/").content.decode()
-    assert "<img" not in contenido
+    # Las únicas imágenes de la página son el símbolo de la marca.
+    assert set(re.findall(r'<img[^>]* src="([^"]+)"', contenido)) <= {
+        "/static/img/simbolo.svg",
+        "/static/img/simbolo-blanco.svg",
+    }
 
 
 @pytest.mark.django_db
