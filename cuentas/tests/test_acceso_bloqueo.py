@@ -172,3 +172,45 @@ def test_limite_por_ip_con_distintos_rut(client, cliente_a_activo, settings):
     respuesta = entrar(client, RUT_CLIENTE_A, CLAVE)
     assert MENSAJE_BLOQUEO in respuesta.content.decode()
     assert EventoAuditoria.objects.get(accion=Accion.BLOQUEO).detalle == "Por IP"
+
+
+def test_en_produccion_la_auditoria_anota_la_ip_del_visitante_solo_si_viene_del_tunel(
+    client, cliente_a_activo, settings
+):
+    """AUT-04, con la configuración del servidor: solo el contenedor de cloudflared es de
+    confianza y la IP del visitante llega en CF-Connecting-IP."""
+    settings.PROXY_CONFIANZA_REDES = ["172.30.57.2/32"]
+    settings.PROXY_CONFIANZA_ENCABEZADO = "CF-Connecting-IP"
+
+    def ip_del_ultimo_fallo(**extra):
+        entrar(client, RUT_CLIENTE_A, "clave-equivocada-123", **extra)
+        return EventoAuditoria.objects.filter(accion=Accion.ACCESO_FALLIDO).latest("pk").ip
+
+    # Por el túnel: la IP que escribió Cloudflare, también en IPv6.
+    assert (
+        ip_del_ultimo_fallo(REMOTE_ADDR="172.30.57.2", HTTP_CF_CONNECTING_IP="203.0.113.7")
+        == "203.0.113.7"
+    )
+    assert (
+        ip_del_ultimo_fallo(REMOTE_ADDR="172.30.57.2", HTTP_CF_CONNECTING_IP="2001:db8::7")
+        == "2001:db8::7"
+    )
+    # Desde otro contenedor de la red, o desde la propia máquina, el encabezado no se cree.
+    for origen in ("172.30.57.9", "127.0.0.1"):
+        assert (
+            ip_del_ultimo_fallo(
+                REMOTE_ADDR=origen,
+                HTTP_CF_CONNECTING_IP="1.2.3.4",
+                HTTP_X_FORWARDED_FOR="1.2.3.4",
+            )
+            == origen
+        )
+    # Lo que el visitante escriba en X-Forwarded-For tampoco cuenta, ni por el túnel.
+    assert (
+        ip_del_ultimo_fallo(
+            REMOTE_ADDR="172.30.57.2",
+            HTTP_CF_CONNECTING_IP="203.0.113.8",
+            HTTP_X_FORWARDED_FOR="1.2.3.4",
+        )
+        == "203.0.113.8"
+    )

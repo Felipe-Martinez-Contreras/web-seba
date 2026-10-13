@@ -1,5 +1,6 @@
 """Ver y descargar (DOC-04, DOC-05): permisos, auditoría, encabezados y URL firmada."""
 
+import logging
 from urllib.parse import parse_qs, urlsplit
 
 import pytest
@@ -214,3 +215,21 @@ def test_con_s3_la_entrega_es_una_redireccion_a_una_url_firmada_de_dos_minutos(
     descarga = parse_qs(urlsplit(portal.get(_portal(documento, "descargar"))["Location"]).query)
     assert descarga["response-content-disposition"][0].startswith("attachment;")
     assert EventoAuditoria.objects.filter(accion=Accion.DOCUMENTO_DESCARGADO).count() == 1
+
+
+def test_con_s3_la_url_firmada_no_queda_en_los_logs_ni_en_la_auditoria(
+    almacen_s3, cliente_a_activo, carpeta_a, administrador, caplog
+):
+    """SEG-10: quien lea los logs o la auditoría no obtiene un enlace de descarga."""
+    documento = subir_documento(carpeta_a, administrador, archivos.pdf("Contrato.pdf"))
+    portal = Client()
+    entrar(portal, RUT_CLIENTE_A)
+    # El nivel de producción: INFO en todos los registradores.
+    with caplog.at_level(logging.INFO):
+        respuesta = portal.get(_portal(documento, "descargar"))
+    firma = parse_qs(urlsplit(respuesta["Location"]).query)["X-Amz-Signature"][0]
+
+    assert len(firma) == 64
+    assert firma not in caplog.text and "X-Amz-Signature" not in caplog.text
+    for evento in EventoAuditoria.objects.all():
+        assert firma not in evento.detalle and "X-Amz" not in evento.detalle

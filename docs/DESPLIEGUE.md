@@ -359,7 +359,7 @@ Se hace en staging, antes de cargar documentos reales, y se anota aquí.
 
 El sitio queda caído entre los pasos 4 y 6: el monitor avisará. Todo en la **VM**, salvo donde se indica.
 
-Pegue esto una vez por sesión. `contar` imprime los conteos y comprueba que cada versión de documento tenga su archivo en el bucket:
+Pegue esto **en cada sesión SSH nueva**: `dc` y `contar` son atajos de la sesión y se pierden al cerrarla. Sin ellos, los comandos de abajo responden "command not found". `contar` imprime los conteos y comprueba que cada versión de documento tenga su archivo en el bucket:
 
 ```bash
 dc() { sudo /opt/web-seba/despliegue/vm/dc "$@"; }
@@ -401,20 +401,26 @@ Si algo sale mal a medio camino: `desplegar.sh` se puede repetir. Si `restaurar.
 **Paso 8: purgar sin esperar 30 días.** La purga solo borra lo que lleva más de `PAPELERA_DIAS` en la papelera, y eso no se cambia. En el simulacro se adelanta, a mano, la fecha de eliminación de **ese** documento. Es una edición directa de la base que no deja evento de auditoría: **solo en staging, con datos DEMO**.
 
 ```bash
-# 1. Antes de eliminarlo: su clave en el bucket y su SHA-256. Use el título exacto del documento.
+# 1. Antes de eliminarlo: el listado de documentos, con su identificador, empresa, título,
+#    clave en el bucket y SHA-256. Elija uno y anote su línea completa.
 dc exec -T web python manage.py shell -c "
 from documentos.models import Documento
-d = Documento.objects.get(titulo='TITULO-DEL-DOCUMENTO')
-print(d.pk, d.version_vigente.clave, d.version_vigente.sha256)"
+for d in Documento.objects.filter(eliminado_en__isnull=True).select_related('empresa', 'version_vigente').order_by('empresa__razon_social', 'titulo'):
+    print(d.pk, '|', d.empresa, '|', d.titulo, '|', d.version_vigente.clave, '|', d.version_vigente.sha256)"
+
+# El identificador del elegido (la primera columna). Se usa el identificador y no el título:
+# dos empresas pueden tener documentos con el mismo título.
+PK=IDENTIFICADOR-DEL-DOCUMENTO
 
 # 2. Elimínelo en el panel (queda en la papelera).
 
-# 3. Adelantar su fecha de eliminación. Debe imprimir 1.
+# 3. Adelantar su fecha de eliminación. Debe imprimir 1; un 0 dice que el identificador está
+#    mal o que el documento no está en la papelera.
 dc exec -T web python manage.py shell -c "
 import datetime
 from django.utils import timezone
 from documentos.models import Documento
-print(Documento.objects.filter(titulo='TITULO-DEL-DOCUMENTO', eliminado_en__isnull=False).update(eliminado_en=timezone.now() - datetime.timedelta(days=31)))"
+print(Documento.objects.filter(pk='$PK', eliminado_en__isnull=False).update(eliminado_en=timezone.now() - datetime.timedelta(days=31)))"
 
 # 4. La purga de todos los días. Debe decir: Se borraron definitivamente 1 documentos…
 sudo /opt/web-seba/despliegue/vm/tarea.sh purgar_papelera
@@ -423,11 +429,11 @@ contar
 
 Tras el punto 4, `contar` muestra un documento y una versión menos, y un evento más (la purga). El punto 5 es recuperar el archivo con los comandos de "Recuperar un documento purgado", usando la clave del punto 1, y comparar su SHA-256 con el anotado.
 
-Los puntos 1, 3 y 4 se probaron en local el 12-10-2026 contra la base de desarrollo. La recuperación desde las versiones del bucket solo se puede probar en staging.
+**Hecho en staging el 12-10-2026:** un documento de Empresa Dos. La actualización de la fecha devolvió 1; `purgar_papelera` informó "Se borraron definitivamente 1 documentos"; `contar` pasó de 8 documentos y 8 versiones a 7 y 7, de 31 a 33 eventos, con `0 []` en el bucket. En Cloud Shell, `ls --all-versions` mostró la generación no vigente, de 1.677 bytes, y el `sha256sum` del archivo recuperado fue idéntico al anotado. Ese día los comandos 1 y 3 buscaban por título; después se cambiaron al identificador, y esa forma está probada en local contra la base de desarrollo.
 
 | Fecha | Quién | Respaldo usado | Conteos antes / después | SHA-256 coincide | Tiempo | Resultado |
 | --- | --- | --- | --- | --- | --- | --- |
-| 12-10-2026 | Responsable | `gs://BUCKET-DE-RESPALDOS/webseba-20261012T213004Z.dump` | Antes: 2 empresas, 3 usuarios, 1 con 2FA, 8 documentos, 8 versiones, 1 solicitud, 26 eventos. Con la base vacía: todo en 0. Después: lo mismo que antes, con 27 eventos. Versiones sin su archivo en el bucket: 0 antes y después | Sí: el PDF subido y el descargado tras restaurar son idénticos | `restaurar.sh`: 236 s | **Correcto.** El administrador entró con su 2FA sin enrolar de nuevo; el portal del cliente y su descarga funcionaron; el monitor avisó la caída y la recuperación. Sin hacer: el paso 8 (purga y recuperación del bucket), que estaba mal planteado y se rediseñó después |
+| 12-10-2026 | Responsable | `gs://BUCKET-DE-RESPALDOS/webseba-20261012T213004Z.dump` | Antes: 2 empresas, 3 usuarios, 1 con 2FA, 8 documentos, 8 versiones, 1 solicitud, 26 eventos. Con la base vacía: todo en 0. Después: lo mismo que antes, con 27 eventos. Versiones sin su archivo en el bucket: 0 antes y después | Sí: el PDF subido y el descargado tras restaurar son idénticos | `restaurar.sh`: 236 s | **Correcto.** El administrador entró con su 2FA sin enrolar de nuevo; el portal del cliente y su descarga funcionaron; el monitor avisó la caída y la recuperación. El paso 8 (purga y recuperación del bucket) se hizo más tarde ese día, ya rediseñado: correcto, con el mismo SHA-256 en el archivo recuperado |
 
 El evento de diferencia (26 antes, 27 después) no se investigó: es coherente con una acción en el sitio entre el conteo y el respaldo, pero no está comprobado. El nombre real del bucket no se escribe en este repositorio.
 
@@ -550,17 +556,17 @@ Estado tras el primer despliegue real (commit `da83509`), según lo informado po
 | Encabezados de seguridad en la respuesta real | `curl -sI https://seba.fmartinez.xyz/acceso/` | SEG-01, SEG-02 | Verificado el 12-10-2026: CSP, `X-Frame-Options`, `Permissions-Policy` y `Referrer-Policy`. HSTS llega con `max-age=3600` (sección 11) |
 | `check --deploy` | Lo ejecuta `desplegar.sh` | SEG-01 | Verificado el 12-10-2026: `desplegar.sh` terminó bien. `security.W005` y `W021` son las esperadas |
 | La VM no acepta conexiones | Lista de reglas de firewall; prueba de conexión al puerto 22 y al 443 de su IP | — | Pendiente |
-| La auditoría registra la IP real | Un acceso fallido desde su red; mirar el evento en el panel | AUT-04 | Pendiente |
+| La auditoría registra la IP real | Un acceso fallido desde su red; mirar el evento en el panel | AUT-04 | Cubierta por pruebas automáticas; no verificada a mano en staging (decisión del responsable, 12-10-2026): `core/tests/test_ip.py` (`test_detras_de_cloudflared_la_ip_sale_de_cf_connecting_ip`, `test_un_encabezado_enviado_por_un_origen_que_no_es_de_confianza_se_ignora`) y `cuentas/tests/test_acceso_bloqueo.py` (`test_en_produccion_la_auditoria_anota_la_ip_del_visitante_solo_si_viene_del_tunel`). Comprobado además con la imagen de producción en local el 11 y el 12-10-2026 |
 | Bucket: sin firma 403, firma alterada y URL vencida rechazadas | `comprobar_almacenamiento --firma` | DOC-03, DOC-04, prueba 11 | Verificado el 12-10-2026 con el commit `a46c641`, sin las variables `AWS_*` en `web.env`: terminó con "El almacenamiento funciona." La URL vencida respondió 400. El primer intento, con `da83509`, había fallado (bitácora) |
-| Subida de 24,9 MB y descarga con el mismo SHA-256 | Por el panel | RNF-02, SEG-07 | Pendiente |
-| Correo: llega una cotización con `Reply-To`; SPF, DKIM y DMARC en "pass" | Ver el original del mensaje recibido | SOL-08 | Parcial, 12-10-2026: el aviso de una consulta pública llegó por Resend y la solicitud quedó como enviada. Pendiente: `Reply-To` y SPF, DKIM y DMARC en "pass" |
-| Aviso de error 500 y de tarea fallida | `avisar_fallo prueba`; un error provocado | RNF-05 | Pendiente |
+| Subida de 24,9 MB y descarga con el mismo SHA-256 | Por el panel | RNF-02, SEG-07 | Pendiente, opcional: no se ejecutó en staging. En local, verificado el 11-10-2026 |
+| Correo: llega una cotización con `Reply-To`; SPF, DKIM y DMARC en "pass" | Ver el original del mensaje recibido | SOL-08 | Verificado el 12-10-2026 en Gmail, en el aviso de una consulta: SPF, DKIM y DMARC en PASS, y la solicitud quedó como enviada. `Reply-To` no se informó: lo cubre `test_sol_08_el_correo_al_profesional_lleva_los_datos_el_enlace_y_el_reply_to` |
+| Aviso de error 500 y de tarea fallida | `avisar_fallo prueba`; un error provocado | RNF-05 | Verificado el 12-10-2026 el aviso de tarea fallida: `avisar_fallo prueba` respondió "Aviso enviado." y el correo "[seba.fmartinez.xyz] Falló la tarea programada prueba" llegó al instante a la bandeja de entrada, sin datos sensibles. No se provocó en staging un error 500 real ni el fallo de una tarea por systemd: el primero lo cubre `core/tests/test_avisos.py` (`test_un_error_real_en_una_vista_llega_por_el_log_de_django`) |
 | Tareas programadas | `systemctl list-timers 'webseba-*'`, `journalctl -u 'webseba-*'` | SOL-11, ADM-09, AUD-03 | Parcial, 12-10-2026: los cinco temporizadores `webseba-*` están activos, también tras el segundo despliegue. Pendiente: revisar en el journal una ejecución de cada uno |
-| Simulacro de restauración | Sección 7 | SEG-11 | Verificado en la VM el 12-10-2026, desde el bucket de respaldos: mismos conteos, base y bucket coherentes, mismo SHA-256, 2FA sin enrolar de nuevo, 236 s (tabla de la sección 7). Pendiente: el paso 8, purgar un documento y recuperarlo de las versiones del bucket |
+| Simulacro de restauración | Sección 7 | SEG-11 | Verificado en la VM el 12-10-2026, desde el bucket de respaldos: mismos conteos, base y bucket coherentes, mismo SHA-256, 2FA sin enrolar de nuevo, 236 s (tabla de la sección 7). El paso 8 también: un documento purgado se recuperó de las versiones del bucket con el mismo SHA-256 |
 | Estáticos desde la caché de Cloudflare | `cf-cache-status: HIT` en la segunda petición | — | Verificado el 12-10-2026: el CSS con `HIT` y el HTML con `DYNAMIC` |
-| Lighthouse móvil y tiempos de respuesta | Contra la URL pública | RNF-06, RNF-02 | Pendiente |
+| Lighthouse móvil y tiempos de respuesta | Contra la URL pública | RNF-06, RNF-02 | Pendiente, opcional: no se ejecutó en staging. En local dio de 98 a 100. Los tiempos de respuesta tras un despliegue sí están medidos (bitácora) |
 | Memoria y swap bajo uso | `free -m`, `docker stats`, `medir.sh` | RNF-02 | Verificado en la VM el 12-10-2026 con el commit `3851c7b`: tras un despliegue, el inicio responde en 0,12 a 0,18 s (antes 28 y 44 s), los sondeos salen sanos y quedan 381 MB disponibles, con la zram activa (DEC-193 a DEC-196 y DEC-198; bitácora). Pendiente: medirlo con varios usuarios a la vez |
-| Logs sin el token de los enlaces | `dc logs web` tras usar un enlace de activación | SEG-10 | Pendiente |
+| Logs sin el token de los enlaces | `dc logs web` tras usar un enlace de activación | SEG-10 | Cubierta por pruebas automáticas; no verificada a mano en staging (decisión del responsable, 12-10-2026): `core/tests/test_vistas.py` (`test_los_logs_no_registran_el_token_de_los_enlaces`), `config/tests/test_gunicorn.py` (`test_el_log_de_acceso_de_gunicorn_no_registra_el_token_de_los_enlaces`, `test_el_log_de_acceso_no_lleva_la_consulta_ni_la_ip`, `test_el_log_de_acceso_no_lleva_la_url_firmada_de_una_descarga`), `documentos/tests/test_entrega.py` (`test_con_s3_la_url_firmada_no_queda_en_los_logs_ni_en_la_auditoria`) y `cuentas/tests/test_enlaces.py` (`test_ni_el_token_ni_la_contrasena_quedan_en_la_auditoria`) |
 
 Filas nuevas de la Fase B:
 
@@ -671,7 +677,14 @@ Lo que se cambió (un commit, sin desplegar al escribir esto):
 
 Las dos filas no son comparables columna por columna en `si` y `so`: la primera anota máximos por muestra y la segunda, sumas. En la segunda, la cola `r` llegó a 8 (antes 23) y `st` siguió en 0.
 
-Pendiente de la etapa, sin ejecutar todavía: el paso 8 del simulacro (purga y recuperación del bucket), la subida de 24,9 MB, los logs sin el token, la IP real en la auditoría, los avisos de error, SPF, DKIM y DMARC en un correo recibido, y Lighthouse.
+**12-10-2026. Cierre de las verificaciones de la Fase B.** Informado por el responsable.
+
+- **Paso 8 del simulacro: correcto.** Un documento de Empresa Dos se eliminó, se purgó con la tarea normal y se recuperó en Cloud Shell desde las versiones del bucket: generación no vigente de 1.677 bytes, mismo SHA-256. Detalle en la sección 7.
+- **Correo:** SPF, DKIM y DMARC en PASS en Gmail, en el aviso de una consulta.
+- **Aviso de tarea fallida:** `avisar_fallo prueba` respondió "Aviso enviado." y el correo llegó al instante a la bandeja de entrada, sin datos sensibles.
+- **Logs sin tokens e IP real en la auditoría:** el responsable decidió no probarlas a mano en la VM. Quedan cubiertas por pruebas automáticas; no verificadas a mano en staging. Los nombres de las pruebas están en la tabla de arriba. Tres se agregaron ese día, porque faltaba cubrir la URL firmada de las descargas en los logs y la IP en la auditoría con la configuración exacta del servidor.
+
+Pendientes opcionales, sin ejecutar en staging: la subida de 24,9 MB a través del túnel y Lighthouse. Tampoco se informaron, y siguen como "Pendiente" en la tabla: la redirección de HTTP a HTTPS, que la VM no acepta conexiones, y una ejecución de cada temporizador en el journal.
 
 ## 13. Solicitud de eliminación de datos
 

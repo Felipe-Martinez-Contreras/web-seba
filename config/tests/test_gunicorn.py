@@ -114,3 +114,25 @@ def test_gunicorn_carga_la_aplicacion_una_vez_y_usa_un_proceso_de_cuatro_hilos(
     monkeypatch.setenv("GUNICORN_HILOS", "2")
     otra = runpy.run_path(str(settings.BASE_DIR / "config" / "gunicorn.py"))
     assert (otra["workers"], otra["threads"]) == (2, 2)
+
+
+def test_el_log_de_acceso_no_lleva_la_url_firmada_de_una_descarga(registro_de_gunicorn):
+    """SEG-10: la descarga responde con una redirección a una URL firmada. Gunicorn anota
+    la ruta pedida, nunca los encabezados de la respuesta."""
+    registro, salida = registro_de_gunicorn
+    firmada = "https://storage.googleapis.com/b/docs/e/v?X-Amz-Signature=0123abcd&X-Amz-Expires=120"
+    ruta = "/portal/documentos/47ccd7fb-8af1-42c0-8196-68629b793b60/descargar/"
+    respuesta = SimpleNamespace(status="302 Found", sent=0, headers=[("Location", firmada)])
+    peticion = SimpleNamespace(headers=[], method="GET", path=ruta, query="")
+    entorno = {
+        "REMOTE_ADDR": "172.30.57.2",
+        "REQUEST_METHOD": "GET",
+        "PATH_INFO": ruta,
+        "QUERY_STRING": "",
+        "RAW_URI": ruta,
+        "SERVER_PROTOCOL": "HTTP/1.1",
+    }
+    registro.access(respuesta, peticion, entorno, datetime.timedelta(milliseconds=12))
+    linea = salida.getvalue()
+    assert "X-Amz" not in linea and "0123abcd" not in linea and "googleapis" not in linea
+    assert json.loads(linea)["mensaje"].startswith(f"GET {ruta} 302 ")

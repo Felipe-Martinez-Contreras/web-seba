@@ -408,7 +408,7 @@ Un commit con las mejoras gratuitas (DEC-193 a DEC-199):
 
 **Medido en la VM el 12-10-2026: resuelto.** Tras un despliegue, el inicio responde en 0,12 a 0,18 s (antes 28 y 44 s) y los sondeos salen sanos. El plan B no hace falta por ahora; su criterio de activación está en `DESPLIEGUE.md` §7. Un commit posterior corrigió `preparar.sh`: esperaba poco a la zram y pedía completar archivos ya completos.
 
-**La etapa sigue sin terminar:** queda pendiente lo demás de `TRAZABILIDAD.md`.
+**Cierre de las verificaciones, 12-10-2026.** En staging quedaron comprobados el paso 8 del simulacro (purga y recuperación desde las versiones del bucket), SPF, DKIM y DMARC en un correo recibido, y el aviso de tarea fallida. Los logs sin tokens y la IP real en la auditoría no se probaron a mano, por decisión del responsable: quedan cubiertos por pruebas automáticas, tres de ellas agregadas ese día. Opcionales sin ejecutar: la subida de 24,9 MB por el túnel y Lighthouse. Lo que sigue pendiente está en `TRAZABILIDAD.md`.
 
 ### Diferencias con lo pedido
 
