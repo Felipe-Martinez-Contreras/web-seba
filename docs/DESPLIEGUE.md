@@ -487,6 +487,8 @@ Todos en la **VM**, con `sudo /opt/web-seba/despliegue/vm/dc exec web python man
 | Desbloquear un RUT o una IP | `desbloquear_acceso --rut <rut>` o `--ip <ip>` |
 | Ver qué contenido falta | `contenido_pendiente` (con `--estricto` falla si falta algo) |
 | Comprobar el bucket | `comprobar_almacenamiento --firma` |
+| Sacar a un archivo el contenido del sitio | `exportar_contenido -` con `-T` y `> archivo` (sección 11) |
+| Cargar ese archivo en una base sin contenido | `importar_contenido -` con `-T` y `< archivo` (sección 11) |
 
 Los tres primeros imprimen un enlace de un solo uso: no lo pegue en canales que guarden historial. El desbloqueo de un usuario cliente se hace desde el panel.
 
@@ -540,11 +542,61 @@ La revisión legal (sección 13) es una recomendación documentada, no un requis
 Procedimiento, **VM**:
 
 1. Respalde por última vez el staging: `sudo respaldar.sh`.
-2. Borre los datos DEMO: `sudo dc down`, `sudo docker volume rm web-seba_db_datos` y vacíe el bucket de documentos con todas sus versiones (`gcloud storage rm --all-versions "gs://BUCKET-DE-DOCUMENTOS/**"`, desde su cuenta, en Cloud Shell o con `gcloud` en su equipo).
-3. Compruebe que `web.env` no tiene la línea `DEMO_PERMITIDO` (`sudo grep -c DEMO_PERMITIDO /etc/web-seba/web.env` debe dar 0). Las instalaciones hechas con la plantilla anterior al 12-10-2026 la traen: bórrela.
-4. `sudo desplegar.sh <commit>`, `comprobar_almacenamiento --firma` y `crear_administrador`.
-5. Cargue el contenido real en el panel y ejecute `contenido_pendiente --estricto`.
-6. Suba HSTS a un año (puntos 3 y 4 de la lista) cuando el sitio lleve unos días estable, y aplíquelo con `sudo dc up -d web`.
+2. **Exporte el contenido del sitio**, si lo cargó en el panel de staging (más abajo, "Llevar el contenido de staging a producción"). Hágalo **antes** del paso siguiente: borrar la base se lleva también ese contenido.
+3. Borre los datos DEMO: `sudo dc down`, `sudo docker volume rm web-seba_db_datos` y vacíe el bucket de documentos con todas sus versiones (`gcloud storage rm --all-versions "gs://BUCKET-DE-DOCUMENTOS/**"`, desde su cuenta, en Cloud Shell o con `gcloud` en su equipo).
+4. Compruebe que `web.env` no tiene la línea `DEMO_PERMITIDO` (`sudo grep -c DEMO_PERMITIDO /etc/web-seba/web.env` debe dar 0). Las instalaciones hechas con la plantilla anterior al 12-10-2026 la traen: bórrela.
+5. `sudo desplegar.sh <commit>`, `comprobar_almacenamiento --firma` y `crear_administrador`.
+6. **Importe el contenido** exportado en el paso 2 (más abajo). Si no lo exportó, cárguelo a mano en Panel › Configuración › Contenido del sitio.
+7. Ejecute `contenido_pendiente --estricto`: debe terminar sin pendientes.
+8. Suba HSTS a un año (puntos 3 y 4 de la lista) cuando el sitio lleve unos días estable, y aplíquelo con `sudo dc up -d web`.
+
+### Llevar el contenido de staging a producción
+
+`exportar_contenido` escribe en un archivo JSON los datos del negocio y los servicios, y nada más: ni usuarios, ni empresas, ni documentos, ni solicitudes, ni auditoría. `importar_contenido` lo carga en la base nueva (DEC-200, DEC-201).
+
+**El archivo trae datos de contacto** (teléfono, correo, WhatsApp). No lo guarde en la carpeta del proyecto ni lo pegue en un chat. Si alguna vez queda dentro del proyecto, el nombre `contenido-sitio*.json` está en `.gitignore` y en `.dockerignore`.
+
+Los dos comandos existen desde la versión del 13-10-2026: despliéguela en staging antes de exportar (sección 5).
+
+**Paso 2: exportar.** **VM**, en la sesión SSH:
+
+```bash
+cd ~ && umask 077
+sudo /opt/web-seba/despliegue/vm/dc exec -T web python manage.py exportar_contenido - > contenido-sitio.json
+sha256sum contenido-sitio.json
+realpath contenido-sitio.json
+```
+
+El comando responde `Exportado: datos del negocio y N servicios.` Lea también lo que diga debajo, porque los datos de `cargar_demo` **no viajan**:
+
+- `Datos de prueba que se exportaron vacíos: …`: esos campos todavía tenían el texto DEMO. Complételos en el panel y exporte de nuevo, o complételos en producción después de importar.
+- `Servicios de prueba omitidos: N`: los servicios DEMO que quedaron, activos o no.
+- `Identificador de demostración reemplazado: servicio-demo-1 -> …`: un servicio real escrito encima de uno DEMO conservaba la dirección `servicio-demo-N`; en el archivo lleva una derivada de su nombre.
+
+Para **bajar el archivo a su equipo**: en la ventana SSH del navegador, botón **Descargar archivo** (*Download file*), y escriba la ruta que mostró `realpath`. En **PowerShell**, `Get-FileHash .\contenido-sitio.json -Algorithm SHA256` debe dar la misma suma que `sha256sum` (PowerShell la muestra en mayúsculas). Guárdelo fuera de la carpeta del proyecto.
+
+El archivo puede quedarse también en su carpeta de la VM: el paso 3 borra la base y el bucket, no su carpeta personal. La copia en su equipo es el resguardo.
+
+**Paso 6: importar.** Si el archivo ya no está en la VM, súbalo con el botón **Subir archivo** (*Upload file*) de la ventana SSH: queda en su carpeta personal. **VM**:
+
+```bash
+cd ~
+sha256sum contenido-sitio.json      # la misma suma del paso 2
+sudo /opt/web-seba/despliegue/vm/dc exec -T web python manage.py importar_contenido - < contenido-sitio.json
+# Comparar: lo que quedó en la base, exportado de nuevo, debe ser idéntico al archivo.
+sudo /opt/web-seba/despliegue/vm/dc exec -T web python manage.py exportar_contenido - | cmp - contenido-sitio.json && echo IGUALES
+rm contenido-sitio.json
+```
+
+`importar_contenido` responde `Importado: N datos del negocio y N servicios.` Repetirlo no duplica nada: responde `El contenido ya estaba cargado: no se cambió nada.` Si falla, no modifica la base y dice por qué:
+
+| Mensaje | Qué pasó |
+| --- | --- |
+| `claves inesperadas`, `faltan claves`, `lleva una marca de datos de prueba`, o un campo con su error | El archivo no es el que escribió `exportar_contenido`, o se editó a mano. El mensaje dice dónde, nunca el valor |
+| `El archivo tiene el formato de dumpdata` | Es una copia hecha con `dumpdata`, que trae claves internas y los servicios DEMO. No se importa: exporte de nuevo |
+| `La base ya tiene otro contenido` | La base no está vacía y lo que tiene no coincide con el archivo. El comando solo carga sobre una base sin contenido; nunca pisa lo que se escribió en el panel |
+
+Los botones de la ventana SSH no se probaron al escribir esta guía. Alternativa desde su equipo, con `gcloud` instalado: `gcloud compute scp --tunnel-through-iap VM:contenido-sitio.json .` para bajar, y con los argumentos al revés para subir.
 
 ## 12. Verificación en staging
 
@@ -552,16 +604,16 @@ Estado tras el primer despliegue real (commit `da83509`), según lo informado po
 
 | Qué | Cómo | Requisito | Estado |
 | --- | --- | --- | --- |
-| El sitio responde por HTTPS y HTTP redirige | `curl -sI` a ambas | SEG-01 | Pendiente |
+| El sitio responde por HTTPS y HTTP redirige | `curl -sI` a ambas | SEG-01 | Verificado el 13-10-2026: `curl -sI http://seba.fmartinez.xyz/` respondió 301 con `location: https://seba.fmartinez.xyz/`. La respuesta por HTTPS ya estaba verificada el 12-10-2026 (fila siguiente) |
 | Encabezados de seguridad en la respuesta real | `curl -sI https://seba.fmartinez.xyz/acceso/` | SEG-01, SEG-02 | Verificado el 12-10-2026: CSP, `X-Frame-Options`, `Permissions-Policy` y `Referrer-Policy`. HSTS llega con `max-age=3600` (sección 11) |
 | `check --deploy` | Lo ejecuta `desplegar.sh` | SEG-01 | Verificado el 12-10-2026: `desplegar.sh` terminó bien. `security.W005` y `W021` son las esperadas |
-| La VM no acepta conexiones | Lista de reglas de firewall; prueba de conexión al puerto 22 y al 443 de su IP | — | Pendiente |
+| La VM no acepta conexiones | Lista de reglas de firewall; prueba de conexión al puerto 22 y al 443 de su IP | — | Verificado el 13-10-2026 desde la red del responsable (**PowerShell**, `Test-NetConnection` a la IP pública de la VM): puertos 22 y 443 con `TcpTestSucceeded: False`, y el ping sin respuesta. La IP no se anota aquí: el repositorio es público. No se informó la lista de reglas de firewall |
 | La auditoría registra la IP real | Un acceso fallido desde su red; mirar el evento en el panel | AUT-04 | Cubierta por pruebas automáticas; no verificada a mano en staging (decisión del responsable, 12-10-2026): `core/tests/test_ip.py` (`test_detras_de_cloudflared_la_ip_sale_de_cf_connecting_ip`, `test_un_encabezado_enviado_por_un_origen_que_no_es_de_confianza_se_ignora`) y `cuentas/tests/test_acceso_bloqueo.py` (`test_en_produccion_la_auditoria_anota_la_ip_del_visitante_solo_si_viene_del_tunel`). Comprobado además con la imagen de producción en local el 11 y el 12-10-2026 |
 | Bucket: sin firma 403, firma alterada y URL vencida rechazadas | `comprobar_almacenamiento --firma` | DOC-03, DOC-04, prueba 11 | Verificado el 12-10-2026 con el commit `a46c641`, sin las variables `AWS_*` en `web.env`: terminó con "El almacenamiento funciona." La URL vencida respondió 400. El primer intento, con `da83509`, había fallado (bitácora) |
 | Subida de 24,9 MB y descarga con el mismo SHA-256 | Por el panel | RNF-02, SEG-07 | Pendiente, opcional: no se ejecutó en staging. En local, verificado el 11-10-2026 |
 | Correo: llega una cotización con `Reply-To`; SPF, DKIM y DMARC en "pass" | Ver el original del mensaje recibido | SOL-08 | Verificado el 12-10-2026 en Gmail, en el aviso de una consulta: SPF, DKIM y DMARC en PASS, y la solicitud quedó como enviada. `Reply-To` no se informó: lo cubre `test_sol_08_el_correo_al_profesional_lleva_los_datos_el_enlace_y_el_reply_to` |
 | Aviso de error 500 y de tarea fallida | `avisar_fallo prueba`; un error provocado | RNF-05 | Verificado el 12-10-2026 el aviso de tarea fallida: `avisar_fallo prueba` respondió "Aviso enviado." y el correo "[seba.fmartinez.xyz] Falló la tarea programada prueba" llegó al instante a la bandeja de entrada, sin datos sensibles. No se provocó en staging un error 500 real ni el fallo de una tarea por systemd: el primero lo cubre `core/tests/test_avisos.py` (`test_un_error_real_en_una_vista_llega_por_el_log_de_django`) |
-| Tareas programadas | `systemctl list-timers 'webseba-*'`, `journalctl -u 'webseba-*'` | SOL-11, ADM-09, AUD-03 | Parcial, 12-10-2026: los cinco temporizadores `webseba-*` están activos, también tras el segundo despliegue. Pendiente: revisar en el journal una ejecución de cada uno |
+| Tareas programadas | `systemctl list-timers 'webseba-*'`, `journalctl -u 'webseba-*'` | SOL-11, ADM-09, AUD-03 | Verificado en el journal de la VM, salvo la tarea mensual. `webseba-reintentar`: 15 ejecuciones seguidas con "Finished" el 12-10-2026, entre las 17:31 y las 21:01, sin fallos. Primera ejecución automática de las nocturnas, el 13-10-2026, todas con "Finished": respaldo a las 02:30:38, `purgar_papelera` a las 03:20:38 y `clearsessions` a las 03:40:33. **Pendiente hasta el 01-11-2026:** `webseba-auditoria`, que corre el día 1 de cada mes |
 | Simulacro de restauración | Sección 7 | SEG-11 | Verificado en la VM el 12-10-2026, desde el bucket de respaldos: mismos conteos, base y bucket coherentes, mismo SHA-256, 2FA sin enrolar de nuevo, 236 s (tabla de la sección 7). El paso 8 también: un documento purgado se recuperó de las versiones del bucket con el mismo SHA-256 |
 | Estáticos desde la caché de Cloudflare | `cf-cache-status: HIT` en la segunda petición | — | Verificado el 12-10-2026: el CSS con `HIT` y el HTML con `DYNAMIC` |
 | Lighthouse móvil y tiempos de respuesta | Contra la URL pública | RNF-06, RNF-02 | Pendiente, opcional: no se ejecutó en staging. En local dio de 98 a 100. Los tiempos de respuesta tras un despliegue sí están medidos (bitácora) |
@@ -684,7 +736,15 @@ Las dos filas no son comparables columna por columna en `si` y `so`: la primera 
 - **Aviso de tarea fallida:** `avisar_fallo prueba` respondió "Aviso enviado." y el correo llegó al instante a la bandeja de entrada, sin datos sensibles.
 - **Logs sin tokens e IP real en la auditoría:** el responsable decidió no probarlas a mano en la VM. Quedan cubiertas por pruebas automáticas; no verificadas a mano en staging. Los nombres de las pruebas están en la tabla de arriba. Tres se agregaron ese día, porque faltaba cubrir la URL firmada de las descargas en los logs y la IP en la auditoría con la configuración exacta del servidor.
 
-Pendientes opcionales, sin ejecutar en staging: la subida de 24,9 MB a través del túnel y Lighthouse. Tampoco se informaron, y siguen como "Pendiente" en la tabla: la redirección de HTTP a HTTPS, que la VM no acepta conexiones, y una ejecución de cada temporizador en el journal.
+Pendientes opcionales, sin ejecutar en staging: la subida de 24,9 MB a través del túnel y Lighthouse. Ese día no se informaron la redirección de HTTP a HTTPS, que la VM no acepta conexiones, ni una ejecución de cada temporizador en el journal: quedaron verificadas el 13-10-2026 (entrada siguiente).
+
+**13-10-2026. Tres verificaciones que faltaban.** Informado por el responsable.
+
+- **HTTP a HTTPS:** `curl -sI http://seba.fmartinez.xyz/` respondió 301 con `location: https://seba.fmartinez.xyz/`.
+- **Sin conexiones entrantes:** `Test-NetConnection` a la IP pública de la VM, en los puertos 22 y 443, dio `TcpTestSucceeded: False`, y el ping no respondió. La IP no se escribe en el repositorio.
+- **Temporizadores:** `webseba-reintentar` con 15 ejecuciones seguidas "Finished" el 12-10-2026, entre las 17:31 y las 21:01, sin fallos. Las nocturnas corrieron solas por primera vez el 13-10-2026, todas "Finished": respaldo a las 02:30:38, `purgar_papelera` a las 03:20:38 y `clearsessions` a las 03:40:33. La de auditoría es mensual: queda pendiente hasta el 01-11-2026.
+
+Ese mismo día se agregaron `exportar_contenido` e `importar_contenido`, para llevar a producción el contenido real que el responsable cargó en el panel de staging (sección 11, DEC-200 y DEC-201). Probados en local y en la CI con la imagen de producción, por la entrada y la salida estándar; **sin ejecutar todavía en la VM**.
 
 ## 13. Solicitud de eliminación de datos
 

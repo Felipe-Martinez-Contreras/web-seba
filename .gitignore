@@ -14,3 +14,5 @@ htmlcov/
 node_modules/
 *.sqlite3
 .DS_Store
+# Contenido del sitio exportado con exportar_contenido: trae datos de contacto.
+contenido-sitio*.json

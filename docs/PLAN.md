@@ -15,7 +15,7 @@ Plan de la Etapa 0 (sección 11 de `ESPECIFICACION.md`). Se actualiza al avanzar
 | 5 | Portal del cliente | Terminada el 11-10-2026; pendiente de aprobación del responsable |
 | 6 | Sitio público y solicitudes | Terminada el 11-10-2026, con las fotografías aprobadas; pendiente de aprobación del responsable |
 | 7 | Endurecimiento y calidad | Aprobada por el responsable el 11-10-2026, tras su revisión en Firefox |
-| 8 | Despliegue y operación | En curso. Fase A (repositorio) terminada el 11-10-2026; Fase B (staging real) pendiente de los pasos del responsable en las consolas |
+| 8 | Despliegue y operación | En curso. Fase A (repositorio) terminada el 11-10-2026; Fase B: staging en marcha y verificado desde el 12-10-2026 (secciones 18 a 20). Falta el paso a producción, que decide el responsable |
 
 ## 1. Entorno revisado (09-10-2026)
 
@@ -149,13 +149,13 @@ De la Fase B, una vez que exista staging (`DESPLIEGUE.md` §12):
 - `comprobar_almacenamiento --firma` contra el bucket real (prueba 11, DOC-03, DOC-04) y los dos ajustes previstos si hacen falta (DEC-183).
 - HTTPS, encabezados y `check --deploy` en la VM; la IP real en la auditoría; subida de 24,9 MB.
 - Correo real con SPF, DKIM y DMARC; aviso de error 500 y de tarea fallida.
-- Temporizadores en marcha y simulacro de restauración anotado.
+- Temporizadores en marcha y simulacro de restauración anotado. Hecho; solo falta la tarea mensual de auditoría, que corre el 01-11-2026.
 - Lighthouse y tiempos de respuesta contra staging (RNF-06, RNF-02); memoria y swap bajo uso.
 - Monitor de disponibilidad y alerta de presupuesto funcionando.
 
 Del responsable, antes de pasar a producción (lista del README):
 
-- Datos comerciales de la sección 0 y contenido del sitio en Panel › Configuración › Contenido del sitio; `contenido_pendiente --estricto` sin pendientes.
+- Datos comerciales de la sección 0 y contenido del sitio en Panel › Configuración › Contenido del sitio; `contenido_pendiente --estricto` sin pendientes. El responsable ya cargó el contenido real en staging: se lleva a producción con `exportar_contenido` e `importar_contenido` (`DESPLIEGUE.md` §11).
 - Texto real de la política de privacidad, que mencione el almacenamiento en EE. UU. (responsable del negocio).
 - Aprobación explícita del paso a producción.
 
@@ -418,3 +418,24 @@ Un commit con las mejoras gratuitas (DEC-193 a DEC-199):
 - **`check --deploy` corre antes de reiniciar**, no después: un error deja la versión anterior en marcha.
 - **`vfs_cache_pressure` no se tocó**: nada de lo medido lo justifica.
 - **El minuto de CPU al 90 % quedó sin explicar**: no volvió a aparecer tras las mejoras y el diagnóstico no se ejecutó.
+
+## 20. Etapa 8, Fase B: verificaciones del 13-10-2026 y traslado del contenido
+
+Tres verificaciones que faltaban, informadas por el responsable: HTTP redirige a HTTPS con 301; la VM no acepta conexiones en los puertos 22 y 443 ni responde al ping; y los temporizadores corren solos (15 ejecuciones de los reintentos el 12-10-2026 y la primera noche de respaldo, papelera y sesiones el 13-10-2026). La tarea de auditoría es mensual: pendiente hasta el 01-11-2026.
+
+El responsable cargó en el panel de staging el contenido real del negocio, y el paso a producción borra la base. Un commit con la forma de llevarlo (DEC-200 y DEC-201):
+
+- **`exportar_contenido`:** escribe en un archivo JSON los datos del negocio y los servicios, sin claves internas ni fechas, y sin los datos de `cargar_demo`.
+- **`importar_contenido`:** lo carga en una base sin contenido. Repetirlo no duplica; ante algo inesperado en el archivo, o ante una base con otro contenido, falla sin modificar nada.
+- **El archivo trae datos de contacto:** queda fuera del repositorio, de la imagen y de los logs.
+- **Guía:** dos pasos nuevos en el paso a producción, con la descarga y la subida por la ventana SSH (`DESPLIEGUE.md` §11).
+
+Probado con 44 pruebas, con la imagen de producción en local sobre una base vacía y con un paso nuevo de la CI. **No ejecutado en la VM.**
+
+### Diferencias con lo pedido
+
+- **Una copia hecha con `dumpdata sitio` no se importa.** Trae claves internas, fechas y los servicios DEMO; el comando la reconoce y pide exportar de nuevo.
+- **Un servicio real escrito encima de uno DEMO cambia de dirección al exportar:** de `servicio-demo-N` a una derivada de su nombre. El comando lo informa.
+- **Los datos del negocio que sigan con texto DEMO salen vacíos**, y después de importar figuran como "Sin completar".
+- **`importar_contenido` no pisa una base con otro contenido**, ni siquiera el de una importación anterior corregida en el panel. No tiene opción para forzarlo.
+- **El archivo puede quedarse en la carpeta personal de la VM** entre la exportación y la importación: el paso a producción borra la base y el bucket, no esa carpeta. La descarga queda como resguardo.

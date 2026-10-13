@@ -150,6 +150,17 @@ jobs:
           echo "$ruta" | grep --quiet --extended-regexp '^/static/css/app\.[0-9a-f]+\.css$'
           despliegue/vm/dc exec -T web python -I -S docker/salud.py "$ruta" > /dev/null
           despliegue/vm/dc exec -T web grep --quiet --fixed-strings -e "--color-primario:" "staticfiles${ruta#/static}"
+      # Como en el paso a producción (docs/DESPLIEGUE.md, sección 11), con datos ficticios.
+      - name: El contenido del sitio va y vuelve por la entrada y la salida estándar
+        run: |
+          ejemplo=sitio/tests/datos/contenido-ejemplo.json
+          despliegue/vm/dc exec -T web python manage.py importar_contenido - < "$ejemplo"
+          despliegue/vm/dc exec -T web python manage.py exportar_contenido - > exportado.json
+          cmp "$ejemplo" exportado.json
+          despliegue/vm/dc exec -T web python manage.py importar_contenido - < exportado.json | tee repetido.txt
+          grep --quiet --fixed-strings "no se cambió nada" repetido.txt
+          despliegue/vm/dc logs --no-log-prefix web > registros-contenido.txt
+          if grep --quiet --fixed-strings "5550 0101" registros-contenido.txt; then exit 1; fi
       - name: check --deploy con la configuración de producción
         run: despliegue/vm/dc exec -T web python manage.py check --deploy
       - name: La aplicación no corre como root y no publica puertos

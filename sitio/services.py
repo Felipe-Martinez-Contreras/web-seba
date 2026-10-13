@@ -94,10 +94,15 @@ def guardar_datos(formulario):
     return formulario.save()
 
 
-def _slug_libre(nombre):
+def _slug_en_uso(slug):
+    return Servicio.objects.filter(slug=slug).exists()
+
+
+def slug_libre(nombre, ocupado=_slug_en_uso):
+    """Slug derivado del nombre que `ocupado` no reconoce como tomado."""
     base = slugify(nombre)[:120] or "servicio"
     slug, numero = base, 2
-    while Servicio.objects.filter(slug=slug).exists():
+    while ocupado(slug):
         slug = f"{base}-{numero}"
         numero += 1
     return slug
@@ -108,7 +113,7 @@ def crear_servicio(formulario):
     aquí y no cambia al renombrarlo: los enlaces que ya circulan siguen funcionando."""
     with transaction.atomic():
         servicio = formulario.save(commit=False)
-        servicio.slug = _slug_libre(servicio.nombre)
+        servicio.slug = slug_libre(servicio.nombre)
         servicio.orden = (Servicio.objects.aggregate(ultimo=Max("orden"))["ultimo"] or 0) + 1
         servicio.save()
     return servicio
