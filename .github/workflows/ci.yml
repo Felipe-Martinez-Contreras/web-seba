@@ -140,6 +140,13 @@ jobs:
           despliegue/vm/tarea.sh reintentar_notificaciones | tee tarea.txt
           grep --quiet --fixed-strings "Notificaciones por reintentar: 0" tarea.txt
           test "$(wc -l < tarea.txt)" = "1"
+      - name: Sin solicitudes vencidas, la tarea que las borra no carga la aplicación
+        run: |
+          despliegue/vm/tarea.sh depurar_solicitudes | tee tarea.txt
+          grep --quiet --fixed-strings "Solicitudes vencidas: 0" tarea.txt
+          test "$(wc -l < tarea.txt)" = "1"
+          despliegue/vm/dc exec -T web python manage.py depurar_solicitudes --simular | tee simulacion.txt
+          grep --quiet --fixed-strings "No se borró nada." simulacion.txt
       - name: HEAD responde 200 y sin cuerpo, por Gunicorn
         run: |
           despliegue/vm/dc exec -T web python docker/head.py /salud/

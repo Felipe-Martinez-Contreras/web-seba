@@ -92,6 +92,7 @@ La guía de uso para el profesional está en [`docs/MANUAL_ADMIN.md`](docs/MANUA
 | Restablecer el 2FA de un administrador | `docker compose run --rm web python manage.py restablecer_2fa <rut>` |
 | Desbloquear un RUT o una IP | `docker compose run --rm web python manage.py desbloquear_acceso --rut <rut>` (o `--ip <ip>`) |
 | Borrar la auditoría más antigua que la retención | `docker compose run --rm web python manage.py depurar_auditoria` |
+| Borrar las consultas y cotizaciones de más de 12 meses (`--simular` solo cuenta) | `docker compose run --rm web python manage.py depurar_solicitudes` |
 | Borrar definitivamente lo que lleva más de 30 días en la papelera | `docker compose run --rm web python manage.py purgar_papelera` |
 | Listar el contenido del sitio que falta completar | `docker compose run --rm web python manage.py contenido_pendiente` (con `--estricto` termina con error si queda algo) |
 | Cargar datos de demostración, marcados DEMO | `docker compose run --rm web python manage.py cargar_demo` |

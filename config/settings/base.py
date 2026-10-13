@@ -156,6 +156,9 @@ SOLICITUDES_TIEMPO_MINIMO_SEGUNDOS = env.entero("SOLICITUDES_TIEMPO_MINIMO_SEGUN
 # Punto de extensión para un captcha, desactivado: ruta de una función que recibe la
 # petición y devuelve si el captcha fue resuelto.
 SOLICITUDES_CAPTCHA = env.texto("SOLICITUDES_CAPTCHA", "")
+# Días que se conserva una consulta o una cotización desde que se recibe; `depurar_solicitudes`
+# borra las anteriores. Es el plazo que informa la política de privacidad. Mínimo, 30.
+SOLICITUDES_RETENCION_DIAS = env.entero("SOLICITUDES_RETENCION_DIAS", 365)
 # `cargar_demo` solo corre con esta variable; producción nunca la define.
 DEMO_PERMITIDO = env.booleano("DEMO_PERMITIDO", False)
 

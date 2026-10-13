@@ -164,7 +164,9 @@ La medición es local y sobre un equipo de desarrollo. Repetirla en staging est�
 - **El límite de envíos es por IP.** Varias personas detrás de una misma IP comparten los 5 envíos por hora. El contador, como los del acceso, no es atómico.
 - **La IP del visitante no se guarda,** pero vive hasta una hora en la clave del contador, en la tabla de caché.
 - **Una notificación puede demorarse.** Si el proceso se reinicia antes de enviar, la solicitud queda "por enviar" hasta la siguiente corrida de `reintentar_notificaciones`. En producción corre cada 15 minutos (`DESPLIEGUE.md` §6).
-- **Los datos personales de las solicitudes no tienen plazo de retención.** Nombre, correo, teléfono y mensaje quedan hasta que alguien los borre en la base. Definir el plazo es parte de la asesoría legal pendiente (Ley 21.719).
+- **Las solicitudes se borran a los 12 meses, pero no sus copias fuera del sistema.** `depurar_solicitudes` elimina a diario las consultas y cotizaciones de más de `SOLICITUDES_RETENCION_DIAS` (365), con sus notas internas y el estado de su notificación (DEC-203). No alcanza el aviso que llegó a la casilla del responsable ni el historial de Resend, y las filas siguen en los respaldos hasta 14 días. Los eventos de auditoría de esa solicitud quedan hasta sus 24 meses, con su UUID y sin datos de la persona.
+- **Ese borrado no tiene vuelta atrás desde la aplicación.** Un plazo mal puesto borra de más en la siguiente corrida; por eso el mínimo es 30 días, y con menos el comando y `manage.py check` fallan sin borrar nada. Entre 30 y 365, la única vuelta atrás son los respaldos de 14 días.
+- **Los plazos de cuentas y documentos tras el término de una relación no están automatizados.** La política promete 6 meses y 5 años (DEC-204); hoy se cumplen a mano y el panel no permite borrar usuarios ni clientes (`MANUAL_ADMIN.md`, `PLAN.md`).
 
 ## 5. Excepciones justificadas
 
@@ -183,6 +185,7 @@ Estos procedimientos están detallados en `docs/DESPLIEGUE.md` §8. Todos se eje
 | Restablecer el 2FA de un administrador | `python manage.py restablecer_2fa <rut>` |
 | Desbloquear un RUT o una IP | `python manage.py desbloquear_acceso --rut <rut>` o `--ip <ip>` |
 | Borrar la auditoría más antigua que la retención | `python manage.py depurar_auditoria` (una vez al mes) |
+| Borrar las consultas y cotizaciones de más de 12 meses | `python manage.py depurar_solicitudes` (a diario; `--simular` solo cuenta) |
 | Borrar definitivamente lo que superó el plazo de la papelera | `python manage.py purgar_papelera` (a diario) |
 | Comprobar el almacenamiento de documentos, también que el bucket no se lea sin firma | `python manage.py comprobar_almacenamiento` (antes de cargar documentos reales y tras cambiar credenciales) |
 

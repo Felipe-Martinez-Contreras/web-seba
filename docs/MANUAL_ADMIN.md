@@ -36,6 +36,18 @@ En la ficha del cliente, pulse **Desactivar** y confirme.
 
 Los clientes no se pueden eliminar desde el panel.
 
+### Cuando termina la relación con un cliente
+
+La política de privacidad promete plazos que el sistema todavía no cumple solo. Hasta que exista la función, hágalo a mano, en este orden:
+
+1. **Entregue la copia.** En la ficha del cliente, pestaña Documentos, abra cada carpeta y descargue cada documento. Entréguele todo a la empresa por un medio seguro. No hay todavía una descarga de todo junto.
+2. **Desactive el cliente** (sección anterior). Sus usuarios pierden el acceso de inmediato y los documentos dejan de estar disponibles para ellos. Nada se borra: usted los sigue viendo en el panel.
+3. **Anote tres fechas** en las notas internas del cliente: el término, el término más 6 meses y el término más 5 años.
+4. **A los 6 meses,** las cuentas de sus usuarios deben eliminarse. **El panel no permite borrar usuarios:** avise a quien mantiene el sistema.
+5. **A los 5 años,** se eliminan los documentos y los datos de la empresa. Los documentos puede eliminarlos usted, uno por uno, desde su ficha; quedan 30 días en la papelera y después se borran. La empresa y su contacto no se pueden borrar desde el panel: avise a quien mantiene el sistema.
+
+Mientras tanto, no reactive el cliente salvo que la relación se retome.
+
 ## Carpetas
 
 En la ficha del cliente, pestaña **Documentos**:
@@ -154,6 +166,12 @@ Cada solicitud muestra además qué pasó con el correo de aviso que el sistema 
 | Por enviar | Se está enviando; espere unos segundos y recargue |
 | Fallida | El aviso no se pudo enviar. La solicitud está guardada completa. Pulse **Reintentar notificación** |
 | Correo no configurado | El sistema aún no tiene un correo para avisarle. La solicitud está guardada completa |
+
+**Las solicitudes se eliminan solas a los 12 meses de recibidas,** con sus notas internas, en cualquier estado. Es el plazo de la política de privacidad.
+
+- Si la persona pasó a ser cliente, lo que necesite conservar debe estar en la ficha del cliente, no en la solicitud.
+- El aviso que le llegó a usted por correo no se borra solo: elimínelo de su casilla con el mismo plazo.
+- Si alguien pide que se borre antes su consulta, avise a quien mantiene el sistema.
 
 La solicitud se guarda siempre, aunque el aviso falle. Si recibe pocos avisos, revise igual la bandeja: el inicio del panel muestra cuántas están pendientes.
 

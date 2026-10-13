@@ -10,6 +10,9 @@ from core.models import ModeloConFechas
 # reinicio del proceso) y la retoma `reintentar_notificaciones`.
 ESPERA_DEL_HILO = datetime.timedelta(minutes=5)
 OTRO_SERVICIO = "Otro / no estoy seguro"
+# Menos que esto borraría solicitudes que todavía se están atendiendo: es un error de
+# configuración, no un plazo.
+RETENCION_MINIMA_DIAS = 30
 
 
 class SolicitudQuerySet(models.QuerySet):
@@ -43,6 +46,10 @@ class SolicitudQuerySet(models.QuerySet):
         if correo_configurado:
             condicion |= Q(notificacion=Solicitud.Notificacion.NO_CONFIGURADA)
         return self.filter(condicion)
+
+    def vencidas(self, *, ahora, dias):
+        """Las que superaron el plazo de conservación, en cualquier estado."""
+        return self.filter(creado_en__lt=ahora - datetime.timedelta(days=dias))
 
 
 class Solicitud(ModeloConFechas):

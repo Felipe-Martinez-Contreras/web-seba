@@ -296,9 +296,12 @@ Las instala `desplegar.sh` como temporizadores de systemd, en hora de Chile.
 | `webseba-respaldo.timer` | `respaldar.sh` | 02:30 |
 | `webseba-papelera.timer` | `purgar_papelera` | 03:20 |
 | `webseba-sesiones.timer` | `clearsessions` | 03:40 |
+| `webseba-solicitudes.timer` | `depurar_solicitudes` | 03:50 |
 | `webseba-auditoria.timer` | `depurar_auditoria` | Día 1 de cada mes, 04:10 |
 
 Las tareas corren dentro del contenedor `web` que ya está en marcha (`dc exec`), no en uno nuevo. `reintentar_notificaciones` corre 96 veces al día y casi nunca tiene trabajo: antes de cargar la aplicación, `tarea.sh` pregunta con `docker/pendientes.py` si hay algo por reintentar, y si no hay, termina ahí (DEC-196).
+
+`depurar_solicitudes` borra las consultas y cotizaciones recibidas hace más de `SOLICITUDES_RETENCION_DIAS` (365 por omisión; con menos de 30 falla sin borrar nada). Es el plazo de 12 meses de la política de privacidad (DEC-203). Usa la misma consulta liviana previa que los reintentos. Cuando borra algo, deja un evento de auditoría con el conteo. Para saber qué borraría, sin borrar: `sudo dc exec web python manage.py depurar_solicitudes --simular`.
 
 Si una tarea termina con error, systemd llama a `avisar_fallo` y llega un correo a `ERRORES_DESTINATARIOS`. Si lo caído es la aplicación entera, ese correo no sale: para eso está el monitor.
 
@@ -488,6 +491,7 @@ Todos en la **VM**, con `sudo /opt/web-seba/despliegue/vm/dc exec web python man
 | Ver qué contenido falta | `contenido_pendiente` (con `--estricto` falla si falta algo) |
 | Comprobar el bucket | `comprobar_almacenamiento --firma` |
 | Sacar a un archivo el contenido del sitio | `exportar_contenido -` con `-T` y `> archivo` (sección 11) |
+| Ver cuántas solicitudes borraría la tarea diaria, sin borrar | `depurar_solicitudes --simular` |
 | Cargar ese archivo en una base sin contenido | `importar_contenido -` con `-T` y `< archivo` (sección 11) |
 
 Los tres primeros imprimen un enlace de un solo uso: no lo pegue en canales que guarden historial. El desbloqueo de un usuario cliente se hace desde el panel.
@@ -746,9 +750,13 @@ Pendientes opcionales, sin ejecutar en staging: la subida de 24,9 MB a través d
 
 Ese mismo día se agregaron `exportar_contenido` e `importar_contenido`, para llevar a producción el contenido real que el responsable cargó en el panel de staging (sección 11, DEC-200 y DEC-201). Probados en local y en la CI con la imagen de producción, por la entrada y la salida estándar; **sin ejecutar todavía en la VM**.
 
+También ese día se agregó `depurar_solicitudes`, con su temporizador diario de las 03:50, para cumplir el plazo de 12 meses de la política de privacidad (DEC-203). Probado en local y en la CI con la imagen de producción; **sin ejecutar todavía en la VM**: el temporizador se instala con el siguiente `desplegar.sh`.
+
 ## 13. Solicitud de eliminación de datos
 
-Plazo real de borrado de un documento: hasta 30 días en la papelera, más la purga diaria, más 30 días de versiones antiguas en el bucket. En la base, las filas borradas siguen en los respaldos hasta 14 días.
+Plazo real de borrado de un documento: hasta 30 días en la papelera, más la purga diaria, más 30 días de versiones antiguas en el bucket. En la base, las filas borradas siguen en los respaldos y en las instantáneas del disco hasta 14 días.
+
+Las consultas y cotizaciones se borran solas a los 12 meses (`depurar_solicitudes`, sección 6). Para borrar antes la de una persona que lo pide no hay botón en el panel: es una operación manual en la base, que debe quedar anotada con fecha y motivo. El aviso que llegó por correo se borra aparte, en la casilla del responsable.
 
 Si una solicitud exige borrar antes:
 
@@ -761,11 +769,11 @@ Si una solicitud exige borrar antes:
 
 Recomendación para la asesoría legal; no bloquea el paso a producción (decisión del responsable, DEC-172). Marco: Ley 19.628 y su reforma por la Ley 21.719. La entrada en vigor de la Ley 21.719 estaba fijada para el 01-12-2026; según informó el responsable, el 01-09-2026 el Gobierno ingresó un proyecto que la posterga al 01-12-2027. **La fecha queda sujeta a ese proyecto**; la recomendación de cumplirla se mantiene.
 
-1. **Transferencia internacional.** Los datos salen de Chile hacia EE. UU.: Google (documentos, base de datos y respaldos), Cloudflare (todo el tráfico) y Resend (correos). Definir la base de licitud y las garantías exigibles.
+1. **Transferencia internacional.** Los datos salen de Chile hacia EE. UU.: Google (documentos, base de datos y respaldos), Cloudflare (todo el tráfico), Resend (correos) y Microsoft (la casilla personal de Outlook que recibe los avisos, sin acuerdo de tratamiento de datos). Definir la base de licitud y las garantías exigibles.
 2. **Datos sensibles.** Los documentos pueden traer datos de salud de trabajadores. Confirmar si su tratamiento por encargo y su traslado requieren algo más.
 3. **Contratos de encargo.** Aceptar y archivar los acuerdos de tratamiento de datos (DPA) de Google Cloud, Cloudflare y Resend.
 4. **Cloudflare ve el tráfico descifrado**: contraseñas al iniciar sesión y documentos mientras se suben. No los almacena, pero es un encargado más (`SEGURIDAD.md` §8).
 5. **Política de privacidad.** Debe informar el almacenamiento en EE. UU. y los encargados. La redacta el responsable del negocio. Hay un borrador para revisión legal, solo con marcadores, en `POLITICA_PRIVACIDAD_BORRADOR.md`.
-6. **Plazos de conservación.** Solicitudes del sitio (hoy sin plazo), auditoría (24 meses), respaldos (14 días), versiones del bucket (30 días) y el plazo real de una eliminación (sección 13).
+6. **Plazos de conservación.** Decididos por el responsable el 13-10-2026 (DEC-204): solicitudes del sitio, 12 meses, que el sistema cumple solo (DEC-203); cuentas, 6 meses tras el término de la relación; datos de la empresa y documentos, 5 años. Los dos últimos se cumplen a mano por ahora (`MANUAL_ADMIN.md`). Además: auditoría (24 meses), respaldos e instantáneas (14 días), versiones del bucket (30 días) y el plazo real de una eliminación (sección 13). El detalle y las preguntas están en `POLITICA_PRIVACIDAD_BORRADOR.md`.
 7. **Derechos de las personas y brechas.** Procedimiento para acceso, rectificación, supresión y portabilidad, y para avisar una brecha de seguridad.
 8. **Relación con las empresas cliente.** Quién es responsable y quién encargado de los datos de sus trabajadores, y qué contrato lo respalda.

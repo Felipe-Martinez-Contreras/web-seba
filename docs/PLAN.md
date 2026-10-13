@@ -163,6 +163,8 @@ Sin etapa:
 
 - Revisión legal de la Ley 19.628 y la Ley 21.719 (`DESPLIEGUE.md` §14): recomendación, no bloqueo (DEC-172).
 - Migración a Django 6.2 LTS cuando se publique.
+- **Terminar relación con un cliente** (sin implementar; DEC-204): una acción del panel que desactive sus cuentas al instante, las borre a los 6 meses y deje sus documentos bloqueados 5 años, sin acceso del cliente, para eliminarlos después junto con los datos de la empresa. Por resolver antes de construirla: un usuario con eventos de auditoría no se puede borrar mientras existan (`EventoAuditoria.actor` es `PROTECT`, 24 meses), así que hay que elegir entre anonimizar la cuenta o desligar esos eventos; y `Empresa`, `Carpeta` y `Documento` también se protegen entre sí.
+- **Exportar todos los documentos de un cliente** en un `.zip` (sin implementar; DEC-204), para entregarle su copia al terminar. Por resolver: el tamaño frente a la memoria de la VM (1 GB) y dejar la descarga en la auditoría.
 - Fotos propias del profesional (`docs/FOTOS.md`). El logo se entregó el 13-10-2026 (DEC-202).
 - Safari y Safari en iOS, con un dispositivo Apple (RNF-03); recorrido de E2 y E6 con un administrador real y su 2FA; el portal en un teléfono real.
 - Lector de pantalla real: el responsable decidió el 11-10-2026 no hacer la pasada con el Narrador (E8 queda con ese pendiente; la lista sigue en el README).
@@ -455,3 +457,18 @@ El responsable entregó el logo el 13-10-2026: original, sin licencia de tercero
 - **Los SVG no son copia exacta de los originales:** se les quitó el título accesible, que traía el nombre del profesional. En el sitio no cambia nada: el símbolo es decorativo.
 - **Los logos horizontales no se guardaron en `static/`**, como se pidió primero: el repositorio es público y el responsable decidió dejarlos fuera.
 
+## 22. Etapa 8, Fase B: plazos de la política de privacidad
+
+El responsable decidió los plazos de conservación el 13-10-2026 (DEC-204) y el borrador de la política los lleva. Sigue siendo un borrador hasta la revisión legal.
+
+- **Solicitudes, 12 meses:** lo cumple el sistema. `depurar_solicitudes` corre a diario, con `--simular` para contar sin borrar y un evento de auditoría con el conteo (DEC-203).
+- **Cuentas (6 meses) y documentos y datos de la empresa (5 años):** se cumplen a mano. `MANUAL_ADMIN.md` dice cómo, y las dos funciones que lo harían quedan anotadas arriba, en "Sin etapa".
+- **Acuerdos de tratamiento de datos:** revisados los de Google Cloud, Cloudflare y Resend; sus nombres están en el borrador.
+
+### Diferencias con lo pedido
+
+- **El mínimo del plazo es 30 días**, no 1: lo pidió el responsable al aprobar el plan.
+- **No se tocó `preparar.sh`.** Los temporizadores los instala `desplegar.sh`, que copia todo `despliegue/systemd/` y activa cada `*.timer`.
+- **Microsoft no tiene acuerdo de tratamiento para una cuenta personal de Outlook.** El texto del panel lo dice como es, en vez de citarlo junto a los otros tres.
+- **El panel no puede borrar usuarios ni clientes.** Los borrados de los 6 meses y de los 5 años son, por ahora, una operación en el servidor.
+- **El borrado no alcanza la casilla de correo del responsable ni el historial de Resend.**

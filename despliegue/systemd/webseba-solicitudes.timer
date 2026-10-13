@@ -1,0 +1,11 @@
+[Unit]
+Description=web-seba: borrar a diario las solicitudes que superaron su plazo (SEG-12)
+
+[Timer]
+OnCalendar=*-*-* 03:50:00
+Unit=webseba-tarea@depurar_solicitudes.service
+Persistent=true
+RandomizedDelaySec=60
+
+[Install]
+WantedBy=timers.target

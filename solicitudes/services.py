@@ -4,17 +4,21 @@ El orden es siempre el mismo: primero se guarda la solicitud y después se inten
 Un fallo del correo nunca la pierde ni llega al visitante.
 """
 
+import datetime
 import logging
+from dataclasses import dataclass
 
 from django.conf import settings
 from django.db import transaction
+from django.db.models import Count
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.formats import date_format
 
 from auditoria.services import Accion, registrar
 from core import correo, tareas
-from solicitudes.models import Solicitud
+from solicitudes.models import RETENCION_MINIMA_DIAS, Solicitud
 
 logger = logging.getLogger(__name__)
 
@@ -170,3 +174,66 @@ def cambiar_estado(solicitud, estado, *, actor, request):
 def guardar_notas(solicitud, notas):
     solicitud.notas_internas = notas
     solicitud.save(update_fields=["notas_internas", "actualizado_en"])
+
+
+# --- Plazo de conservación ------------------------------------------------------------
+
+
+class PlazoInvalido(Exception):
+    """SOLICITUDES_RETENCION_DIAS está bajo el mínimo: no se borra nada."""
+
+
+def plazo_de_retencion():
+    """Los días que se conserva una solicitud. Falla si la configuración está bajo el mínimo."""
+    dias = settings.SOLICITUDES_RETENCION_DIAS
+    if dias < RETENCION_MINIMA_DIAS:
+        raise PlazoInvalido(
+            f"SOLICITUDES_RETENCION_DIAS vale {dias} y el mínimo es {RETENCION_MINIMA_DIAS}: "
+            "con menos se borrarían solicitudes que todavía se están atendiendo."
+        )
+    return dias
+
+
+@dataclass(frozen=True)
+class Depuracion:
+    limite: datetime.datetime
+    consultas: int
+    cotizaciones: int
+
+    @property
+    def total(self):
+        return self.consultas + self.cotizaciones
+
+    @property
+    def fecha(self):
+        return date_format(timezone.localtime(self.limite), "d-m-Y")
+
+
+def depurar_vencidas(*, simular=False):
+    """Lo que hace `depurar_solicitudes`: borra las consultas y cotizaciones que superaron
+    el plazo de conservación. Con `simular` solo cuenta.
+
+    Con la fila se van sus notas internas y el estado de su notificación. El evento de
+    auditoría lleva el conteo y la fecha de corte, nunca datos de las personas.
+    """
+    dias, ahora = plazo_de_retencion(), timezone.now()
+    limite = ahora - datetime.timedelta(days=dias)
+    with transaction.atomic():
+        vencidas = Solicitud.objects.vencidas(ahora=ahora, dias=dias)
+        por_tipo = dict(vencidas.values_list("tipo").annotate(Count("pk")))
+        resultado = Depuracion(
+            limite=limite,
+            consultas=por_tipo.get(Solicitud.Tipo.CONSULTA, 0),
+            cotizaciones=por_tipo.get(Solicitud.Tipo.COTIZACION, 0),
+        )
+        if resultado.total and not simular:
+            vencidas.delete()
+            # La depuración deja su propio rastro, igual que la de la auditoría.
+            registrar(
+                Accion.SOLICITUDES_DEPURADAS,
+                detalle=(
+                    f"{resultado.total} solicitudes anteriores al {resultado.fecha} "
+                    f"({resultado.consultas} consultas, {resultado.cotizaciones} cotizaciones)"
+                ),
+            )
+    return resultado
