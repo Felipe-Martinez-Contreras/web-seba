@@ -765,7 +765,7 @@ Recomendación para la asesoría legal; no bloquea el paso a producción (decisi
 2. **Datos sensibles.** Los documentos pueden traer datos de salud de trabajadores. Confirmar si su tratamiento por encargo y su traslado requieren algo más.
 3. **Contratos de encargo.** Aceptar y archivar los acuerdos de tratamiento de datos (DPA) de Google Cloud, Cloudflare y Resend.
 4. **Cloudflare ve el tráfico descifrado**: contraseñas al iniciar sesión y documentos mientras se suben. No los almacena, pero es un encargado más (`SEGURIDAD.md` §8).
-5. **Política de privacidad.** Debe informar el almacenamiento en EE. UU. y los encargados. La redacta el responsable del negocio.
+5. **Política de privacidad.** Debe informar el almacenamiento en EE. UU. y los encargados. La redacta el responsable del negocio. Hay un borrador para revisión legal, solo con marcadores, en `POLITICA_PRIVACIDAD_BORRADOR.md`.
 6. **Plazos de conservación.** Solicitudes del sitio (hoy sin plazo), auditoría (24 meses), respaldos (14 días), versiones del bucket (30 días) y el plazo real de una eliminación (sección 13).
 7. **Derechos de las personas y brechas.** Procedimiento para acceso, rectificación, supresión y portabilidad, y para avisar una brecha de seguridad.
 8. **Relación con las empresas cliente.** Quién es responsable y quién encargado de los datos de sus trabajadores, y qué contrato lo respalda.
