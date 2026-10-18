@@ -472,3 +472,27 @@ El responsable decidió los plazos de conservación el 13-10-2026 (DEC-204) y el
 - **Microsoft no tiene acuerdo de tratamiento para una cuenta personal de Outlook.** El texto del panel lo dice como es, en vez de citarlo junto a los otros tres.
 - **El panel no puede borrar usuarios ni clientes.** Los borrados de los 6 meses y de los 5 años son, por ahora, una operación en el servidor.
 - **El borrado no alcanza la casilla de correo del responsable ni el historial de Resend.**
+
+## 23. Etapa 8, Fase B: imágenes del sitio desde el panel
+
+Pedido por el responsable el 18-10-2026: cambiar las fotos de fondo y el logo desde el panel, sin pasar por el código (DEC-205 y DEC-206).
+
+- **Panel › Configuración › Contenido del sitio › Imágenes del sitio:** cinco tarjetas (foto de portada, de contacto y de acceso; logo sobre fondo azul marino y sobre fondo blanco), cada una con vista previa, subir una nueva, texto alternativo en las fotos y "Volver a la original" con confirmación.
+- **Seguridad:** solo JPG, PNG y WebP por su contenido, nunca SVG; 10 MB; píxeles limitados antes de decodificar; todo se vuelve a codificar sin metadatos; solo administradores, con CSRF y evento de auditoría sin datos personales.
+- **Entrega:** desde la base de datos, en `/imagenes/<sha256>.<ext>` con caché de un año, antes de la sesión. Sin imagen subida o si la base falla, la original del repositorio.
+- **Logo:** del PNG para fondo oscuro salen el favicon (PNG e ICO) y el apple-touch-icon.
+- **Medido con 0,25 CPU y 450 MB:** peor caso 13,3 s y +132 MB, contra el plazo propio de 60 s y los 100 s de Cloudflare.
+- **Revisión en Edge** a 360 y 1280 px con una foto horizontal, una vertical de celular y una muy clara: sin desbordes ni errores de CSP; titular a 7,60:1 sobre la foto clara.
+
+### Diferencias con lo pedido
+
+- **Límite de WebP en 4 MP, no 16 MP.** Con 16 MP la decodificación pedía +251 MB, demasiado para la VM. JPG queda en 40 MP (se decodifica reducida) y PNG en 16 MP.
+- **El plazo de Gunicorn no aplica por petición.** Con hilos, `timeout = 120` es el latido del proceso; el límite real es el de Cloudflare (100 s). Se agregó un plazo propio de 60 s y no hizo falta otro para la vista.
+- **Dos PNG para el logo**, decisión del responsable al revisar el plan: el símbolo original tiene dos tonos.
+- **Middleware para entregar las imágenes**, no previsto en el plan: con la vista sola, las respuestas llevaban `Vary: Cookie` porque el corte de sesión lee la sesión en cada petición.
+- **Las fotos subidas no van a `FOTOS.md`:** las elige el administrador, que responde por sus derechos.
+- **Una foto nueva con el texto alternativo de la original se rechaza.**
+- **Sin perfil de color en las imágenes publicadas:** se convierten a sRGB y el perfil se descarta.
+- **La regla de caché de Cloudflare para `/imagenes/` es un paso de consola del responsable** (`DESPLIEGUE.md` §3.7); hasta hacerla, Cloudflare puede no guardarlas, pero el sitio funciona igual.
+- **Las fotos de la revisión son sintéticas** (generadas con Pillow), no fotos reales de celular; la orientación y el GPS sí son los de un EXIF real.
+- **Una prueba anterior cambió** porque ahora el favicon de la raíz consulta la base: `test_el_favicon_de_la_raiz_lleva_al_archivo_estatico` pide acceso a ella.

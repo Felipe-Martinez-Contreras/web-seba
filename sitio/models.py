@@ -95,3 +95,54 @@ class DatosNegocio(ModeloConFechas):
     def cargar(cls):
         """El registro único. Lo crea la migración inicial; si faltara, se crea vacío."""
         return cls.objects.get_or_create(pk=ID_UNICO)[0]
+
+
+class ImagenSitio(ModeloConFechas):
+    """Imagen del sitio que el administrador cambió desde el panel (DEC-205). Sin fila, el
+    sitio usa la original del repositorio; con fila y sin variantes, la original con el
+    texto alternativo que se haya escrito."""
+
+    class Ranura(models.TextChoices):
+        PORTADA = "portada", "Foto de portada"
+        CONTACTO = "contacto", "Foto del bloque de contacto"
+        ACCESO = "acceso", "Foto de las pantallas de acceso"
+        LOGO_FONDO_OSCURO = "logo-fondo-oscuro", "Logo sobre fondo azul marino"
+        LOGO_FONDO_CLARO = "logo-fondo-claro", "Logo sobre fondo blanco"
+
+    ranura = models.CharField("ranura", max_length=20, choices=Ranura, unique=True)
+    alt = models.CharField("texto alternativo", max_length=200, blank=True)
+
+    class Meta:
+        verbose_name = "imagen del sitio"
+        verbose_name_plural = "imágenes del sitio"
+
+    def __str__(self):
+        return self.get_ranura_display()
+
+
+class VarianteImagen(models.Model):
+    """Un tamaño de una imagen subida, ya re-codificado en el servidor: nunca el archivo
+    original. Se entrega en /imagenes/<sha256>.<extensión>."""
+
+    class Tipo(models.TextChoices):
+        WEBP = "image/webp", "WebP"
+        PNG = "image/png", "PNG"
+        ICO = "image/x-icon", "ICO"
+
+    imagen = models.ForeignKey(ImagenSitio, on_delete=models.CASCADE, related_name="variantes")
+    nombre = models.CharField("variante", max_length=20)
+    tipo_mime = models.CharField("tipo", max_length=20, choices=Tipo)
+    sha256 = models.CharField("SHA-256", max_length=64, db_index=True)
+    ancho = models.PositiveIntegerField("ancho")
+    alto = models.PositiveIntegerField("alto")
+    contenido = models.BinaryField("contenido")
+
+    class Meta:
+        verbose_name = "variante de imagen"
+        verbose_name_plural = "variantes de imagen"
+        constraints = [
+            models.UniqueConstraint(fields=["imagen", "nombre"], name="variante_unica_por_imagen"),
+        ]
+
+    def __str__(self):
+        return f"{self.imagen} ({self.nombre})"

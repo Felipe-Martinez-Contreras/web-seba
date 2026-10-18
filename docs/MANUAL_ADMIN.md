@@ -190,7 +190,45 @@ Reglas que conviene conocer:
 - Los textos son simples: se respetan los saltos de línea, sin negritas ni enlaces.
 - WhatsApp y las redes sociales son opcionales.
 
-En **Auditoría** queda registrado quién entró, quién falló al entrar y qué cambios se hicieron: clientes, usuarios, carpetas, enlaces generados y documentos (subidas, reemplazos, movimientos, eliminaciones y restauraciones). También queda cada vez que alguien ve o descarga un documento, y quién fue. Puede filtrar por cliente, por RUT, por tipo de acción y por fechas.
+### Imágenes del sitio
+
+En **Configuración › Contenido del sitio › Imágenes del sitio** cambia las fotos de fondo y el logo sin pedir ayuda técnica. Hay cinco tarjetas, cada una con la imagen que se ve hoy:
+
+| Imagen | Dónde aparece | Qué subir |
+| --- | --- | --- |
+| Foto de portada | Arriba del inicio, detrás del titular. También es la imagen que muestran WhatsApp o LinkedIn al compartir el sitio | Foto horizontal, de al menos 1.920 px de ancho |
+| Foto del bloque de contacto | Junto al formulario de cotización del inicio | Foto horizontal o cuadrada |
+| Foto de las pantallas de acceso | Franja al pie de la página de acceso de clientes | Foto horizontal: se ve una franja ancha y baja |
+| Logo sobre fondo azul marino | Encabezado, pie y barras laterales. Con él se hacen el ícono de la pestaña del navegador y el de la pantalla de inicio del celular | PNG cuadrado, de 512 px por lado, con fondo transparente y el dibujo en colores claros |
+| Logo sobre fondo blanco (opcional) | Pantallas de acceso | El mismo logo en colores oscuros. Si no lo sube, se usa el de fondo azul marino dentro de un cuadro de ese color |
+
+**Para cambiar una foto:** pulse *Elegir archivo*, escriba el **texto alternativo** (una frase que describa lo que se ve, para las personas que usan un lector de pantalla; por ejemplo, "Casco de seguridad sobre una mesa de obra") y pulse **Guardar**. El cambio se ve de inmediato en el sitio. Puede cambiar solo el texto alternativo, sin subir otra foto.
+
+**Formatos:** JPG, PNG o WebP, de hasta 10 MB; el logo, solo PNG cuadrado (de 180 a 2.048 px por lado). No se aceptan SVG. El sitio reduce cada foto al tamaño que usa, la deja liviana y le quita los datos que agrega la cámara, como el lugar donde se tomó. Una foto de celular puesta de pie queda bien orientada.
+
+**Qué fotos usar:**
+
+- **Fotos propias o con licencia de uso comercial**, como las de Unsplash o Pexels. Usted responde por tener derecho a publicarlas.
+- **Sin personas reconocibles.** Para mostrar a alguien de frente necesita su autorización por escrito.
+- **Sin logos de clientes ni de otras marcas**, ni en ropa, cascos, vehículos o letreros. Mostrar el logo de un cliente puede dar a entender que lo recomienda.
+- **Sin trabajo inseguro** (alturas sin protección, ausencia de equipos de protección personal) ni humo industrial: contradicen el mensaje de un servicio de prevención.
+- **No presente una foto de banco como si fuera su obra o su equipo.**
+- No se preocupe por si la foto es clara u oscura: sobre todas va un velo azul marino que mantiene legible el texto blanco.
+
+**Volver a la original:** el botón aparece cuando la imagen se cambió. Pide confirmación y vuelve a la imagen que trae el sitio, con su texto alternativo. La imagen subida se descarta: si la quiere otra vez, tiene que volver a subirla.
+
+| Mensaje | Qué hacer |
+| --- | --- |
+| "El archivo no es una imagen JPG, PNG ni WebP." | Guárdela en uno de esos formatos. Un iPhone guarda en HEIC: en *Ajustes › Cámara › Formatos*, la opción *Más compatible* guarda las fotos nuevas en JPG |
+| "La imagen es muy grande; súbala más pequeña." | Redúzcala a unos 3.000 px de ancho, o expórtela en JPG, que admite imágenes más grandes que PNG y WebP |
+| "La imagen pesa más de 10 MB; súbala más pequeña." | Igual que el anterior |
+| "El logo debe ser cuadrado…" o "debe medir entre 180 y 2048 px…" | Recórtelo a un cuadrado, idealmente de 512 × 512 px |
+| "El texto describe la foto original…" | Escriba un texto alternativo que describa la foto nueva |
+| "Se está procesando otra imagen…" | Otro administrador está subiendo una imagen. Intente de nuevo en unos segundos |
+
+Cada cambio y cada vuelta a la original quedan en **Auditoría**, con quién lo hizo.
+
+En **Auditoría** queda registrado quién entró, quién falló al entrar y qué cambios se hicieron: clientes, usuarios, carpetas, enlaces generados, documentos (subidas, reemplazos, movimientos, eliminaciones y restauraciones) e imágenes del sitio. También queda cada vez que alguien ve o descarga un documento, y quién fue. Puede filtrar por cliente, por RUT, por tipo de acción y por fechas.
 
 En la ficha de cada cliente, la pestaña **Actividad** muestra lo mismo, solo para ese cliente.
 

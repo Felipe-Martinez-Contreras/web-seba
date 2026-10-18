@@ -1,4 +1,3 @@
-{% load static %}
 {% comment %}
 SEO de las páginas públicas (PUB-07): descripción, canónica y Open Graph. Los valores los
 arma sitio/paginas.py con SITIO_URL; lo que no está registrado no se publica.
@@ -12,5 +11,5 @@ arma sitio/paginas.py con SITIO_URL; lo que no está registrado no se publica.
 <meta property="og:title" content="{{ seo_titulo|default:'Inicio' }}">
 {% if seo_descripcion %}<meta property="og:description" content="{{ seo_descripcion }}">{% endif %}
 {% if seo_sitio %}<meta property="og:site_name" content="{{ seo_sitio }}">{% endif %}
-<meta property="og:image" content="{{ sitio_url }}{% static seo_imagen.archivo_movil %}">
+<meta property="og:image" content="{{ sitio_url }}{{ seo_imagen.src_movil }}">
 <meta property="og:image:alt" content="{{ seo_imagen.alt }}">

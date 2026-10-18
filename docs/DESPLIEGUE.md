@@ -149,7 +149,8 @@ Cree otro bucket (`us-east1`, Standard, acceso uniforme, prevención de acceso p
 Los ajustes van en reglas acotadas al nombre del sitio, para no tocar el resto de `fmartinez.xyz`.
 
 1. **Reglas › Reglas de configuración › Crear**: *Nombre de host* es igual a `seba.fmartinez.xyz`. Desactive **Ofuscación de direcciones de correo**, **Rocket Loader** y **Web Analytics (RUM)**. Los tres reescriben el HTML o inyectan scripts, y la política de seguridad de contenido de la aplicación los bloquea.
-2. **Reglas › Reglas de caché › Crear**: *Nombre de host* es igual a `seba.fmartinez.xyz` **y** *Ruta URI* empieza con `/static/`. Acción: *Apto para caché*, TTL perimetral *Respetar el origen*. La aplicación ya envía un año de caché en esos archivos, que llevan un hash en el nombre. **No** cree reglas de caché para otras rutas: el HTML y las páginas privadas no se cachean.
+2. **Reglas › Reglas de caché › Crear**: *Nombre de host* es igual a `seba.fmartinez.xyz` **y** *Ruta URI* empieza con `/static/`. Acción: *Apto para caché*, TTL perimetral *Respetar el origen*. La aplicación ya envía un año de caché en esos archivos, que llevan un hash en el nombre.
+   **Desde el 18-10-2026, la misma regla incluye `/imagenes/`** (las imágenes que el administrador sube en el panel, DEC-205): edite la condición para que diga *Ruta URI empieza con `/static/`* **o** *Ruta URI empieza con `/imagenes/`*, siempre con *Nombre de host* igual a `seba.fmartinez.xyz`. Su URL lleva el SHA-256 del contenido y la aplicación envía un año de caché: una imagen nueva tiene otra URL. **No** cree reglas de caché para otras rutas: el HTML y las páginas privadas no se cachean.
 3. **SSL/TLS › Certificados perimetrales**: versión mínima de TLS 1.2. La redirección de HTTP a HTTPS la hace la propia aplicación.
 
 ### 3.8 Resend y los registros de correo
@@ -551,6 +552,7 @@ Procedimiento, **VM**:
 4. Compruebe que `web.env` no tiene la línea `DEMO_PERMITIDO` (`sudo grep -c DEMO_PERMITIDO /etc/web-seba/web.env` debe dar 0). Las instalaciones hechas con la plantilla anterior al 12-10-2026 la traen: bórrela.
 5. `sudo desplegar.sh <commit>`, `comprobar_almacenamiento --firma` y `crear_administrador`.
 6. **Importe el contenido** exportado en el paso 2 (más abajo). Si no lo exportó, cárguelo a mano en Panel › Configuración › Contenido del sitio.
+   **Las imágenes del sitio no viajan** (DEC-205): si cambió fotos o el logo en el panel de staging, guarde antes del paso 3 los archivos que subió y vuelva a subirlos en Panel › Configuración › Contenido del sitio › Imágenes del sitio. Sin eso, producción muestra las originales.
 7. Ejecute `contenido_pendiente --estricto`: debe terminar sin pendientes.
 8. Suba HSTS a un año (puntos 3 y 4 de la lista) cuando el sitio lleve unos días estable, y aplíquelo con `sudo dc up -d web`.
 

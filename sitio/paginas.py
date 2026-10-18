@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.utils.functional import cached_property
 from django.utils.text import Truncator
 
-from sitio import fotos, pendientes, services
+from sitio import imagenes, pendientes, services
 from sitio.models import DatosNegocio, Servicio
 
 # Rutas del sitio que no son páginas: no llevan el encabezado `X-Robots-Tag`.
@@ -62,6 +62,10 @@ class PaginaPublica:
         return services.formularios_disponibles(self.datos)
 
     @cached_property
+    def imagenes_sitio(self):
+        return imagenes.de_la_peticion(self.request)
+
+    @cached_property
     def indexable(self):
         return self.request.resolver_match.view_name in paginas_indexables(self.datos)
 
@@ -107,7 +111,7 @@ class PaginaPublica:
             seo_sitio=nombre,
             seo_url=url_absoluta(self.request.path),
             seo_indexable=self.indexable,
-            seo_imagen=fotos.PORTADA,
+            seo_imagen=self.imagenes_sitio.foto(imagenes.Ranura.PORTADA),
             sitio_url=settings.SITIO_URL.rstrip("/"),
         )
         return contexto

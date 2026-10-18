@@ -1,13 +1,21 @@
 {% comment %}
 Marca: el símbolo del logo y el nombre comercial en texto (DISENO.md, diferencia 10; DEC-202).
 El nombre sale de DatosNegocio; el símbolo es decorativo (alt vacío) porque el nombre va al lado.
+El símbolo es el subido desde el panel o, si no hay, el original (DEC-205). Si solo se subió el
+de fondo oscuro, sobre blanco va dentro de un cuadro azul marino.
 Parámetros: marca_nombre; marca_url (opcional); marca_tono: claro (por defecto, sobre azul
 marino) u oscuro (sobre blanco). Sin nombre no se muestra nada.
 {% endcomment %}
 {% load static %}
 {% if marca_nombre %}
 {% if marca_url %}<a class="flex min-h-11 items-center gap-2 text-base font-semibold {% if marca_tono == "oscuro" %}text-primario{% else %}text-blanco{% endif %} no-underline" href="{{ marca_url }}">{% else %}<span class="flex items-center gap-2 text-base font-semibold {% if marca_tono == "oscuro" %}text-primario{% else %}text-blanco{% endif %}">{% endif %}
-  {% if marca_tono == "oscuro" %}<img class="shrink-0" src="{% static 'img/simbolo.svg' %}" alt="" width="40" height="40">{% else %}<img class="shrink-0" src="{% static 'img/simbolo-blanco.svg' %}" alt="" width="32" height="32">{% endif %}
+  {% if marca_tono == "oscuro" %}
+  {% static 'img/simbolo.svg' as simbolo_original %}
+  {% if imagenes_sitio.simbolo_con_fondo %}<span class="marca-cuadro"><img src="{{ imagenes_sitio.simbolo_sobre_claro }}" alt="" width="32" height="32"></span>{% else %}<img class="shrink-0" src="{{ imagenes_sitio.simbolo_sobre_claro|default:simbolo_original }}" alt="" width="40" height="40">{% endif %}
+  {% else %}
+  {% static 'img/simbolo-blanco.svg' as simbolo_original %}
+  <img class="shrink-0" src="{{ imagenes_sitio.simbolo_sobre_oscuro|default:simbolo_original }}" alt="" width="32" height="32">
+  {% endif %}
   <span class="leading-tight">{{ marca_nombre }}</span>
 {% if marca_url %}</a>{% else %}</span>{% endif %}
 {% endif %}

@@ -1,0 +1,62 @@
+{% extends "base_panel.html" %}
+{% block titulo %}Imágenes del sitio{% endblock %}
+{% block contenido %}
+<h1 class="text-2xl">Contenido del sitio</h1>
+<p class="mt-1 max-w-lectura text-sm text-texto-secundario">Las fotos de fondo y el logo que muestra el sitio. Cada imagen se reduce y se limpia en el servidor antes de publicarse. «Volver a la original» restaura la que viene con el sitio.</p>
+
+<div class="mt-6">{% include "componentes/pestanas.html" with pestanas=pestanas pestanas_etiqueta="Contenido del sitio" only %}</div>
+
+<p class="mt-6 max-w-lectura text-sm text-texto-secundario">Use fotos propias o con licencia de uso comercial, sin personas reconocibles ni logos de clientes o de otras marcas. Sobre las fotos va siempre un velo azul marino, para que el texto se lea con cualquier imagen.</p>
+
+<div class="mt-6 grid gap-6 xl:grid-cols-2">
+  {% for tarjeta in tarjetas %}
+  {% with formulario=tarjeta.formulario %}
+  <section class="tarjeta flex flex-col gap-4 p-5" id="imagen-{{ tarjeta.ranura }}" aria-labelledby="imagen-{{ tarjeta.ranura }}-titulo">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <h2 class="text-lg" id="imagen-{{ tarjeta.ranura }}-titulo">{{ tarjeta.titulo }}</h2>
+      {% if tarjeta.subida %}
+      {% include "componentes/insignia.html" with texto=tarjeta.insignia tono="info" only %}
+      {% else %}
+      {% include "componentes/insignia.html" with texto="Original" only %}
+      {% endif %}
+    </div>
+
+    {% if tarjeta.es_foto %}
+    <div class="sobre-primario relative isolate flex h-40 items-end overflow-hidden rounded-caja bg-primario p-4 text-blanco">
+      <img class="absolute inset-0 -z-20 size-full object-cover" src="{{ tarjeta.foto.src_movil }}" width="{{ tarjeta.foto.ancho }}" height="{{ tarjeta.foto.alto }}" alt="{{ tarjeta.foto.alt }}" loading="lazy">
+      <div class="velo absolute inset-0 -z-10"></div>
+      <p class="text-base font-semibold">Vista previa con el velo del sitio</p>
+    </div>
+    {% elif tarjeta.ranura == "logo-fondo-oscuro" %}
+    <div class="flex items-center gap-4">
+      <span class="vista-logo bg-primario"><img src="{{ tarjeta.simbolo }}" alt="Logo actual sobre azul marino" width="64" height="64"></span>
+      <p class="text-sm text-texto-secundario">Se usa en el encabezado, el pie y las barras laterales. Con él se generan el ícono de la pestaña del navegador y el de la pantalla de inicio del celular.</p>
+    </div>
+    {% else %}
+    <div class="flex items-center gap-4">
+      <span class="vista-logo bg-superficie">{% if tarjeta.simbolo_con_fondo %}<span class="marca-cuadro"><img src="{{ tarjeta.simbolo }}" alt="Logo actual sobre blanco" width="32" height="32"></span>{% else %}<img src="{{ tarjeta.simbolo }}" alt="Logo actual sobre blanco" width="64" height="64">{% endif %}</span>
+      <p class="text-sm text-texto-secundario">Se usa en las pantallas de acceso, sobre blanco. Es opcional: si no lo sube, se muestra el logo para fondo azul marino dentro de un cuadro de ese color.</p>
+    </div>
+    {% endif %}
+
+    {% include "componentes/resumen_errores.html" with formulario=formulario %}
+    <form class="flex flex-col gap-4" method="post" action="{% url 'panel:imagen_cambiar' tarjeta.ranura %}" enctype="multipart/form-data" novalidate>
+      {% csrf_token %}
+      {% include "componentes/campo.html" with campo=formulario.archivo %}
+      {% if tarjeta.es_foto %}{% include "componentes/campo.html" with campo=formulario.alt %}{% endif %}
+      <div class="flex flex-wrap gap-3">
+        {% include "componentes/boton.html" with texto="Guardar" icono="upload" only %}
+        {% if tarjeta.modificada %}
+        {% include "componentes/boton.html" with texto="Volver a la original" variante="secundario" tipo="button" icono="rotate-ccw" abre_dialogo="restaurar-"|add:tarjeta.ranura only %}
+        {% endif %}
+      </div>
+    </form>
+    {% if tarjeta.modificada %}
+    {% url 'panel:imagen_restaurar' tarjeta.ranura as url_restaurar %}
+    {% include "componentes/dialogo_confirmacion.html" with id="restaurar-"|add:tarjeta.ranura titulo="¿Volver a la imagen original?" mensaje="Se dejará de usar la imagen subida y su texto alternativo, y el sitio mostrará la original. Si la quiere de nuevo, tendrá que volver a subirla." accion=url_restaurar confirmar_texto="Volver a la original" peligro=False campo_nombre="" %}
+    {% endif %}
+  </section>
+  {% endwith %}
+  {% endfor %}
+</div>
+{% endblock %}

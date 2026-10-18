@@ -12,6 +12,9 @@ from panel.views.clientes import (
 )
 from panel.views.contenido import (
     Contenido,
+    ImagenCambiar,
+    Imagenes,
+    ImagenRestaurar,
     ServicioEditar,
     ServicioEstado,
     ServicioMover,
@@ -71,6 +74,9 @@ __all__ = [
     "DocumentoReemplazar",
     "DocumentoRestaurar",
     "DocumentoSubir",
+    "ImagenCambiar",
+    "ImagenRestaurar",
+    "Imagenes",
     "Inicio",
     "ServicioEditar",
     "ServicioEstado",

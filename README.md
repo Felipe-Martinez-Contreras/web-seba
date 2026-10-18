@@ -137,7 +137,7 @@ Carga datos marcados DEMO: contenido del sitio, cuatro servicios, una política 
 6. Para ver un fallo de correo: ponga en `.env` `CORREO_HOST=127.0.0.1`, `CORREO_PUERTO=1` y un `CORREO_REMITENTE`, reinicie y envíe otra. El visitante ve la misma confirmación; el panel la muestra "Fallida", con el botón para reintentar.
 7. `docker compose run --rm web python manage.py contenido_pendiente` lista lo que falta para publicar.
 
-El contenido real se carga en el panel, en **Configuración › Contenido del sitio**. Las fotografías y su licencia están en [`docs/FOTOS.md`](docs/FOTOS.md).
+El contenido real se carga en el panel, en **Configuración › Contenido del sitio**. Las fotografías y el logo se cambian en **Contenido del sitio › Imágenes del sitio** ([`docs/MANUAL_ADMIN.md`](docs/MANUAL_ADMIN.md)); las originales y su licencia están en [`docs/FOTOS.md`](docs/FOTOS.md).
 
 ### Revisión manual pendiente: lector de pantalla y Firefox
 

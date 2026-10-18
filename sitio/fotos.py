@@ -1,10 +1,13 @@
 """Fotografías del sitio (PUB-08). Origen, autor y licencia de cada una: docs/FOTOS.md.
 
-Son archivos estáticos propios. Para reemplazar una foto basta cambiar sus dos archivos
-(1.920 y 960 px de ancho) y, si la escena cambia, su texto alternativo aquí.
+Las de aquí son las originales, archivos estáticos del repositorio. El administrador puede
+reemplazarlas desde el panel (DEC-205, `sitio/imagenes.py`); sin una imagen subida, o si
+no se puede leer, el sitio usa estas.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+
+from django.templatetags.static import static
 
 
 @dataclass(frozen=True)
@@ -16,6 +19,20 @@ class Foto:
     # Describe la escena, sin atribuirla al negocio: ninguna foto de banco muestra al
     # profesional, a sus clientes ni sus obras.
     alt: str
+    # URL de la versión subida desde el panel. Vacías: los archivos estáticos de arriba.
+    url: str = ""
+    url_movil: str = ""
+
+    @property
+    def src(self):
+        return self.url or static(self.archivo)
+
+    @property
+    def src_movil(self):
+        return self.url_movil or static(self.archivo_movil)
+
+    def subida(self, *, url, url_movil, ancho, alto, alt):
+        return replace(self, url=url, url_movil=url_movil, ancho=ancho, alto=alto, alt=alt)
 
 
 PORTADA = Foto(

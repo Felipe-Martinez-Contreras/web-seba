@@ -12,8 +12,9 @@ from django.core.management import call_command
 from django.core.management.base import CommandError
 
 from conftest import datos_de_consulta
-from sitio import contenido, pendientes, services
+from sitio import contenido, imagenes, pendientes, services
 from sitio.models import DatosNegocio, Servicio
+from sitio.tests import imagenes_prueba
 from solicitudes.models import Solicitud
 
 pytestmark = pytest.mark.django_db
@@ -144,10 +145,17 @@ def test_tras_importar_no_queda_contenido_pendiente_ni_marcado_como_de_prueba():
 
 
 def test_el_archivo_solo_lleva_datos_del_negocio_y_servicios(
-    negocio, servicio, cliente_a, documento_a, client, tmp_path
+    negocio, servicio, cliente_a, documento_a, administrador, client, tmp_path
 ):
     client.post("/contacto/", datos_de_consulta())
     assert Solicitud.objects.count() == 1
+    # Las imágenes del sitio no viajan (DEC-205): se vuelven a subir en el panel.
+    imagenes.cambiar(
+        imagenes.Ranura.PORTADA,
+        archivo=imagenes_prueba.subida("foto.jpg", imagenes_prueba.jpg(400, 300)),
+        alt="Texto alternativo subido",
+        actor=administrador,
+    )
     destino = tmp_path / "contenido.json"
     _exportar(destino)
 
@@ -171,6 +179,8 @@ def test_el_archivo_solo_lleva_datos_del_negocio_y_servicios(
         "Visitante de Prueba",
         "visitante@ejemplo.test",
         documento_a.titulo,
+        "Texto alternativo subido",
+        "imagen",
     ):
         assert ausente not in texto, ausente
 

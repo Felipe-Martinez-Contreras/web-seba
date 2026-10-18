@@ -46,6 +46,7 @@ Documento 1 ── n VersionDocumento
 Documento n ── 1 VersionDocumento (version_vigente)
 EventoAuditoria n ── 1 Usuario (actor), n ── 1 Empresa
 Usuario 1 ── n EnlaceAcceso
+ImagenSitio 1 ── n VarianteImagen
 ```
 
 | Entidad | Clave en las URL | Reglas que aplica la base de datos |
@@ -56,6 +57,8 @@ Usuario 1 ── n EnlaceAcceso
 | `Documento` | UUID | `PROTECT` hacia empresa y carpeta: una carpeta con documentos no se borra. `eliminado_en` marca la papelera |
 | `VersionDocumento` | UUID | Número único por documento; clave con la forma `docs/<uuid>/<uuid>`; SHA-256 válido; tamaño mayor que cero |
 | `EventoAuditoria` | — | Solo se agregan |
+| `ImagenSitio` | La ranura (`portada`, `contacto`, `acceso`, `logo-fondo-oscuro`, `logo-fondo-claro`) | Una fila por ranura. Sin fila, el sitio usa la imagen original del repositorio |
+| `VarianteImagen` | El SHA-256 de su contenido (`/imagenes/<sha256>.<ext>`) | Una por nombre dentro de su imagen; se borra con ella. Contenido ya re-codificado, nunca el archivo subido |
 
 Lo que la base no puede expresar lo aplican los servicios y lo cubren las pruebas: que la carpeta de un documento sea de su misma empresa (`documentos.services.mover`) y que la versión vigente sea una versión de ese documento.
 
@@ -142,12 +145,13 @@ Solo lectura: todas sus vistas admiten únicamente GET y heredan de `ClienteMixi
 | `/solicitud-recibida/` | Confirmación, solo para quien acaba de enviar |
 | `/privacidad/` | Política de privacidad |
 | `/sitemap.xml`, `/robots.txt` | Páginas públicas con contenido; sin rutas privadas |
+| `/imagenes/<sha256>.<ext>` | Una imagen subida desde el panel, ya re-codificada (DEC-205) |
 
 - **Todo el contenido sale de la base:** `DatosNegocio` (registro único) y `Servicio`. Se editan en Panel › Configuración › Contenido del sitio.
 - **Una sola regla de contenido pendiente** (`sitio/pendientes.py`): lo vacío o con `[COMPLETAR]` no se muestra; lo de prueba se muestra. La usan las páginas, el panel y el comando `contenido_pendiente`.
 - **`PaginaPublica`** (`sitio/paginas.py`) arma navegación, pie y SEO de cada página, como `core/navegacion.py` lo hace para el portal y el panel.
 - **Sin política de privacidad no hay formularios.**
-- **Fotografías:** archivos estáticos propios, descritos en `sitio/fotos.py` y registrados en `FOTOS.md`.
+- **Fotografías y logo:** los originales son archivos estáticos (`sitio/fotos.py`, `FOTOS.md`, `DISENO.md`). El administrador puede reemplazarlos en Panel › Contenido del sitio › Imágenes del sitio (DEC-205): `sitio/procesar_imagen.py` valida y vuelve a codificar, `sitio/imagenes.py` guarda en la base y resuelve qué URL usa cada plantilla, una vez por petición, y `ImagenesMiddleware` entrega `/imagenes/<sha256>.<ext>` antes de la sesión, con caché de un año. Si no hay imagen subida o la base falla, la original.
 
 ## 8. Recorrido de una solicitud
 

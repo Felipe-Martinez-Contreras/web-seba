@@ -24,7 +24,8 @@ from documentos import almacenamiento, services
 from documentos.models import Documento, VersionDocumento
 from documentos.tests import archivos
 from empresas.models import Carpeta, Empresa
-from sitio.models import DatosNegocio, Servicio
+from sitio.models import DatosNegocio, ImagenSitio, Servicio, VarianteImagen
+from sitio.tests import imagenes_prueba
 from solicitudes.models import Solicitud
 
 pytestmark = pytest.mark.django_db
@@ -40,6 +41,8 @@ PUBLICAS = {
     "sitio:privacidad",
     "sitio:sitemap",
     "sitio:robots",
+    # Imágenes subidas desde el panel, ya re-codificadas: las muestra el sitio público.
+    "sitio:imagen",
     "solicitudes:contacto",
     "solicitudes:cotizacion",
     # Solo se muestra a quien acaba de enviar un formulario; a los demás los lleva al inicio.
@@ -57,6 +60,7 @@ PUBLICAS = {
 _VALORES = {
     "UUIDConverter": uuid.UUID("00000000-0000-4000-8000-000000000000"),
     "IntConverter": 1,
+    "SlugConverter": "portada",
 }
 
 
@@ -144,6 +148,9 @@ PANEL = {
     "panel:servicio_editar",
     "panel:servicio_mover",
     "panel:servicio_estado",
+    "panel:imagenes",
+    "panel:imagen_cambiar",
+    "panel:imagen_restaurar",
 }
 
 # Rutas del portal: todas de solo lectura. Una ruta nueva debe sumarse aquí o la prueba falla.
@@ -181,6 +188,8 @@ def _datos_post(carpeta=None):
         "resumen": "Resumen puesto por un intruso",
         "nombre_comercial": "Nombre comercial puesto por un intruso",
         "politica_privacidad": "Política puesta por un intruso",
+        "portada-archivo": imagenes_prueba.subida("intruso.jpg", imagenes_prueba.jpg(800, 600)),
+        "portada-alt": "Texto puesto por un intruso",
     }
     if carpeta is not None:
         datos["carpeta"] = str(carpeta.pk)
@@ -227,6 +236,7 @@ def _reales(empresa, usuario, carpeta, documento):
         "carpeta": carpeta.pk,
         "documento": documento.pk,
         "version": documento.version_vigente_id,
+        "ranura": "portada",
     }
 
 
@@ -276,6 +286,8 @@ def _foto_de_la_base():
         "servicios": list(Servicio.objects.order_by("pk").values()),
         "solicitudes": list(Solicitud.objects.order_by("pk").values()),
         "datos_del_negocio": list(DatosNegocio.objects.values()),
+        "imagenes": list(ImagenSitio.objects.order_by("pk").values()),
+        "variantes": list(VarianteImagen.objects.order_by("pk").values()),
         "almacenamiento": _objetos_guardados(),
         "enlaces": EnlaceAcceso.objects.count(),
         "eventos": EventoAuditoria.objects.count(),
@@ -327,6 +339,8 @@ def test_las_urls_publicas_responden_sin_sesion(urls):
         "cuentas:restablecer": 404,
         "cuentas:salir": 405,
         "solicitudes:recibida": 302,
+        # Sin una imagen subida con ese SHA-256 no hay nada que entregar.
+        "sitio:imagen": 404,
     }
     for nombre, ruta, _ in urls:
         if nombre in PUBLICAS:

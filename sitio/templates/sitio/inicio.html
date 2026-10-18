@@ -1,9 +1,8 @@
 {% extends "base_publica.html" %}
-{% load static %}
 {% block meta %}
 {{ block.super }}
 {# La fotografía de la portada es lo más grande de la primera pantalla: se pide de inmediato. #}
-{% if titular or en_preparacion %}<link rel="preload" as="image" href="{% static foto_portada.archivo %}" imagesrcset="{% static foto_portada.archivo_movil %} 960w, {% static foto_portada.archivo %} 1920w" imagesizes="100vw" fetchpriority="high">{% endif %}
+{% if titular or en_preparacion %}<link rel="preload" as="image" href="{{ foto_portada.src }}" imagesrcset="{{ foto_portada.src_movil }} 960w, {{ foto_portada.src }} 1920w" imagesizes="100vw" fetchpriority="high">{% endif %}
 {% endblock %}
 {% block cabecera %}
 {% if titular %}

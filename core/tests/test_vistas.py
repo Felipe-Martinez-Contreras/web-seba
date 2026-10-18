@@ -43,7 +43,7 @@ def test_salud_solo_admite_get_y_head(client):
     assert "no-store" in respuesta["Cache-Control"]
 
 
-def test_el_favicon_de_la_raiz_lleva_al_archivo_estatico(client):
+def test_el_favicon_de_la_raiz_lleva_al_archivo_estatico(client, db):
     respuesta = client.get("/favicon.ico")
     assert respuesta.status_code == 302
     assert respuesta["Location"] == "/static/img/favicon.ico"

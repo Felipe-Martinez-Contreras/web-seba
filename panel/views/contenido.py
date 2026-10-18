@@ -1,15 +1,17 @@
-"""Contenido del sitio: datos del negocio y servicios (ADM-10)."""
+"""Contenido del sitio: datos del negocio, servicios e imágenes (ADM-10, DEC-205)."""
 
 from django.contrib import messages
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.functional import cached_property
 from django.views import View
 from django.views.generic import FormView, TemplateView
 
 from core.mixins import AdministradorMixin
-from sitio import pendientes, services
-from sitio.forms import FormularioDatosNegocio, FormularioServicio
+from sitio import imagenes, pendientes, services
+from sitio.forms import FormularioDatosNegocio, FormularioImagen, FormularioServicio
 from sitio.models import DatosNegocio, Servicio
 
 _GRUPOS = (
@@ -18,7 +20,11 @@ _GRUPOS = (
     ("Redes sociales", ("instagram", "linkedin", "facebook")),
     ("Política de privacidad", ("politica_privacidad",)),
 )
-_PESTANAS = (("panel:contenido", "Datos del negocio"), ("panel:servicios", "Servicios"))
+_PESTANAS = (
+    ("panel:contenido", "Datos del negocio"),
+    ("panel:servicios", "Servicios"),
+    ("panel:imagenes", "Imágenes del sitio"),
+)
 
 
 class _VistaDeContenido(AdministradorMixin):
@@ -153,3 +159,103 @@ class ServicioEstado(_VistaDeServicio, View):
             else:
                 messages.success(request, f"{self.servicio.nombre} dejó de mostrarse en el sitio.")
         return redirect("panel:servicios")
+
+
+class Imagenes(_VistaDeContenido, TemplateView):
+    """Fotos de fondo y logo del sitio: vista previa, subir una nueva, texto alternativo y
+    volver a la original (DEC-205)."""
+
+    template_name = "panel/imagenes.html"
+    ruta = "panel:imagenes"
+
+    def formulario(self, ranura, actuales, datos=None, archivos=None):
+        fila = actuales.fila(ranura)
+        original = imagenes.ORIGINALES.get(ranura)
+        alt_original = original.alt if original else ""
+        return FormularioImagen(
+            datos,
+            archivos,
+            ranura=ranura,
+            alt_inicial=(fila.alt if fila else "") or alt_original,
+            alt_original=alt_original,
+            prefix=ranura,
+        )
+
+    def get_context_data(self, formulario_con_errores=None, **kwargs):
+        contexto = super().get_context_data(**kwargs)
+        actuales = imagenes.cargar()
+        tarjetas = []
+        for ranura in imagenes.Ranura:
+            formulario = formulario_con_errores
+            if formulario is None or formulario.ranura != ranura:
+                formulario = self.formulario(ranura, actuales)
+            fila = actuales.fila(ranura)
+            tarjeta = {
+                "ranura": ranura.value,
+                "titulo": ranura.label,
+                "formulario": formulario,
+                "subida": actuales.subida(ranura),
+                "modificada": fila is not None,
+                "insignia": (
+                    f"Subida el {timezone.localtime(fila.actualizado_en):%d-%m-%Y}"
+                    if actuales.subida(ranura)
+                    else ""
+                ),
+                "es_foto": imagenes.es_foto(ranura),
+            }
+            if imagenes.es_foto(ranura):
+                tarjeta["foto"] = actuales.foto(ranura)
+            elif ranura == imagenes.Ranura.LOGO_FONDO_OSCURO:
+                tarjeta["simbolo"] = actuales.simbolo_sobre_oscuro
+            else:
+                tarjeta["simbolo"] = actuales.simbolo_sobre_claro
+                tarjeta["simbolo_con_fondo"] = actuales.simbolo_con_fondo
+            tarjetas.append(tarjeta)
+        contexto.update(
+            tarjetas=tarjetas,
+            tamano_maximo_mb=imagenes.tamano_maximo() // (1024 * 1024),
+        )
+        return contexto
+
+
+def _ranura(valor):
+    try:
+        return imagenes.Ranura(valor)
+    except ValueError as error:
+        raise Http404 from error
+
+
+class ImagenCambiar(Imagenes):
+    http_method_names = ["post"]
+
+    def post(self, request, **kwargs):
+        ranura = _ranura(kwargs["ranura"])
+        formulario = self.formulario(ranura, imagenes.cargar(), request.POST, request.FILES)
+        if formulario.is_valid():
+            try:
+                cambio = imagenes.cambiar(
+                    ranura,
+                    archivo=formulario.cleaned_data.get("archivo"),
+                    alt=formulario.cleaned_data.get("alt", ""),
+                    actor=request.user,
+                    request=request,
+                )
+            except imagenes.ImagenRechazada as rechazo:
+                formulario.add_error("archivo", rechazo.motivo)
+            else:
+                if cambio:
+                    messages.success(request, f"Se guardó: {ranura.label.lower()}.")
+                else:
+                    messages.info(request, "No había cambios que guardar.")
+                return redirect(reverse("panel:imagenes") + f"#imagen-{ranura.value}")
+        return self.render_to_response(self.get_context_data(formulario_con_errores=formulario))
+
+
+class ImagenRestaurar(_VistaDeContenido, View):
+    http_method_names = ["post"]
+
+    def post(self, request, **kwargs):
+        ranura = _ranura(kwargs["ranura"])
+        if imagenes.restaurar(ranura, actor=request.user, request=request):
+            messages.success(request, f"Se volvió a la original: {ranura.label.lower()}.")
+        return redirect(reverse("panel:imagenes") + f"#imagen-{ranura.value}")

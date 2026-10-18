@@ -5,10 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block titulo %}{% endblock %}</title>
   {% block meta %}{% endblock %}
+  {% with iconos=imagenes_sitio.iconos %}{% if iconos %}
+  {# Generados desde el logo subido en el panel (DEC-205). Sin el SVG original, que el navegador preferiría. #}
+  <link rel="icon" href="{{ iconos.ico }}" sizes="16x16 32x32 48x48">
+  <link rel="icon" href="{{ iconos.favicon32 }}" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="{{ iconos.apple180 }}">
+  {% else %}
   <link rel="icon" href="{% static 'img/favicon.ico' %}" sizes="32x32">
   <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
   <link rel="icon" href="{% static 'img/favicon-32.png' %}" type="image/png" sizes="32x32">
   <link rel="apple-touch-icon" href="{% static 'img/apple-touch-icon.png' %}">
+  {% endif %}{% endwith %}
   <link rel="preload" href="{% static 'fonts/inter-latin-400-normal.woff2' %}" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
   <script src="{% static 'js/app.js' %}" defer></script>

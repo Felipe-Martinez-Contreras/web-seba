@@ -565,6 +565,17 @@
     background-color: rgb(27 45 79 / 0.8);
   }
 
+  /* Logo subido solo para fondo oscuro, mostrado sobre blanco (pantallas de acceso): va en
+     un cuadro azul marino del mismo tamaño que el símbolo original (DEC-205). */
+  .marca-cuadro {
+    @apply flex size-10 shrink-0 items-center justify-center rounded-caja bg-primario;
+  }
+
+  /* Vista previa de un logo en el panel, sobre el fondo en que se usa. */
+  .vista-logo {
+    @apply flex size-24 shrink-0 items-center justify-center rounded-caja border border-divisor;
+  }
+
   /* Campo trampa del antispam: fuera de pantalla, sin estilos en línea (CSP) */
   .trampa {
     @apply absolute -left-[9999px] size-px overflow-hidden;

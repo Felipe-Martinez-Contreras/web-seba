@@ -106,4 +106,11 @@ urlpatterns = [
     path("contenido/servicios/", views.Servicios.as_view(), name="servicios"),
     path("contenido/servicios/nuevo/", views.ServicioNuevo.as_view(), name="servicio_nuevo"),
     path("contenido/servicios/<int:servicio>/", include(_de_servicio)),
+    path("contenido/imagenes/", views.Imagenes.as_view(), name="imagenes"),
+    path("contenido/imagenes/<slug:ranura>/", views.ImagenCambiar.as_view(), name="imagen_cambiar"),
+    path(
+        "contenido/imagenes/<slug:ranura>/restaurar/",
+        views.ImagenRestaurar.as_view(),
+        name="imagen_restaurar",
+    ),
 ]

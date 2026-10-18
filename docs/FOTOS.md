@@ -50,6 +50,10 @@ Una prueba comprueba que cada archivo sea WebP, pese menos de 300 KB y figure en
 
 ## Cómo reemplazar una foto
 
+**Desde el panel (lo normal desde el 18-10-2026):** Contenido del sitio › Imágenes del sitio. El servidor la valida, le quita los metadatos y la deja en WebP de 1.920 y 960 px bajo los mismos pesos (DEC-205, DEC-206); el manual del administrador explica cómo. Las fotos subidas así no se registran en esta tabla: las elige el administrador, que responde por sus derechos de uso. Las de la tabla siguen en el repositorio como respaldo y vuelven con "Volver a la original".
+
+**En el repositorio**, para cambiar la foto original:
+
 1. Prepare la foto nueva en WebP, de 1.920 px de ancho y menos de 300 KB, y su versión de 960 px.
 2. Reemplace los dos archivos en `static/img/` conservando sus nombres.
 3. Si cambian sus proporciones o lo que muestra, actualice el ancho, el alto y el texto alternativo en `sitio/fotos.py`.

@@ -10,4 +10,5 @@ urlpatterns = [
     path("privacidad/", views.Privacidad.as_view(), name="privacidad"),
     path("sitemap.xml", views.sitemap, name="sitemap"),
     path("robots.txt", views.robots, name="robots"),
+    path("imagenes/<str:nombre>", views.imagen, name="imagen"),
 ]

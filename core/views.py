@@ -25,8 +25,11 @@ def salud(request):
 
 @require_safe
 def favicon(request):
-    """Los navegadores piden /favicon.ico en la raíz aunque la página enlace otro ícono."""
-    return redirect(static("img/favicon.ico"))
+    """Los navegadores piden /favicon.ico en la raíz aunque la página enlace otro ícono. Es
+    el generado desde el logo subido en el panel o, si no hay, el original (DEC-205)."""
+    from sitio import imagenes
+
+    return redirect(imagenes.de_la_peticion(request).iconos.get("ico") or static("img/favicon.ico"))
 
 
 def csrf_fallido(request, reason=""):

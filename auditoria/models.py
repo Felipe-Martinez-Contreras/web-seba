@@ -87,6 +87,8 @@ class EventoAuditoria(models.Model):
         SOLICITUD_ESTADO = "solicitud_estado", "Cambio de estado de solicitud"
         SOLICITUD_REINTENTO = "solicitud_reintento", "Reintento de notificación de solicitud"
         SOLICITUDES_DEPURADAS = "solicitudes_depuradas", "Depuración de solicitudes"
+        IMAGEN_CAMBIADA = "imagen_cambiada", "Imagen del sitio cambiada"
+        IMAGEN_RESTAURADA = "imagen_restaurada", "Imagen del sitio restaurada"
 
     fecha = models.DateTimeField("fecha", default=timezone.now, editable=False)
     actor = models.ForeignKey(

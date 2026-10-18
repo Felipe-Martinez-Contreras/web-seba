@@ -44,6 +44,7 @@ MIDDLEWARE = [
     "core.middleware.IpClienteMiddleware",
     "django.middleware.csp.ContentSecurityPolicyMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
+    "sitio.middleware.ImagenesMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -159,6 +160,11 @@ SOLICITUDES_CAPTCHA = env.texto("SOLICITUDES_CAPTCHA", "")
 # Días que se conserva una consulta o una cotización desde que se recibe; `depurar_solicitudes`
 # borra las anteriores. Es el plazo que informa la política de privacidad. Mínimo, 30.
 SOLICITUDES_RETENCION_DIAS = env.entero("SOLICITUDES_RETENCION_DIAS", 365)
+# Imágenes del sitio que se cambian desde el panel (DEC-205, DEC-206): tamaño máximo del
+# archivo y plazo del procesamiento. El plazo queda bajo los 100 s en que Cloudflare corta
+# una respuesta; lo medido con 0,25 CPU no pasa de 14 s.
+IMAGENES_TAMANO_MAXIMO_MB = env.entero("IMAGENES_TAMANO_MAXIMO_MB", 10)
+IMAGENES_PLAZO_SEGUNDOS = env.entero("IMAGENES_PLAZO_SEGUNDOS", 60)
 # `cargar_demo` solo corre con esta variable; producción nunca la define.
 DEMO_PERMITIDO = env.booleano("DEMO_PERMITIDO", False)
 
