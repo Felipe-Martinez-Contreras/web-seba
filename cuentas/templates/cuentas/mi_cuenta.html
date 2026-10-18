@@ -24,6 +24,7 @@
       {# Para los gestores de contraseñas: a qué cuenta pertenece la contraseña. No se procesa. #}
       <input type="text" name="username" value="{{ user.rut|rut }}" autocomplete="username" hidden>
       {% include "componentes/campo.html" with campo=form.old_password contrasena=True %}
+      {% include "componentes/reglas_contrasena.html" with reglas=form.reglas only %}
       {% include "componentes/campo.html" with campo=form.new_password1 contrasena=True %}
       {% include "componentes/campo.html" with campo=form.new_password2 contrasena=True %}
       <div>{% include "componentes/boton.html" with texto="Cambiar contraseña" only %}</div>

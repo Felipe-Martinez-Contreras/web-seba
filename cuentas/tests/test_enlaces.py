@@ -158,7 +158,7 @@ def test_el_enlace_no_sirve_si_la_cuenta_o_la_empresa_se_desactivan(client, clie
 @pytest.mark.parametrize(
     ("clave", "repetir", "mensaje"),
     [
-        ("corta-1", None, "por lo menos 12 caracteres"),
+        ("corta-123", None, "por lo menos 10 caracteres"),
         ("123456789012345", None, "numérica"),
         ("1q2w3e4r5t6y7u8i", None, "demasiado común"),
         (NUEVA, "no-coincide-con-la-otra", "no coinciden"),

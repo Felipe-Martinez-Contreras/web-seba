@@ -1,0 +1,9 @@
+{% comment %}
+Reglas de la contraseña (AUT-05, DEC-207), antes de los campos para leerlas antes de escribir.
+El campo de la contraseña nueva las anuncia con aria-describedby (cuentas/forms.py).
+Parámetros: reglas (texto de cuentas.forms.reglas_contrasena).
+{% endcomment %}
+<p class="flex gap-2 rounded-caja bg-primario-suave p-3 text-sm text-texto" id="reglas-contrasena">
+  <span class="icono icono-chico mt-0.5 shrink-0 text-primario" aria-hidden="true">{% include "iconos/info.svg" %}</span>
+  <span>{{ reglas }}</span>
+</p>

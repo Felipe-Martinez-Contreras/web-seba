@@ -122,14 +122,14 @@ def test_fechas_con_formato_chileno_y_textos_en_espanol():
     assert translation.gettext("This field is required.") == "Este campo es obligatorio."
 
 
-def test_contrasenas_con_argon2_y_minimo_de_12_caracteres():
+def test_contrasenas_con_argon2_y_minimo_de_10_caracteres():
     assert settings.PASSWORD_HASHERS == ["cuentas.hashers.Argon2idAcotado"]
     minimo = next(
         validador["OPTIONS"]["min_length"]
         for validador in settings.AUTH_PASSWORD_VALIDATORS
         if validador["NAME"].endswith("MinimumLengthValidator")
     )
-    assert minimo == 12
+    assert minimo == 10
 
 
 @pytest.mark.django_db

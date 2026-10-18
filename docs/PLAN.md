@@ -496,3 +496,17 @@ Pedido por el responsable el 18-10-2026: cambiar las fotos de fondo y el logo de
 - **La regla de caché de Cloudflare para `/imagenes/` es un paso de consola del responsable** (`DESPLIEGUE.md` §3.7); hasta hacerla, Cloudflare puede no guardarlas, pero el sitio funciona igual.
 - **Las fotos de la revisión son sintéticas** (generadas con Pillow), no fotos reales de celular; la orientación y el GPS sí son los de un EXIF real.
 - **Una prueba anterior cambió** porque ahora el favicon de la raíz consulta la base: `test_el_favicon_de_la_raiz_lleva_al_archivo_estatico` pide acceso a ella.
+
+## 24. Reglas de contraseña más simples
+
+Pedido por el responsable el 18-10-2026 (DEC-207): las reglas frustraban a clientes y administradores.
+
+- **Mínimo de 10 caracteres** (antes 12) y **sin la regla de similitud** con nombre, correo y RUT. Siguen rechazadas las contraseñas comunes y las de solo números.
+- **Reglas a la vista antes de escribir** en la activación, el restablecimiento y Mi cuenta; `crear_administrador` las muestra junto al enlace.
+- **Sin cambios forzados:** las contraseñas existentes siguen sirviendo.
+
+### Diferencias con lo pedido
+
+- **`crear_administrador` no pide contraseña:** entrega un enlace de activación y la contraseña se define al abrirlo. Por eso el comando imprime las reglas junto al enlace, y el formulario del enlace las muestra antes del campo.
+- **Los errores son los de Django en español**, como antes ("Esta contraseña es demasiado corta. Debe contener por lo menos 10 caracteres."): no se reescribieron.
+- **Una prueba anterior cambió** porque cambió el requisito: `test_contrasenas_con_argon2_y_minimo_de_12_caracteres` pasa a llamarse `…_de_10_caracteres`. Las dos pruebas de validadores ya no esperan "similar" y usan una contraseña corta de 9 caracteres.

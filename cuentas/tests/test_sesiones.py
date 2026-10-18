@@ -143,10 +143,9 @@ def test_cambiar_la_contrasena_cierra_las_demas_sesiones_y_conserva_la_actual(
 def test_la_contrasena_nueva_pasa_por_los_validadores(client, cliente_a_activo):
     entrar(client, RUT_CLIENTE_A)
     for debil, mensaje in (
-        ("corta-1", "por lo menos 12 caracteres"),
+        ("corta-123", "por lo menos 10 caracteres"),
         ("123456789012345", "numérica"),
         ("1q2w3e4r5t6y7u8i", "demasiado común"),
-        ("cliente.a@ejemplo.test", "similar"),
     ):
         respuesta = _cambiar(client, nueva=debil)
         assert respuesta.status_code == 200, debil

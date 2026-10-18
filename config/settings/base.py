@@ -184,14 +184,14 @@ TAREAS_ESPERA_SEGUNDOS = 2
 # Argon2id con el costo acotado a la memoria del servidor (cuentas/hashers.py).
 PASSWORD_HASHERS = ["cuentas.hashers.Argon2idAcotado"]
 
+# AUT-05 (DEC-207): largo mínimo, contraseñas comunes y solo números. Sin la regla de
+# similitud con los datos del usuario: rechazaba contraseñas razonables. El bloqueo por
+# intentos, Argon2id y el 2FA de los administradores compensan.
+CONTRASENA_LARGO_MINIMO = 10
 AUTH_PASSWORD_VALIDATORS = [
     {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-        "OPTIONS": {"user_attributes": ("rut", "nombre", "email")},
-    },
-    {
         "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-        "OPTIONS": {"min_length": 12},
+        "OPTIONS": {"min_length": CONTRASENA_LARGO_MINIMO},
     },
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},

@@ -1,13 +1,22 @@
 from django import forms
+from django.conf import settings
 from django.contrib.auth.forms import PasswordChangeForm, SetPasswordForm
 
 from core import rut as utilidades_rut
 from core.validators import validar_rut
 from cuentas.models import Usuario
 
-AYUDA_CONTRASENA = (
-    "Mínimo 12 caracteres. No use solo números ni una contraseña común o parecida a sus datos."
-)
+# Identificador del párrafo con las reglas, que el campo anuncia con aria-describedby.
+ID_REGLAS_CONTRASENA = "reglas-contrasena"
+
+
+def reglas_contrasena():
+    """Las reglas de AUT-05 en una línea, para mostrarlas antes de escribir (DEC-207). Las
+    mismas aplican el formulario y `validate_password`: largo, comunes y solo números."""
+    return (
+        f"Use al menos {settings.CONTRASENA_LARGO_MINIMO} caracteres. Puede ser una frase; "
+        "no use solo números ni una contraseña muy conocida."
+    )
 
 
 def _entrada_rut(**atributos):
@@ -138,9 +147,16 @@ class _TextosDeContrasena:
 
     def _ajustar(self):
         self.fields["new_password1"].label = "Contraseña nueva"
-        self.fields["new_password1"].help_text = AYUDA_CONTRASENA
+        # Las reglas van en un párrafo antes de los campos (componentes/reglas_contrasena.html),
+        # no como ayuda debajo: se leen antes de escribir.
+        self.fields["new_password1"].help_text = ""
+        self.fields["new_password1"].widget.attrs["aria-describedby"] = ID_REGLAS_CONTRASENA
         self.fields["new_password2"].label = "Repita la contraseña nueva"
         self.fields["new_password2"].help_text = ""
+
+    @property
+    def reglas(self):
+        return reglas_contrasena()
 
 
 class FormularioDefinirContrasena(_TextosDeContrasena, SetPasswordForm):

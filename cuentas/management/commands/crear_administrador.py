@@ -3,6 +3,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 from auditoria.services import Accion, registrar
 from cuentas import services
+from cuentas.forms import reglas_contrasena
 from cuentas.models import EnlaceAcceso, Usuario
 
 
@@ -49,3 +50,5 @@ class Command(BaseCommand):
             "Enlace de activación (un solo uso, no lo comparta por canales inseguros):"
         )
         self.stdout.write(services.url_del_enlace(EnlaceAcceso.Tipo.ACTIVACION, token))
+        # La contraseña la define la persona al abrir el enlace: se le avisan las reglas antes.
+        self.stdout.write(f"Contraseña que pedirá el enlace: {reglas_contrasena()}")

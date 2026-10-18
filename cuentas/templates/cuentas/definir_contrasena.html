@@ -6,6 +6,7 @@
 {% include "componentes/resumen_errores.html" %}
 <form class="flex flex-col gap-5" method="post">
   {% csrf_token %}
+  {% include "componentes/reglas_contrasena.html" with reglas=formulario.reglas only %}
   {% include "componentes/campo.html" with campo=formulario.new_password1 contrasena=True %}
   {% include "componentes/campo.html" with campo=formulario.new_password2 contrasena=True %}
   {% include "componentes/boton.html" with texto=textos.boton ancho=True only %}
