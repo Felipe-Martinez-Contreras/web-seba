@@ -131,6 +131,15 @@
     </div>
   </section>
 
+  <section aria-labelledby="ref-rubros">
+    <h2 id="ref-rubros" class="text-2xl">Tarjetas de rubro</h2>
+    <ul class="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <li class="grid">{% include "componentes/tarjeta_rubro.html" with nombre="Rubro con foto" foto=foto_rubro only %}</li>
+      <li class="grid">{% include "componentes/tarjeta_rubro.html" with nombre="Rubro con un nombre en dos líneas" foto=foto_rubro only %}</li>
+      <li class="grid">{% include "componentes/tarjeta_rubro.html" with nombre="Rubro sin foto" only %}</li>
+    </ul>
+  </section>
+
   <section aria-labelledby="ref-indicadores">
     <h2 id="ref-indicadores" class="text-2xl">Tarjetas de indicador</h2>
     <div class="mt-4 grid gap-4 sm:grid-cols-3">

@@ -510,3 +510,27 @@ Pedido por el responsable el 18-10-2026 (DEC-207): las reglas frustraban a clien
 - **`crear_administrador` no pide contraseña:** entrega un enlace de activación y la contraseña se define al abrirlo. Por eso el comando imprime las reglas junto al enlace, y el formulario del enlace las muestra antes del campo.
 - **Los errores son los de Django en español**, como antes ("Esta contraseña es demasiado corta. Debe contener por lo menos 10 caracteres."): no se reescribieron.
 - **Una prueba anterior cambió** porque cambió el requisito: `test_contrasenas_con_argon2_y_minimo_de_12_caracteres` pasa a llamarse `…_de_10_caracteres`. Las dos pruebas de validadores ya no esperan "similar" y usan una contraseña corta de 9 caracteres.
+
+## 25. Rubros: "Áreas en las que trabajamos"
+
+Pedido por el responsable el 18-10-2026 (DEC-208): mostrar los rubros en que trabaja, como la franja de fotos de su publicidad (PUB-09).
+
+- **Modelo `Rubro`:** nombre de hasta 30 caracteres, foto opcional, texto alternativo, orden y activo.
+- **Panel › Configuración › Contenido del sitio › Rubros:** crear, editar, ordenar, activar o desactivar, quitar la foto y eliminar con confirmación. Cada acción, salvo ordenar, deja su evento en la auditoría, sin el texto alternativo.
+- **Fotos:** el mismo procesamiento de las imágenes del sitio, recortadas al centro a 4:3, en 800 y 400 px. Se guardan en la base y se entregan por `/imagenes/` con caché de un año.
+- **Inicio:** después de "Nuestros servicios", dos columnas en móvil y cuatro en escritorio; el nombre sobre una franja del velo azul marino; sin foto, fondo neutro con un ícono. Sin rubros activos no hay sección.
+- **`cargar_rubros`:** los ocho rubros del flyer, sin fotos, solo si no hay ninguno.
+- **`exportar_contenido`, versión 2:** lleva los rubros sin sus fotos; `importar_contenido` sigue aceptando la versión 1.
+- **Medido con 0,25 CPU y 450 MB:** peor caso 6,1 s y +77 MB.
+- **Revisión en Edge** a 360 y 1280 px con 0, 8 y 3 rubros: sin desbordes ni errores; nombre a 7,77:1 sobre la foto casi blanca.
+
+### Diferencias con lo pedido
+
+- **Título en plural**, "Áreas en las que trabajamos", elegido por el responsable al revisar el plan.
+- **Sin descripción opcional:** la recomendación es esperar a que las tarjetas lleven a una página propia (DEC-208).
+- **Contenido de partida con un comando y no con una migración:** con una migración, `importar_contenido` se negaría a cargar en producción los rubros editados en staging.
+- **Se agregó "Quitar la foto"**, que no estaba en el pedido: sin esa opción, la única forma de dejar un rubro sin foto era eliminarlo y crearlo de nuevo.
+- **El orden no viaja como número:** como en los servicios, es la posición en la lista del archivo. Por eso, al eliminar un rubro, los demás se numeran de nuevo.
+- **Velo de la franja al 80 % y no al 85 % del plan:** el 85 % quedaba fuera del 70 a 80 % de la sección 9 de la especificación.
+- **Cambió una prueba anterior** porque cambió lo que muestra la página: `test_la_portada_no_lleva_imagen_mientras_no_haya_fotografias` admite ahora, solo dentro de la muestra de la tarjeta de rubro, la foto `contacto-960.webp` del repositorio. Fuera de esa muestra sigue exigiendo que solo haya el símbolo. Las pruebas de exportar e importar esperan ahora la versión 2 y el mensaje con los rubros.
+- **Las fotos de la revisión son sintéticas**, las mismas de DEC-205.

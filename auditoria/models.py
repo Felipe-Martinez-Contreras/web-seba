@@ -89,6 +89,10 @@ class EventoAuditoria(models.Model):
         SOLICITUDES_DEPURADAS = "solicitudes_depuradas", "Depuración de solicitudes"
         IMAGEN_CAMBIADA = "imagen_cambiada", "Imagen del sitio cambiada"
         IMAGEN_RESTAURADA = "imagen_restaurada", "Imagen del sitio restaurada"
+        RUBRO_CREADO = "rubro_creado", "Rubro creado"
+        RUBRO_EDITADO = "rubro_editado", "Rubro editado"
+        RUBRO_ELIMINADO = "rubro_eliminado", "Rubro eliminado"
+        RUBRO_FOTO_CAMBIADA = "rubro_foto_cambiada", "Foto de rubro cambiada"
 
     fecha = models.DateTimeField("fecha", default=timezone.now, editable=False)
     actor = models.ForeignKey(

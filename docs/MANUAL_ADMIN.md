@@ -181,6 +181,7 @@ En **Configuración › Contenido del sitio** se edita lo que muestra el sitio p
 
 - **Datos del negocio:** nombre comercial, titular y bajada de la portada, presentación, contacto, redes sociales y texto de la política de privacidad.
 - **Servicios:** cree, edite, ordene con las flechas, y active o desactive. Un servicio no se elimina: al desactivarlo deja de mostrarse.
+- **Rubros:** las áreas en que trabaja, como en su publicidad. Vea "Rubros" más abajo.
 
 Reglas que conviene conocer:
 
@@ -228,7 +229,37 @@ En **Configuración › Contenido del sitio › Imágenes del sitio** cambia las
 
 Cada cambio y cada vuelta a la original quedan en **Auditoría**, con quién lo hizo.
 
-En **Auditoría** queda registrado quién entró, quién falló al entrar y qué cambios se hicieron: clientes, usuarios, carpetas, enlaces generados, documentos (subidas, reemplazos, movimientos, eliminaciones y restauraciones) e imágenes del sitio. También queda cada vez que alguien ve o descarga un documento, y quién fue. Puede filtrar por cliente, por RUT, por tipo de acción y por fechas.
+### Rubros
+
+En **Configuración › Contenido del sitio › Rubros** maneja la sección **"Áreas en las que trabajamos"** del inicio, que va después de los servicios: una tarjeta por rubro, con su foto y el nombre encima. En el celular se ven dos por fila y en el computador, cuatro. Si no hay ningún rubro activo, la sección no aparece.
+
+**Para empezar:** quien mantiene el sitio puede crear de una vez los ocho rubros de su publicidad (Construcción, Industria, Logística y bodegaje, Agricultura y ganadería, Alimentos, Transporte, Comercio y Servicios), sin fotos, con el comando `cargar_rubros` (`DESPLIEGUE.md` §11). Solo funciona si todavía no hay rubros, así que nunca los duplica. También puede crearlos usted uno por uno con **Nuevo rubro**.
+
+**Qué puede hacer con cada rubro:**
+
+- **Editar:** cambiar el nombre, subir o cambiar la foto y escribir su texto alternativo. Al lado ve cómo queda la tarjeta en el sitio.
+- **Quitar la foto** (dentro de Editar): la tarjeta queda con un fondo gris azulado y un casco, del mismo tamaño que las demás.
+- **Ordenar** con las flechas: el sitio los muestra en ese orden.
+- **Desactivar:** deja de mostrarse, pero lo conserva para después.
+- **Eliminar:** borra el rubro y su foto, después de confirmar. No se puede deshacer; si solo quiere ocultarlo un tiempo, desactívelo.
+
+**El nombre** es corto, de hasta 30 caracteres, como en la publicidad: "Construcción", "Logística y bodegaje". No puede repetirse.
+
+**Qué fotos usar:**
+
+- **Horizontales.** El sitio recorta cada foto al centro, en proporción 4:3 (como una foto de cámara), y la reduce a 800 px de ancho. Deje lo importante al centro: los bordes de una foto muy panorámica, o la parte de arriba y de abajo de una vertical, se pierden.
+- **Que se reconozca el rubro de un vistazo:** una grúa en una obra, una bodega con estanterías, un campo, un camión. La tarjeta es chica, sobre todo en el celular.
+- **Sin logos de clientes ni de otras marcas**, ni en ropa, cascos, vehículos o letreros, y **sin personas reconocibles**. Las mismas reglas de las fotos de fondo (arriba).
+- **Con derecho a usarlas.** Si son de un banco de imágenes (Unsplash, Pexels u otro), que la licencia permita el uso comercial. Si las genera con inteligencia artificial, revise que las condiciones de la herramienta le permitan publicarlas con fines comerciales, y que no imiten la marca, la obra o la cara de alguien. En todos los casos, usted responde por tener ese derecho.
+- No se preocupe por si la foto es clara u oscura: el nombre va sobre una franja azul marino que lo mantiene legible.
+
+**Texto alternativo:** obligatorio cuando el rubro tiene foto. Describa lo que se ve, por ejemplo "Grúa horquilla moviendo pallets en una bodega".
+
+**Formatos y mensajes:** los mismos de las fotos de fondo (JPG, PNG o WebP, hasta 10 MB, sin SVG), con los mismos mensajes de la tabla de arriba. Si falta el texto alternativo, el aviso es "Escriba el texto alternativo de la foto."; si el nombre ya existe, "Ya existe un rubro con ese nombre."
+
+Crear, editar, eliminar y cambiar o quitar la foto de un rubro quedan en **Auditoría**, con quién lo hizo. Al llevar el contenido a otro servidor viajan los nombres, el orden y los textos, pero no las fotos: hay que volver a subirlas.
+
+En **Auditoría** queda registrado quién entró, quién falló al entrar y qué cambios se hicieron: clientes, usuarios, carpetas, enlaces generados, documentos (subidas, reemplazos, movimientos, eliminaciones y restauraciones), imágenes del sitio y rubros. También queda cada vez que alguien ve o descarga un documento, y quién fue. Puede filtrar por cliente, por RUT, por tipo de acción y por fechas.
 
 En la ficha de cada cliente, la pestaña **Actividad** muestra lo mismo, solo para ese cliente.
 

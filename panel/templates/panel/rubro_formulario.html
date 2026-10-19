@@ -1,0 +1,39 @@
+{% extends "base_panel.html" %}
+{% block titulo %}{% if edicion %}Editar rubro{% else %}Nuevo rubro{% endif %}{% endblock %}
+{% block contenido %}
+{% include "componentes/migas.html" with migas=migas only %}
+<h1 class="mt-4 text-2xl">{% if edicion %}Editar rubro{% else %}Nuevo rubro{% endif %}</h1>
+
+<div class="mt-6 grid max-w-4xl gap-6 lg:grid-cols-[1fr_16rem]">
+  <div class="tarjeta p-5">
+    {% include "componentes/resumen_errores.html" with formulario=form %}
+    <form class="flex flex-col gap-5" method="post" enctype="multipart/form-data" novalidate>
+      {% csrf_token %}
+      {% include "componentes/campo.html" with campo=form.nombre %}
+      {% include "componentes/campo.html" with campo=form.archivo %}
+      {% include "componentes/campo.html" with campo=form.alt %}
+      <div class="flex flex-wrap gap-3">
+        {% if edicion %}
+        {% include "componentes/boton.html" with texto="Guardar cambios" only %}
+        {% else %}
+        {% include "componentes/boton.html" with texto="Crear rubro" only %}
+        {% endif %}
+        {% url 'panel:rubros' as url_cancelar %}
+        {% include "componentes/boton.html" with texto="Cancelar" href=url_cancelar variante="secundario" only %}
+      </div>
+    </form>
+  </div>
+
+  {% if edicion %}
+  <section class="flex flex-col gap-3" aria-labelledby="vista-previa-titulo">
+    <h2 class="text-base font-semibold" id="vista-previa-titulo">Así se ve en el sitio</h2>
+    {% include "componentes/tarjeta_rubro.html" with nombre=rubro.nombre foto=foto only %}
+    {% if foto %}
+    {% include "componentes/boton.html" with texto="Quitar la foto" variante="secundario" tipo="button" icono="trash-2" abre_dialogo="quitar-foto" only %}
+    {% url 'panel:rubro_quitar_foto' rubro.pk as url_quitar %}
+    {% include "componentes/dialogo_confirmacion.html" with id="quitar-foto" titulo="¿Quitar la foto?" mensaje="El rubro sigue en el sitio, con un fondo neutro y un ícono en lugar de la foto. Si la quiere de nuevo, tendrá que volver a subirla." accion=url_quitar confirmar_texto="Quitar la foto" peligro=True campo_nombre="" %}
+    {% endif %}
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

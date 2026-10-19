@@ -134,6 +134,7 @@ Usa UUID como identificador en las URL de empresas, carpetas, documentos y versi
 | Documento | UUID, empresa, carpeta, título, descripción, versión vigente, eliminado en, eliminado por | La carpeta pertenece a la misma empresa; "eliminado en" marca la papelera |
 | VersionDocumento | UUID, documento, número, clave de almacenamiento, nombre original saneado, tipo MIME detectado, extensión, tamaño, SHA-256, subido por, subido en | Las versiones no se editan; solo se agregan |
 | Servicio | Nombre, slug, ícono (de una lista fija del set de íconos), resumen, descripción, orden, activo | Se edita desde el panel |
+| Rubro | Nombre (hasta 30 caracteres), foto opcional, texto alternativo de la foto, orden, activo | Se edita desde el panel y, a diferencia de un servicio, se puede eliminar: nada lo nombra. La foto se procesa y se guarda como las imágenes del sitio (agregado el 19-10-2026, DEC-208) |
 | DatosNegocio | Nombre comercial, titular y bajada de la portada, presentación, teléfono, email público, WhatsApp, comuna o región, horario, redes sociales (Instagram, LinkedIn, Facebook; opcionales), texto de la política de privacidad | Registro único, editable desde el panel |
 | Solicitud | UUID, tipo (consulta o cotización), nombre, email, teléfono, empresa, servicio, rango de trabajadores, comuna, mensaje, consentimiento y su fecha, estado, notas internas, estado de notificación, error, intentos, notificada en | No guarda la IP del visitante |
 | EventoAuditoria | Fecha, actor, RUT intentado, acción, empresa, tipo y UUID del objeto, IP, detalle breve | Solo se agregan; nunca se editan ni se borran desde la aplicación |
@@ -147,13 +148,14 @@ Cada requisito tiene un código. Mantén en `docs/TRAZABILIDAD.md` la relación 
 ### 7.1 Sitio público (PUB)
 
 - **PUB-01** Páginas: Inicio, Servicios, Contacto, Solicitar cotización, Acceso clientes, Política de privacidad, y páginas 404 y 500 propias.
-- **PUB-02** Inicio, según la referencia visual (sección 9): portada con fotografía, titular y bajada (desde DatosNegocio) y los botones "Solicitar cotización" y "Conozca nuestros servicios"; sección "Nuestros servicios" con una tarjeta por servicio activo (ícono, nombre y resumen, enlazada a la página Servicios); sección de contacto con fotografía y el formulario de cotización de SOL-02 incrustado; pie de página.
+- **PUB-02** Inicio, según la referencia visual (sección 9): portada con fotografía, titular y bajada (desde DatosNegocio) y los botones "Solicitar cotización" y "Conozca nuestros servicios"; sección "Nuestros servicios" con una tarjeta por servicio activo (ícono, nombre y resumen, enlazada a la página Servicios); sección "Áreas en las que trabajamos" con los rubros activos (PUB-09); sección de contacto con fotografía y el formulario de cotización de SOL-02 incrustado; pie de página.
 - **PUB-03** Servicios: listado de servicios activos en su orden. Cada uno tiene un botón "Solicitar cotización" que abre el formulario con ese servicio preseleccionado (`?servicio=<slug>`).
 - **PUB-04** Navegación: logo, Inicio, Servicios, Contacto y botón "Acceso clientes"; en móvil, menú desplegable. El pie muestra el logo, los enlaces, los datos de contacto, el enlace a la política de privacidad y, solo si están registradas, las redes sociales.
 - **PUB-05** Si un dato no existe, su sección no se muestra. Nada de lorem ipsum ni textos de relleno.
 - **PUB-06** Comando `contenido_pendiente` que lista los marcadores [COMPLETAR] del contenido. El inicio del panel muestra el mismo aviso.
 - **PUB-07** SEO básico: `title` y `meta description` por página, Open Graph, `sitemap.xml` y `robots.txt`. Portal, panel, activación y recuperación llevan `noindex` y no aparecen en el sitemap.
 - **PUB-08** Fotografías: mientras no existan fotos propias del profesional, se usan fotos de bancos gratuitos con licencia de uso comercial (por ejemplo, Unsplash o Pexels), del rubro (obras, industria, elementos de protección personal) y sin logos ni marcas de terceros visibles. Cada foto se registra en `docs/FOTOS.md` con su URL de origen, autor y licencia; se optimiza (WebP, ancho máximo 1.920 px, menos de 300 KB) y se sirve como estático propio. Reemplazarla por una foto real solo requiere cambiar el archivo. Ninguna foto se presenta como si mostrara al profesional, a sus clientes o sus obras.
+- **PUB-09** Rubros (agregado el 19-10-2026, DEC-208): en el inicio, después de "Nuestros servicios", la sección "Áreas en las que trabajamos" con una tarjeta por rubro activo, en su orden: la foto recortada a 4:3, con el nombre encima sobre una franja del velo azul marino; sin foto, un fondo neutro con un ícono, del mismo tamaño. Dos columnas en móvil y cuatro en escritorio. Las tarjetas no son enlaces. Sin rubros activos, la sección no aparece. El comando `cargar_rubros` crea los ocho rubros de partida, sin fotos, solo si no hay ninguno.
 
 ### 7.2 Formularios y solicitudes (SOL)
 
@@ -195,7 +197,7 @@ Cada requisito tiene un código. Mantén en `docs/TRAZABILIDAD.md` la relación 
 - **ADM-07** Carpetas: crear, renombrar, ordenar y eliminar solo cuando no tienen documentos, incluidos los de la papelera.
 - **ADM-08** Documentos: subir uno o varios archivos con barra de progreso y resultado por archivo (aceptado, o rechazado con su motivo); editar título y descripción; mover a otra carpeta de la misma empresa; reemplazar el archivo (crea una versión nueva); ver el historial y descargar cualquier versión; eliminar con confirmación.
 - **ADM-09** Papelera por empresa: los documentos eliminados se pueden restaurar durante 30 días. El comando `purgar_papelera` elimina de forma definitiva, en base de datos y almacenamiento, los que superan ese plazo.
-- **ADM-10** Contenido del sitio: editar DatosNegocio y gestionar Servicios (crear, editar, ordenar, activar y desactivar).
+- **ADM-10** Contenido del sitio: editar DatosNegocio y gestionar Servicios (crear, editar, ordenar, activar y desactivar). Desde el 19-10-2026, también los Rubros (PUB-09): crear, editar, ordenar, activar, desactivar y eliminar con confirmación, cada uno con su foto.
 - **ADM-11** Auditoría: listado de solo lectura, filtrable por empresa, usuario, acción y fechas.
 - **ADM-12** El admin de Django queda solo para el superusuario técnico, en una ruta definida por variable de entorno y con 2FA. No es la interfaz de trabajo diario.
 
@@ -224,7 +226,7 @@ Cada requisito tiene un código. Mantén en `docs/TRAZABILIDAD.md` la relación 
 
 ### 7.7 Auditoría (AUD)
 
-- **AUD-01** Se registran: inicios de sesión exitosos y fallidos (con el RUT intentado), bloqueos, cierres de sesión, activaciones, restablecimientos y cambios de contraseña, eventos de 2FA, altas y cambios de empresas y usuarios; subida, reemplazo, movimiento, eliminación, restauración y purga de documentos; vistas y descargas; y cambios de estado de solicitudes.
+- **AUD-01** Se registran: inicios de sesión exitosos y fallidos (con el RUT intentado), bloqueos, cierres de sesión, activaciones, restablecimientos y cambios de contraseña, eventos de 2FA, altas y cambios de empresas y usuarios; subida, reemplazo, movimiento, eliminación, restauración y purga de documentos; vistas y descargas; cambios de estado de solicitudes; y, desde el 18 y el 19-10-2026, los cambios de las imágenes del sitio y de los rubros (crear, editar, eliminar y cambiar la foto).
 - **AUD-02** Cada evento guarda fecha y hora, actor, acción, empresa, objeto e IP. Nunca contraseñas, tokens, enlaces de activación ni contenido de documentos.
 - **AUD-03** La auditoría no se edita ni se borra desde la aplicación. Retención configurable (24 meses por defecto), con el comando `depurar_auditoria`.
 

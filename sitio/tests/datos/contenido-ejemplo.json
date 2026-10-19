@@ -1,6 +1,6 @@
 {
   "formato": "web-seba/contenido",
-  "version": 1,
+  "version": 2,
   "datos_negocio": {
     "nombre_comercial": "Prevención Ficticia de Ejemplo",
     "titular": "Titular ficticio para las pruebas",
@@ -63,6 +63,23 @@
       "icono": "hard-hat",
       "resumen": "",
       "descripcion": "",
+      "activo": false
+    }
+  ],
+  "rubros": [
+    {
+      "nombre": "Rubro ficticio uno",
+      "alt": "Foto ficticia de una bodega con estanterías.",
+      "activo": true
+    },
+    {
+      "nombre": "Rubro ficticio dos",
+      "alt": "",
+      "activo": true
+    },
+    {
+      "nombre": "Rubro ficticio desactivado",
+      "alt": "",
       "activo": false
     }
   ]

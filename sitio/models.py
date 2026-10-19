@@ -120,16 +120,55 @@ class ImagenSitio(ModeloConFechas):
         return self.get_ranura_display()
 
 
+class RubroQuerySet(models.QuerySet):
+    def activos(self):
+        return self.filter(activo=True)
+
+
+class Rubro(ModeloConFechas):
+    """Rubro en que trabaja el profesional, con su foto (PUB-09, DEC-208). Se edita desde el
+    panel y, a diferencia de un servicio, se puede eliminar: nada lo nombra."""
+
+    nombre = models.CharField("nombre", max_length=30)
+    alt = models.CharField("texto alternativo de la foto", max_length=200, blank=True)
+    orden = models.PositiveIntegerField("orden", default=0)
+    activo = models.BooleanField("activo", default=True)
+
+    objects = RubroQuerySet.as_manager()
+
+    class Meta:
+        verbose_name = "rubro"
+        verbose_name_plural = "rubros"
+        ordering = ["orden", "nombre"]
+        indexes = [models.Index(fields=["activo", "orden"], name="rubro_activo_orden_idx")]
+        constraints = [
+            models.UniqueConstraint(
+                Lower("nombre"),
+                name="rubro_nombre_unico",
+                violation_error_message="Ya existe un rubro con ese nombre.",
+            ),
+        ]
+
+    def __str__(self):
+        return self.nombre
+
+
 class VarianteImagen(models.Model):
     """Un tamaño de una imagen subida, ya re-codificado en el servidor: nunca el archivo
-    original. Se entrega en /imagenes/<sha256>.<extensión>."""
+    original. Se entrega en /imagenes/<sha256>.<extensión>. Es de una imagen del sitio o de
+    la foto de un rubro, nunca de ambas."""
 
     class Tipo(models.TextChoices):
         WEBP = "image/webp", "WebP"
         PNG = "image/png", "PNG"
         ICO = "image/x-icon", "ICO"
 
-    imagen = models.ForeignKey(ImagenSitio, on_delete=models.CASCADE, related_name="variantes")
+    imagen = models.ForeignKey(
+        ImagenSitio, on_delete=models.CASCADE, related_name="variantes", null=True, blank=True
+    )
+    rubro = models.ForeignKey(
+        Rubro, on_delete=models.CASCADE, related_name="variantes", null=True, blank=True
+    )
     nombre = models.CharField("variante", max_length=20)
     tipo_mime = models.CharField("tipo", max_length=20, choices=Tipo)
     sha256 = models.CharField("SHA-256", max_length=64, db_index=True)
@@ -142,7 +181,15 @@ class VarianteImagen(models.Model):
         verbose_name_plural = "variantes de imagen"
         constraints = [
             models.UniqueConstraint(fields=["imagen", "nombre"], name="variante_unica_por_imagen"),
+            models.UniqueConstraint(fields=["rubro", "nombre"], name="variante_unica_por_rubro"),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(imagen__isnull=False, rubro__isnull=True)
+                    | models.Q(imagen__isnull=True, rubro__isnull=False)
+                ),
+                name="variante_de_imagen_o_de_rubro",
+            ),
         ]
 
     def __str__(self):
-        return f"{self.imagen} ({self.nombre})"
+        return f"{self.imagen or self.rubro} ({self.nombre})"

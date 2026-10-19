@@ -42,6 +42,13 @@ FOTO_BYTES = 300 * 1024
 FOTO_MOVIL_BYTES = 100 * 1024
 _CALIDADES = (80, 65, 50)
 
+# Tarjeta de rubro (DEC-208): 4:3, a 800 px para escritorio y 400 px para móvil.
+RUBRO_PROPORCION = (4, 3)
+RUBRO_ANCHO = 800
+RUBRO_CHICA_ANCHO = 400
+RUBRO_BYTES = 120 * 1024
+RUBRO_CHICA_BYTES = 40 * 1024
+
 LOGO_MINIMO = 180
 LOGO_MAXIMO = 2048
 SIMBOLO_LADO = 128
@@ -190,25 +197,30 @@ def _con_candado(funcion):
     return envoltura
 
 
-@_con_candado
-def procesar_foto(archivo, *, plazo_segundos):
-    """Foto de fondo: JPG, PNG o WebP → WebP de hasta 1.920 px (< 300 KB) y de 960 px
-    (< 100 KB). Respeta la orientación de la cámara y descarta los metadatos."""
-    plazo = _Plazo(plazo_segundos)
+def _decodificar(archivo, lado, plazo, *, cubrir=False):
+    """Foto JPG, PNG o WebP en RGB, derecha, en sRGB y sin metadatos, reducida a una caja
+    cuadrada de `lado`: encajada en ella o, con `cubrir`, con el lado menor de ese largo
+    (para recortarla después)."""
     with _abrir(archivo, (JPG, PNG, WEBP)) as original:
         perfil = original.info.get("icc_profile")
         orientacion = original.getexif().get(ExifTags.Base.Orientation, 1)
         original.seek(0)  # una WebP o PNG animada: solo el primer cuadro
         if original.format == JPG:
-            # Decodifica directo a la escala más chica que todavía cubre 1.920 px.
-            original.draft("RGB", (FOTO_LADO, FOTO_LADO))
+            # Decodifica directo a la escala más chica que todavía cubre la caja.
+            original.draft("RGB", (lado, lado))
         original.load()
         plazo.comprobar()
         imagen = original
         if imagen.mode not in ("RGB", "RGBA", "L"):
             imagen = imagen.convert("RGBA")
         # La caja es cuadrada: reducir antes de girar da el mismo resultado con menos memoria.
-        imagen.thumbnail((FOTO_LADO, FOTO_LADO), Image.Resampling.LANCZOS, reducing_gap=3.0)
+        if cubrir:
+            factor = lado / min(imagen.size)
+            if factor < 1:
+                tamano = (round(imagen.width * factor), round(imagen.height * factor))
+                imagen = imagen.resize(tamano, Image.Resampling.LANCZOS, reducing_gap=3.0)
+        else:
+            imagen.thumbnail((lado, lado), Image.Resampling.LANCZOS, reducing_gap=3.0)
         if imagen is original:
             # Al cerrar el archivo, Pillow descarta los píxeles de la imagen abierta.
             imagen = imagen.copy()
@@ -224,6 +236,15 @@ def procesar_foto(archivo, *, plazo_segundos):
         else:
             fondo.paste(imagen.convert("RGB"))
         imagen = fondo
+    return imagen
+
+
+@_con_candado
+def procesar_foto(archivo, *, plazo_segundos):
+    """Foto de fondo: JPG, PNG o WebP → WebP de hasta 1.920 px (< 300 KB) y de 960 px
+    (< 100 KB). Respeta la orientación de la cámara y descarta los metadatos."""
+    plazo = _Plazo(plazo_segundos)
+    imagen = _decodificar(archivo, FOTO_LADO, plazo)
     grande, (ancho, alto) = _webp_bajo(imagen, FOTO_BYTES, plazo)
     movil = imagen.copy()
     movil.thumbnail((FOTO_MOVIL_LADO, FOTO_MOVIL_LADO), Image.Resampling.LANCZOS)
@@ -231,6 +252,38 @@ def procesar_foto(archivo, *, plazo_segundos):
     return [
         Variante("1920", "image/webp", ancho, alto, grande),
         Variante("960", "image/webp", ancho_movil, alto_movil, chica),
+    ]
+
+
+def _recortar(imagen, ancho_maximo):
+    """El centro de la foto en proporción 4:3, de hasta `ancho_maximo`. Una foto más chica se
+    recorta a su tamaño, sin agrandarla."""
+    ancho, alto = imagen.size
+    recorte_ancho = min(ancho, alto * RUBRO_PROPORCION[0] // RUBRO_PROPORCION[1])
+    recorte_alto = recorte_ancho * RUBRO_PROPORCION[1] // RUBRO_PROPORCION[0]
+    izquierda, arriba = (ancho - recorte_ancho) // 2, (alto - recorte_alto) // 2
+    imagen = imagen.crop((izquierda, arriba, izquierda + recorte_ancho, arriba + recorte_alto))
+    if recorte_ancho > ancho_maximo:
+        destino = (ancho_maximo, ancho_maximo * RUBRO_PROPORCION[1] // RUBRO_PROPORCION[0])
+        imagen = imagen.resize(destino, Image.Resampling.LANCZOS)
+    return imagen
+
+
+@_con_candado
+def procesar_rubro(archivo, *, plazo_segundos):
+    """Foto de un rubro: JPG, PNG o WebP → el centro en 4:3, en WebP de 800 × 600 px
+    (< 120 KB) y de 400 × 300 px (< 40 KB), para la tarjeta del inicio (DEC-208). Respeta
+    la orientación de la cámara y descarta los metadatos."""
+    plazo = _Plazo(plazo_segundos)
+    imagen = _recortar(_decodificar(archivo, RUBRO_ANCHO, plazo, cubrir=True), RUBRO_ANCHO)
+    plazo.comprobar()
+    grande, (ancho, alto) = _webp_bajo(imagen, RUBRO_BYTES, plazo)
+    chica, (ancho_chica, alto_chica) = _webp_bajo(
+        _recortar(imagen, RUBRO_CHICA_ANCHO), RUBRO_CHICA_BYTES, plazo
+    )
+    return [
+        Variante("800", "image/webp", ancho, alto, grande),
+        Variante("400", "image/webp", ancho_chica, alto_chica, chica),
     ]
 
 

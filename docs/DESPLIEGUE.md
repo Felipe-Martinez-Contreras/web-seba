@@ -552,13 +552,15 @@ Procedimiento, **VM**:
 4. Compruebe que `web.env` no tiene la línea `DEMO_PERMITIDO` (`sudo grep -c DEMO_PERMITIDO /etc/web-seba/web.env` debe dar 0). Las instalaciones hechas con la plantilla anterior al 12-10-2026 la traen: bórrela.
 5. `sudo desplegar.sh <commit>`, `comprobar_almacenamiento --firma` y `crear_administrador`.
 6. **Importe el contenido** exportado en el paso 2 (más abajo). Si no lo exportó, cárguelo a mano en Panel › Configuración › Contenido del sitio.
-   **Las imágenes del sitio no viajan** (DEC-205): si cambió fotos o el logo en el panel de staging, guarde antes del paso 3 los archivos que subió y vuelva a subirlos en Panel › Configuración › Contenido del sitio › Imágenes del sitio. Sin eso, producción muestra las originales.
+   **Las imágenes del sitio no viajan** (DEC-205): si cambió fotos o el logo en el panel de staging, guarde antes del paso 3 los archivos que subió y vuelva a subirlos en Panel › Configuración › Contenido del sitio › Imágenes del sitio. Sin eso, producción muestra las originales. Lo mismo con **las fotos de los rubros** (DEC-208): los rubros llegan con su nombre, orden y texto alternativo, pero sin foto; súbalas en Panel › Configuración › Contenido del sitio › Rubros.
 7. Ejecute `contenido_pendiente --estricto`: debe terminar sin pendientes.
 8. Suba HSTS a un año (puntos 3 y 4 de la lista) cuando el sitio lleve unos días estable, y aplíquelo con `sudo dc up -d web`.
 
 ### Llevar el contenido de staging a producción
 
-`exportar_contenido` escribe en un archivo JSON los datos del negocio y los servicios, y nada más: ni usuarios, ni empresas, ni documentos, ni solicitudes, ni auditoría. `importar_contenido` lo carga en la base nueva (DEC-200, DEC-201).
+`exportar_contenido` escribe en un archivo JSON los datos del negocio, los servicios y los rubros, y nada más: ni usuarios, ni empresas, ni documentos, ni solicitudes, ni auditoría, ni imágenes ni fotos de rubros. `importar_contenido` lo carga en la base nueva (DEC-200, DEC-201). Desde el 19-10-2026 el archivo es de la **versión 2**, con los rubros; `importar_contenido` sigue aceptando uno de la versión 1, y en ese caso no toca los rubros (DEC-208).
+
+**Rubros de partida:** si todavía no cargó los rubros en staging, puede crearlos ahí antes de exportar, o directamente en producción, con `sudo /opt/web-seba/despliegue/vm/dc exec -T web python manage.py cargar_rubros`. Crea los ocho de la publicidad, sin fotos, solo si no hay ninguno: repetirlo responde `Ya hay rubros: no se cambió nada.` En producción, hágalo **después** de importar, o `importar_contenido` encontrará rubros distintos de los del archivo y se negará.
 
 **El archivo trae datos de contacto** (teléfono, correo, WhatsApp). No lo guarde en la carpeta del proyecto ni lo pegue en un chat. Si alguna vez queda dentro del proyecto, el nombre `contenido-sitio*.json` está en `.gitignore` y en `.dockerignore`.
 
@@ -573,10 +575,11 @@ sha256sum contenido-sitio.json
 realpath contenido-sitio.json
 ```
 
-El comando responde `Exportado: datos del negocio y N servicios.` Lea también lo que diga debajo, porque los datos de `cargar_demo` **no viajan**:
+El comando responde `Exportado: datos del negocio, N servicios y N rubros.`, y recuerda que las fotos de los rubros y las imágenes del sitio no viajan. Lea también lo que diga debajo, porque los datos de `cargar_demo` **no viajan**:
 
 - `Datos de prueba que se exportaron vacíos: …`: esos campos todavía tenían el texto DEMO. Complételos en el panel y exporte de nuevo, o complételos en producción después de importar.
 - `Servicios de prueba omitidos: N`: los servicios DEMO que quedaron, activos o no.
+- `Rubros de prueba omitidos: N`: rubros con la marca DEMO en el nombre o el texto alternativo.
 - `Identificador de demostración reemplazado: servicio-demo-1 -> …`: un servicio real escrito encima de uno DEMO conservaba la dirección `servicio-demo-N`; en el archivo lleva una derivada de su nombre.
 
 Para **bajar el archivo a su equipo**: en la ventana SSH del navegador, botón **Descargar archivo** (*Download file*), y escriba la ruta que mostró `realpath`. En **PowerShell**, `Get-FileHash .\contenido-sitio.json -Algorithm SHA256` debe dar la misma suma que `sha256sum` (PowerShell la muestra en mayúsculas). Guárdelo fuera de la carpeta del proyecto.
@@ -594,7 +597,7 @@ sudo /opt/web-seba/despliegue/vm/dc exec -T web python manage.py exportar_conten
 rm contenido-sitio.json
 ```
 
-`importar_contenido` responde `Importado: N datos del negocio y N servicios.` Repetirlo no duplica nada: responde `El contenido ya estaba cargado: no se cambió nada.` Si falla, no modifica la base y dice por qué:
+`importar_contenido` responde `Importado: N datos del negocio, N servicios y N rubros.` Repetirlo no duplica nada: responde `El contenido ya estaba cargado: no se cambió nada.` Si falla, no modifica la base y dice por qué:
 
 | Mensaje | Qué pasó |
 | --- | --- |

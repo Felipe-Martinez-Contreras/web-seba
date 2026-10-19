@@ -8,10 +8,11 @@ from sitio import contenido
 
 class Command(BaseCommand):
     help = (
-        "Escribe en un archivo JSON el contenido del sitio: los datos del negocio y los "
-        "servicios, sin usuarios, empresas, documentos, solicitudes ni auditoría. Los datos "
-        "de prueba de cargar_demo no se exportan. El archivo trae datos de contacto: no lo "
-        "guarde en el repositorio. Se carga con importar_contenido."
+        "Escribe en un archivo JSON el contenido del sitio: los datos del negocio, los "
+        "servicios y los rubros (sin fotos ni imágenes), sin usuarios, empresas, documentos, "
+        "solicitudes ni auditoría. Los datos de prueba de cargar_demo no se exportan. El "
+        "archivo trae datos de contacto: no lo guarde en el repositorio. Se carga con "
+        "importar_contenido."
     )
 
     def add_arguments(self, parser):
@@ -34,7 +35,11 @@ class Command(BaseCommand):
         # El resumen va por la salida de errores, para no mezclarse con el archivo, y solo
         # lleva conteos, nombres de campo y slugs.
         servicios = exportacion.datos["servicios"]
-        self._informar(f"Exportado: datos del negocio y {len(servicios)} servicios.")
+        rubros = exportacion.datos["rubros"]
+        self._informar(
+            f"Exportado: datos del negocio, {len(servicios)} servicios y {len(rubros)} rubros. "
+            "Las fotos de los rubros y las imágenes del sitio no viajan: vuelva a subirlas."
+        )
         if exportacion.campos_vaciados:
             self._informar(
                 "Datos de prueba que se exportaron vacíos: "
@@ -43,6 +48,8 @@ class Command(BaseCommand):
             )
         if exportacion.servicios_omitidos:
             self._informar(f"Servicios de prueba omitidos: {exportacion.servicios_omitidos}.")
+        if exportacion.rubros_omitidos:
+            self._informar(f"Rubros de prueba omitidos: {exportacion.rubros_omitidos}.")
         for anterior, nuevo in exportacion.slugs_cambiados:
             self._informar(f"Identificador de demostración reemplazado: {anterior} -> {nuevo}.")
 

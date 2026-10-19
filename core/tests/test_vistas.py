@@ -190,11 +190,15 @@ def test_la_referencia_muestra_los_componentes(client):
 @pytest.mark.urls("core.tests.urls_prueba")
 def test_la_portada_no_lleva_imagen_mientras_no_haya_fotografias(client):
     contenido = client.get("/_referencia/componentes/").content.decode()
-    # Las únicas imágenes de la página son el símbolo de la marca.
-    assert set(re.findall(r'<img[^>]* src="([^"]+)"', contenido)) <= {
+    # Fuera de la muestra de la tarjeta de rubro (PUB-09), que necesita una foto para verse,
+    # las únicas imágenes de la página son el símbolo de la marca.
+    antes, rubros = contenido.split('aria-labelledby="ref-rubros"')
+    rubros, despues = rubros.split("</section>", 1)
+    assert set(re.findall(r'<img[^>]* src="([^"]+)"', antes + despues)) <= {
         "/static/img/simbolo.svg",
         "/static/img/simbolo-blanco.svg",
     }
+    assert set(re.findall(r'<img[^>]* src="([^"]+)"', rubros)) == {"/static/img/contacto-960.webp"}
 
 
 @pytest.mark.django_db

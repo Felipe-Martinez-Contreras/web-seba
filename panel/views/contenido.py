@@ -1,4 +1,5 @@
-"""Contenido del sitio: datos del negocio, servicios e imágenes (ADM-10, DEC-205)."""
+"""Contenido del sitio: datos del negocio, servicios, rubros e imágenes (ADM-10, PUB-09,
+DEC-205)."""
 
 from django.contrib import messages
 from django.http import Http404
@@ -10,9 +11,14 @@ from django.views import View
 from django.views.generic import FormView, TemplateView
 
 from core.mixins import AdministradorMixin
-from sitio import imagenes, pendientes, services
-from sitio.forms import FormularioDatosNegocio, FormularioImagen, FormularioServicio
-from sitio.models import DatosNegocio, Servicio
+from sitio import imagenes, pendientes, rubros, services
+from sitio.forms import (
+    FormularioDatosNegocio,
+    FormularioImagen,
+    FormularioRubro,
+    FormularioServicio,
+)
+from sitio.models import DatosNegocio, Rubro, Servicio
 
 _GRUPOS = (
     ("Identidad y portada", ("nombre_comercial", "titular", "bajada", "presentacion")),
@@ -23,6 +29,7 @@ _GRUPOS = (
 _PESTANAS = (
     ("panel:contenido", "Datos del negocio"),
     ("panel:servicios", "Servicios"),
+    ("panel:rubros", "Rubros"),
     ("panel:imagenes", "Imágenes del sitio"),
 )
 
@@ -259,3 +266,126 @@ class ImagenRestaurar(_VistaDeContenido, View):
         if imagenes.restaurar(ranura, actor=request.user, request=request):
             messages.success(request, f"Se volvió a la original: {ranura.label.lower()}.")
         return redirect(reverse("panel:imagenes") + f"#imagen-{ranura.value}")
+
+
+class Rubros(_VistaDeContenido, TemplateView):
+    """Rubros de «Áreas en las que trabajamos» (PUB-09): crear, editar, ordenar, activar o
+    desactivar y eliminar."""
+
+    template_name = "panel/rubros.html"
+    ruta = "panel:rubros"
+
+    def get_context_data(self, **kwargs):
+        contexto = super().get_context_data(**kwargs)
+        contexto["rubros"] = [
+            (rubro, rubros.foto_de(rubro)) for rubro in rubros.con_variantes(Rubro.objects.all())
+        ]
+        return contexto
+
+
+class _VistaDeRubro(_VistaDeContenido):
+    ruta = "panel:rubros"
+
+    @cached_property
+    def rubro(self):
+        return get_object_or_404(rubros.con_variantes(Rubro.objects), pk=self.kwargs["rubro"])
+
+
+def _migas_rubro(titulo):
+    return [("Rubros", reverse("panel:rubros")), (titulo, "")]
+
+
+class RubroNuevo(_VistaDeContenido, FormView):
+    template_name = "panel/rubro_formulario.html"
+    form_class = FormularioRubro
+    ruta = "panel:rubros"
+
+    def form_valid(self, form):
+        try:
+            rubro = rubros.crear(form, actor=self.request.user, request=self.request)
+        except imagenes.ImagenRechazada as rechazo:
+            form.add_error("archivo", rechazo.motivo)
+            return self.form_invalid(form)
+        messages.success(self.request, f"Se creó el rubro {rubro.nombre}.")
+        return redirect("panel:rubros")
+
+    def get_context_data(self, **kwargs):
+        contexto = super().get_context_data(**kwargs)
+        contexto["migas"] = _migas_rubro("Nuevo rubro")
+        return contexto
+
+
+class RubroEditar(_VistaDeRubro, FormView):
+    template_name = "panel/rubro_formulario.html"
+    form_class = FormularioRubro
+
+    @cached_property
+    def foto(self):
+        return rubros.foto_de(self.rubro)
+
+    def get_form_kwargs(self):
+        return {
+            **super().get_form_kwargs(),
+            "instance": self.rubro,
+            "tiene_foto": self.foto is not None,
+        }
+
+    def form_valid(self, form):
+        try:
+            cambio = rubros.editar(form, actor=self.request.user, request=self.request)
+        except imagenes.ImagenRechazada as rechazo:
+            form.add_error("archivo", rechazo.motivo)
+            return self.form_invalid(form)
+        if cambio:
+            messages.success(self.request, "Se guardaron los cambios del rubro.")
+        return redirect("panel:rubros")
+
+    def get_context_data(self, **kwargs):
+        contexto = super().get_context_data(**kwargs)
+        contexto.update(
+            edicion=True,
+            rubro=self.rubro,
+            foto=self.foto,
+            migas=_migas_rubro("Editar rubro"),
+        )
+        return contexto
+
+
+class RubroQuitarFoto(_VistaDeRubro, View):
+    http_method_names = ["post"]
+
+    def post(self, request, **kwargs):
+        if rubros.quitar_foto(self.rubro, actor=request.user, request=request):
+            messages.success(request, f"{self.rubro.nombre} quedó sin foto.")
+        return redirect("panel:rubro_editar", self.rubro.pk)
+
+
+class RubroMover(_VistaDeRubro, View):
+    http_method_names = ["post"]
+
+    def post(self, request, **kwargs):
+        rubros.mover(self.rubro, request.POST.get("direccion"))
+        return redirect("panel:rubros")
+
+
+class RubroEstado(_VistaDeRubro, View):
+    http_method_names = ["post"]
+
+    def post(self, request, **kwargs):
+        activo = request.POST.get("activo") == "si"
+        if rubros.cambiar_estado(self.rubro, activo, actor=request.user, request=request):
+            if activo:
+                messages.success(request, f"{self.rubro.nombre} volvió a mostrarse en el sitio.")
+            else:
+                messages.success(request, f"{self.rubro.nombre} dejó de mostrarse en el sitio.")
+        return redirect("panel:rubros")
+
+
+class RubroEliminar(_VistaDeRubro, View):
+    http_method_names = ["post"]
+
+    def post(self, request, **kwargs):
+        nombre = self.rubro.nombre
+        rubros.eliminar(self.rubro, actor=request.user, request=request)
+        messages.success(request, f"Se eliminó el rubro {nombre}.")
+        return redirect("panel:rubros")

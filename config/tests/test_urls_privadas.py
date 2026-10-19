@@ -24,7 +24,7 @@ from documentos import almacenamiento, services
 from documentos.models import Documento, VersionDocumento
 from documentos.tests import archivos
 from empresas.models import Carpeta, Empresa
-from sitio.models import DatosNegocio, ImagenSitio, Servicio, VarianteImagen
+from sitio.models import DatosNegocio, ImagenSitio, Rubro, Servicio, VarianteImagen
 from sitio.tests import imagenes_prueba
 from solicitudes.models import Solicitud
 
@@ -148,6 +148,13 @@ PANEL = {
     "panel:servicio_editar",
     "panel:servicio_mover",
     "panel:servicio_estado",
+    "panel:rubros",
+    "panel:rubro_nuevo",
+    "panel:rubro_editar",
+    "panel:rubro_quitar_foto",
+    "panel:rubro_mover",
+    "panel:rubro_estado",
+    "panel:rubro_eliminar",
     "panel:imagenes",
     "panel:imagen_cambiar",
     "panel:imagen_restaurar",
@@ -190,6 +197,7 @@ def _datos_post(carpeta=None):
         "politica_privacidad": "Política puesta por un intruso",
         "portada-archivo": imagenes_prueba.subida("intruso.jpg", imagenes_prueba.jpg(800, 600)),
         "portada-alt": "Texto puesto por un intruso",
+        "alt": "Texto alternativo puesto por un intruso",
     }
     if carpeta is not None:
         datos["carpeta"] = str(carpeta.pk)
@@ -208,10 +216,12 @@ def urls():
 
 
 def _contenido_y_solicitud():
-    """Un servicio y una solicitud reales, para las rutas del panel que los identifican."""
+    """Un servicio, un rubro y una solicitud reales, para las rutas del panel que los
+    identifican."""
     servicio, _ = Servicio.objects.get_or_create(
         slug="servicio-de-prueba", defaults={"nombre": "Servicio de prueba", "orden": 1}
     )
+    Rubro.objects.get_or_create(nombre="Rubro de prueba", defaults={"orden": 1})
     solicitud = Solicitud.objects.first() or Solicitud.objects.create(
         tipo=Solicitud.Tipo.COTIZACION,
         nombre="Visitante de Prueba",
@@ -228,8 +238,10 @@ def _contenido_y_solicitud():
 
 def _reales(empresa, usuario, carpeta, documento):
     servicio, solicitud = _contenido_y_solicitud()
+    rubro = Rubro.objects.get(nombre="Rubro de prueba")
     return {
         "servicio": servicio.pk,
+        "rubro": rubro.pk,
         "solicitud": solicitud.pk,
         "empresa": empresa.pk,
         "usuario": usuario.uuid,
@@ -284,6 +296,7 @@ def _foto_de_la_base():
         "documentos": list(Documento.objects.order_by("pk").values()),
         "versiones": list(VersionDocumento.objects.order_by("pk").values()),
         "servicios": list(Servicio.objects.order_by("pk").values()),
+        "rubros": list(Rubro.objects.order_by("pk").values()),
         "solicitudes": list(Solicitud.objects.order_by("pk").values()),
         "datos_del_negocio": list(DatosNegocio.objects.values()),
         "imagenes": list(ImagenSitio.objects.order_by("pk").values()),

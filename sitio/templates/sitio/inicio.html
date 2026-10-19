@@ -33,8 +33,19 @@
 </section>
 {% endif %}
 
+{% if rubros %}
+<section class="contenedor pb-12{% if not servicios %} pt-12{% endif %}" aria-labelledby="rubros-titulo">
+  <h2 class="text-2xl" id="rubros-titulo">Áreas en las que trabajamos</h2>
+  <ul class="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+    {% for rubro, foto in rubros %}
+    <li class="grid">{% include "componentes/tarjeta_rubro.html" with nombre=rubro.nombre foto=foto only %}</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
 {% if formularios_disponibles or contacto.hay %}
-<section class="contenedor pb-12{% if not servicios %} pt-12{% endif %}" id="contacto" aria-labelledby="contacto-titulo">
+<section class="contenedor pb-12{% if not servicios and not rubros %} pt-12{% endif %}" id="contacto" aria-labelledby="contacto-titulo">
   <div class="tarjeta grid overflow-hidden lg:grid-cols-[1fr_1.3fr]">
     <div class="sobre-primario relative isolate flex min-h-48 flex-col justify-end bg-primario p-6 text-blanco sm:p-8">
       {% include "componentes/foto_fondo.html" with foto=foto_contacto only %}

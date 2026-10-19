@@ -13,7 +13,7 @@ from django.core.management.base import CommandError
 
 from conftest import datos_de_consulta
 from sitio import contenido, imagenes, pendientes, services
-from sitio.models import DatosNegocio, Servicio
+from sitio.models import DatosNegocio, Rubro, Servicio
 from sitio.tests import imagenes_prueba
 from solicitudes.models import Solicitud
 
@@ -21,6 +21,8 @@ pytestmark = pytest.mark.django_db
 
 RAIZ = Path(__file__).resolve().parents[2]
 EJEMPLO = Path(__file__).parent / "datos" / "contenido-ejemplo.json"
+# El mismo contenido en la versión 1, sin rubros: se sigue aceptando (DEC-208).
+EJEMPLO_V1 = Path(__file__).parent / "datos" / "contenido-ejemplo-v1.json"
 TELEFONO_DEL_EJEMPLO = "5550 0101"
 CORREO_DEL_EJEMPLO = "prevencion-ficticia.example"
 
@@ -41,6 +43,7 @@ def _importar(origen):
 def _vaciar():
     """Deja el contenido como en una base recién migrada."""
     Servicio.objects.all().delete()
+    Rubro.objects.all().delete()
     DatosNegocio.objects.all().delete()
     DatosNegocio.cargar()
 
@@ -49,6 +52,7 @@ def _estado():
     return (
         DatosNegocio.objects.values(*contenido.CAMPOS_NEGOCIO).get(),
         list(Servicio.objects.order_by("orden").values(*contenido.CAMPOS_SERVICIO, "orden")),
+        list(Rubro.objects.order_by("orden").values(*contenido.CAMPOS_RUBRO, "orden")),
     )
 
 
@@ -89,15 +93,24 @@ def test_ida_y_vuelta_exportar_vaciar_importar_y_comparar(negocio, tmp_path):
             orden=orden,
             activo=activo,
         )
+    for orden, (nombre, alt, activo) in enumerate(
+        [
+            ("Construcción", "Grúa torre sobre una obra.", True),
+            ("Logística y bodegaje", "", True),
+            ("Alimentos", "", False),
+        ],
+        start=1,
+    ):
+        Rubro.objects.create(nombre=nombre, alt=alt, orden=orden, activo=activo)
     antes = _estado()
     ida, vuelta = tmp_path / "ida.json", tmp_path / "vuelta.json"
 
     _, resumen = _exportar(ida)
-    assert "Exportado: datos del negocio y 6 servicios." in resumen
+    assert "Exportado: datos del negocio, 6 servicios y 3 rubros." in resumen
     _vaciar()
     assert _estado() != antes and Servicio.objects.count() == 0
 
-    assert "Importado: 11 datos del negocio y 6 servicios." in _importar(ida)
+    assert "Importado: 11 datos del negocio, 6 servicios y 3 rubros." in _importar(ida)
     assert _estado() == antes
     _exportar(vuelta)
     assert vuelta.read_bytes() == ida.read_bytes()
@@ -109,7 +122,7 @@ def test_el_ejemplo_entra_en_una_base_nueva_y_sale_identico(tmp_path):
     assert contenido.serializar(json.loads(texto)) == texto
 
     _importar(EJEMPLO)
-    datos, servicios = _estado()
+    datos, servicios, _ = _estado()
     assert datos == _ejemplo()["datos_negocio"]
     assert [servicio["orden"] for servicio in servicios] == [1, 2, 3, 4, 5, 6]
     assert [servicio["activo"] for servicio in servicios] == [True] * 5 + [False]
@@ -156,14 +169,17 @@ def test_el_archivo_solo_lleva_datos_del_negocio_y_servicios(
         alt="Texto alternativo subido",
         actor=administrador,
     )
+    Rubro.objects.create(nombre="Industria", alt="Galpón industrial con estanterías.", orden=1)
     destino = tmp_path / "contenido.json"
     _exportar(destino)
 
     texto = destino.read_text(encoding="utf-8")
     datos = json.loads(texto)
-    assert list(datos) == ["formato", "version", "datos_negocio", "servicios"]
+    assert list(datos) == ["formato", "version", "datos_negocio", "servicios", "rubros"]
+    assert datos["version"] == 2
     assert tuple(datos["datos_negocio"]) == contenido.CAMPOS_NEGOCIO
     assert [tuple(fila) for fila in datos["servicios"]] == [contenido.CAMPOS_SERVICIO]
+    assert [tuple(fila) for fila in datos["rubros"]] == [contenido.CAMPOS_RUBRO]
     for ausente in (
         '"pk"',
         '"id"',
@@ -213,7 +229,7 @@ def test_los_datos_de_cargar_demo_no_viajan(administrador, settings, tmp_path):
     destino = tmp_path / "contenido.json"
 
     _, resumen = _exportar(destino)
-    assert "Exportado: datos del negocio y 2 servicios." in resumen
+    assert "Exportado: datos del negocio, 2 servicios y 0 rubros." in resumen
     assert "Datos de prueba que se exportaron vacíos: horario, politica_privacidad." in resumen
     assert "Servicios de prueba omitidos: 3." in resumen
     assert "servicio-demo-1 -> asesoria-en-prevencion" in resumen
@@ -281,8 +297,15 @@ def _sin(ruta):
         (_con(["usuarios"], []), "Raíz del archivo: claves inesperadas: usuarios."),
         (_sin(["servicios"]), "Raíz del archivo: faltan claves: servicios."),
         (_con(["formato"], "otro"), "formato: se esperaba web-seba/contenido."),
-        (_con(["version"], 2), "version: este comando solo lee la versión 1."),
-        (_con(["version"], True), "version: este comando solo lee la versión 1."),
+        (_con(["version"], 3), "version: este comando solo lee las versiones 1 y 2."),
+        (_con(["version"], True), "version: este comando solo lee las versiones 1 y 2."),
+        (_sin(["rubros"]), "Raíz del archivo: faltan claves: rubros."),
+        (_con(["rubros"], {}), "rubros: se esperaba una lista."),
+        (_con(["rubros", 0, "orden"], 1), "rubros, elemento 1: claves inesperadas: orden."),
+        (_sin(["rubros", 1, "alt"]), "rubros, elemento 2: faltan claves: alt."),
+        (_con(["rubros", 0, "activo"], "sí"), "rubros, elemento 1.activo: debe ser true o false."),
+        (_con(["rubros", 0, "nombre"], "x" * 31), "rubros, elemento 1.nombre:"),
+        (_con(["rubros", 1, "nombre"], "RUBRO ficticio uno"), "elemento 2.nombre: está repetido."),
         (_con(["datos_negocio", "id"], 1), "datos_negocio: claves inesperadas: id."),
         (_sin(["datos_negocio", "horario"]), "datos_negocio: faltan claves: horario."),
         (_con(["datos_negocio"], []), "datos_negocio: se esperaba un objeto."),
@@ -425,8 +448,9 @@ def test_una_base_a_medio_cargar_con_los_mismos_datos_se_completa():
     datos.nombre_comercial = ejemplo["datos_negocio"]["nombre_comercial"]
     datos.save()
     Servicio.objects.create(**ejemplo["servicios"][0], orden=1)
+    Rubro.objects.create(**ejemplo["rubros"][0], orden=1)
 
-    assert "Importado: 10 datos del negocio y 5 servicios." in _importar(EJEMPLO)
+    assert "Importado: 10 datos del negocio, 5 servicios y 2 rubros." in _importar(EJEMPLO)
     assert _estado()[0] == ejemplo["datos_negocio"] and Servicio.objects.count() == 6
 
 
@@ -437,11 +461,14 @@ def test_con_un_guion_lee_de_la_entrada_y_escribe_en_la_salida_estandar(monkeypa
     """Como en la VM: `dc exec -T … exportar_contenido - > archivo` y, al revés, con `<`."""
     con_bom = b"\xef\xbb\xbf" + EJEMPLO.read_bytes()
     monkeypatch.setattr(sys, "stdin", io.TextIOWrapper(io.BytesIO(con_bom)))
-    assert "Importado: 11 datos del negocio y 6 servicios." in _importar("-")
+    assert "Importado: 11 datos del negocio, 6 servicios y 3 rubros." in _importar("-")
 
     salida, resumen = _exportar("-")
     assert salida == EJEMPLO.read_text(encoding="utf-8")
-    assert resumen == "Exportado: datos del negocio y 6 servicios.\n"
+    assert resumen == (
+        "Exportado: datos del negocio, 6 servicios y 3 rubros. Las fotos de los rubros y las "
+        "imágenes del sitio no viajan: vuelva a subirlas.\n"
+    )
 
 
 def test_ni_los_comandos_ni_sus_mensajes_dejan_datos_de_contacto_en_los_logs(caplog, tmp_path):
@@ -460,3 +487,75 @@ def test_el_archivo_exportado_queda_fuera_del_repositorio_y_de_la_imagen(archivo
     for nombre in ("contenido-sitio.json", "contenido-sitio-13-10-2026.json"):
         assert any(fnmatch.fnmatch(nombre, patron) for patron in patrones), nombre
     assert not any(fnmatch.fnmatch(EJEMPLO.name, patron) for patron in patrones)
+
+
+# --- Rubros y la versión 1 (DEC-208) ----------------------------------------------------
+
+
+def test_un_archivo_de_la_version_1_se_sigue_importando_y_no_toca_los_rubros():
+    Rubro.objects.create(nombre="Rubro que ya estaba", orden=1)
+
+    assert "Importado: 11 datos del negocio, 6 servicios y 0 rubros." in _importar(EJEMPLO_V1)
+    assert list(Rubro.objects.values_list("nombre", flat=True)) == ["Rubro que ya estaba"]
+    assert _estado()[1] == _estado_de(EJEMPLO_V1)[1]
+    assert "no se cambió nada" in _importar(EJEMPLO_V1)
+
+
+def _estado_de(origen):
+    """El estado que deja importar `origen` en una base vacía, sin tocar la actual."""
+    datos = json.loads(origen.read_text(encoding="utf-8"))
+    return (
+        datos["datos_negocio"],
+        [{**servicio, "orden": orden} for orden, servicio in enumerate(datos["servicios"], 1)],
+    )
+
+
+def test_los_rubros_se_importan_en_su_orden_sin_foto_y_repetirlo_no_cambia_nada():
+    _importar(EJEMPLO)
+    assert list(Rubro.objects.values_list("nombre", "orden", "activo")) == [
+        ("Rubro ficticio uno", 1, True),
+        ("Rubro ficticio dos", 2, True),
+        ("Rubro ficticio desactivado", 3, False),
+    ]
+    assert Rubro.objects.get(orden=1).alt == "Foto ficticia de una bodega con estanterías."
+    assert not Rubro.objects.filter(variantes__isnull=False).exists()
+    assert "no se cambió nada" in _importar(EJEMPLO)
+
+
+@pytest.mark.parametrize(
+    ("cambio", "difiere"),
+    [
+        (
+            lambda: Rubro.objects.create(nombre="Rubro de otra base", orden=4),
+            "rubro Rubro de otra base",
+        ),
+        (
+            lambda: Rubro.objects.filter(orden=1).update(alt="Otra foto."),
+            "rubro Rubro ficticio uno",
+        ),
+        (
+            lambda: Rubro.objects.filter(orden=3).update(activo=True),
+            "rubro Rubro ficticio desactivado",
+        ),
+    ],
+)
+def test_una_base_con_otros_rubros_se_niega_sin_cambiar_nada(cambio, difiere):
+    _importar(EJEMPLO)
+    cambio()
+    antes = _estado()
+    with pytest.raises(CommandError, match=f"Difieren: {difiere}"):
+        _importar(EJEMPLO)
+    assert _estado() == antes
+
+
+def test_eliminar_un_rubro_deja_el_orden_sin_huecos_y_la_ida_y_vuelta_sigue_igual(
+    administrador, tmp_path
+):
+    from sitio import rubros
+
+    _importar(EJEMPLO)
+    rubros.eliminar(Rubro.objects.get(orden=2), actor=administrador)
+    assert list(Rubro.objects.values_list("orden", flat=True)) == [1, 2]
+    destino = tmp_path / "contenido.json"
+    _exportar(destino)
+    assert "no se cambió nada" in _importar(destino)

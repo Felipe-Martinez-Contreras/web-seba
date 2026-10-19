@@ -47,6 +47,7 @@ Documento n ── 1 VersionDocumento (version_vigente)
 EventoAuditoria n ── 1 Usuario (actor), n ── 1 Empresa
 Usuario 1 ── n EnlaceAcceso
 ImagenSitio 1 ── n VarianteImagen
+Rubro 1 ── n VarianteImagen
 ```
 
 | Entidad | Clave en las URL | Reglas que aplica la base de datos |
@@ -58,7 +59,8 @@ ImagenSitio 1 ── n VarianteImagen
 | `VersionDocumento` | UUID | Número único por documento; clave con la forma `docs/<uuid>/<uuid>`; SHA-256 válido; tamaño mayor que cero |
 | `EventoAuditoria` | — | Solo se agregan |
 | `ImagenSitio` | La ranura (`portada`, `contacto`, `acceso`, `logo-fondo-oscuro`, `logo-fondo-claro`) | Una fila por ranura. Sin fila, el sitio usa la imagen original del repositorio |
-| `VarianteImagen` | El SHA-256 de su contenido (`/imagenes/<sha256>.<ext>`) | Una por nombre dentro de su imagen; se borra con ella. Contenido ya re-codificado, nunca el archivo subido |
+| `Rubro` | Clave entera, solo en el panel (`/panel/contenido/rubros/<id>/`) | Nombre único sin distinguir mayúsculas. Se puede eliminar, con sus variantes (DEC-208) |
+| `VarianteImagen` | El SHA-256 de su contenido (`/imagenes/<sha256>.<ext>`) | De una imagen del sitio o de un rubro, nunca de ambos ni de ninguno (restricción `variante_de_imagen_o_de_rubro`). Una por nombre dentro de su dueño; se borra con él. Contenido ya re-codificado, nunca el archivo subido |
 
 Lo que la base no puede expresar lo aplican los servicios y lo cubren las pruebas: que la carpeta de un documento sea de su misma empresa (`documentos.services.mover`) y que la versión vigente sea una versión de ese documento.
 
@@ -147,7 +149,7 @@ Solo lectura: todas sus vistas admiten únicamente GET y heredan de `ClienteMixi
 | `/sitemap.xml`, `/robots.txt` | Páginas públicas con contenido; sin rutas privadas |
 | `/imagenes/<sha256>.<ext>` | Una imagen subida desde el panel, ya re-codificada (DEC-205) |
 
-- **Todo el contenido sale de la base:** `DatosNegocio` (registro único) y `Servicio`. Se editan en Panel › Configuración › Contenido del sitio.
+- **Todo el contenido sale de la base:** `DatosNegocio` (registro único), `Servicio` y `Rubro`. Se editan en Panel › Configuración › Contenido del sitio.
 - **Una sola regla de contenido pendiente** (`sitio/pendientes.py`): lo vacío o con `[COMPLETAR]` no se muestra; lo de prueba se muestra. La usan las páginas, el panel y el comando `contenido_pendiente`.
 - **`PaginaPublica`** (`sitio/paginas.py`) arma navegación, pie y SEO de cada página, como `core/navegacion.py` lo hace para el portal y el panel.
 - **Sin política de privacidad no hay formularios.**

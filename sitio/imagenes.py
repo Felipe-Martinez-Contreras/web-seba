@@ -149,16 +149,39 @@ def tamano_maximo():
     return settings.IMAGENES_TAMANO_MAXIMO_MB * 1024 * 1024
 
 
-def _procesar(ranura, archivo):
+def comprobar_peso(archivo):
+    """Rechaza el archivo por su peso, antes de abrirlo."""
     if archivo.size > tamano_maximo():
         raise ImagenRechazada(
             f"La imagen pesa más de {settings.IMAGENES_TAMANO_MAXIMO_MB} MB; súbala más pequeña."
         )
+
+
+def _procesar(ranura, archivo):
+    comprobar_peso(archivo)
     plazo = settings.IMAGENES_PLAZO_SEGUNDOS
     if es_foto(ranura):
         return procesar_imagen.procesar_foto(archivo, plazo_segundos=plazo)
     return procesar_imagen.procesar_logo(
         archivo, con_iconos=ranura == Ranura.LOGO_FONDO_OSCURO, plazo_segundos=plazo
+    )
+
+
+def reemplazar_variantes(dueno, variantes, **relacion):
+    """Cambia las variantes guardadas de `dueno` (una imagen del sitio o un rubro) por las
+    recién procesadas. `relacion` es el campo que las une a él: `imagen=` o `rubro=`."""
+    dueno.variantes.all().delete()
+    VarianteImagen.objects.bulk_create(
+        VarianteImagen(
+            **relacion,
+            nombre=variante.nombre,
+            tipo_mime=variante.tipo_mime,
+            sha256=hashlib.sha256(variante.contenido).hexdigest(),
+            ancho=variante.ancho,
+            alto=variante.alto,
+            contenido=variante.contenido,
+        )
+        for variante in variantes
     )
 
 
@@ -180,19 +203,7 @@ def cambiar(ranura, *, archivo=None, alt="", actor, request=None):
         fila.alt = alt
         fila.save()
         if variantes:
-            fila.variantes.all().delete()
-            VarianteImagen.objects.bulk_create(
-                VarianteImagen(
-                    imagen=fila,
-                    nombre=variante.nombre,
-                    tipo_mime=variante.tipo_mime,
-                    sha256=hashlib.sha256(variante.contenido).hexdigest(),
-                    ancho=variante.ancho,
-                    alto=variante.alto,
-                    contenido=variante.contenido,
-                )
-                for variante in variantes
-            )
+            reemplazar_variantes(fila, variantes, imagen=fila)
         # Un texto fijo: ni el nombre del archivo ni el texto alternativo.
         que = "imagen nueva" if variantes else "texto alternativo"
         registrar(

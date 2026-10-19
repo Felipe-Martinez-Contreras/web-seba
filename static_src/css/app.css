@@ -565,6 +565,36 @@
     background-color: rgb(27 45 79 / 0.8);
   }
 
+  /* Tarjeta de rubro (PUB-09, DEC-208): foto en 4:3. El nombre va sobre una franja con el
+     mismo velo al 80 %, que crece con el texto y se funde hacia arriba: la foto se sigue
+     viendo y el contraste del nombre no depende de ella. Sin foto, fondo neutro e ícono. */
+  .tarjeta-rubro {
+    @apply relative isolate flex aspect-[4/3] flex-col justify-end overflow-hidden rounded-caja;
+  }
+
+  .tarjeta-rubro-sin-foto {
+    @apply border border-divisor bg-primario-suave text-texto;
+  }
+
+  .icono-rubro {
+    @apply absolute top-3 left-3 flex size-10 items-center justify-center rounded-caja bg-superficie text-primario;
+  }
+
+  .velo-nombre {
+    @apply relative px-3 pt-2 pb-3 text-base font-semibold text-blanco;
+    background-color: rgb(27 45 79 / 0.8);
+  }
+
+  .velo-nombre::before {
+    @apply pointer-events-none absolute inset-x-0 bottom-full h-8;
+    content: "";
+    background-image: linear-gradient(to top, rgb(27 45 79 / 0.8), rgb(27 45 79 / 0));
+  }
+
+  .miniatura-rubro {
+    @apply flex h-18 w-24 shrink-0 items-center justify-center overflow-hidden rounded-caja object-cover text-primario;
+  }
+
   /* Logo subido solo para fondo oscuro, mostrado sobre blanco (pantallas de acceso): va en
      un cuadro azul marino del mismo tamaño que el símbolo original (DEC-205). */
   .marca-cuadro {

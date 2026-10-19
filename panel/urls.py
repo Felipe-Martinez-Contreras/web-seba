@@ -85,6 +85,14 @@ _de_servicio = [
     path("estado/", views.ServicioEstado.as_view(), name="servicio_estado"),
 ]
 
+_de_rubro = [
+    path("editar/", views.RubroEditar.as_view(), name="rubro_editar"),
+    path("foto/quitar/", views.RubroQuitarFoto.as_view(), name="rubro_quitar_foto"),
+    path("mover/", views.RubroMover.as_view(), name="rubro_mover"),
+    path("estado/", views.RubroEstado.as_view(), name="rubro_estado"),
+    path("eliminar/", views.RubroEliminar.as_view(), name="rubro_eliminar"),
+]
+
 urlpatterns = [
     path("", views.Inicio.as_view(), name="inicio"),
     path("clientes/", views.Clientes.as_view(), name="clientes"),
@@ -106,6 +114,9 @@ urlpatterns = [
     path("contenido/servicios/", views.Servicios.as_view(), name="servicios"),
     path("contenido/servicios/nuevo/", views.ServicioNuevo.as_view(), name="servicio_nuevo"),
     path("contenido/servicios/<int:servicio>/", include(_de_servicio)),
+    path("contenido/rubros/", views.Rubros.as_view(), name="rubros"),
+    path("contenido/rubros/nuevo/", views.RubroNuevo.as_view(), name="rubro_nuevo"),
+    path("contenido/rubros/<int:rubro>/", include(_de_rubro)),
     path("contenido/imagenes/", views.Imagenes.as_view(), name="imagenes"),
     path("contenido/imagenes/<slug:ranura>/", views.ImagenCambiar.as_view(), name="imagen_cambiar"),
     path(

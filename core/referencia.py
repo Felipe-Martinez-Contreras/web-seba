@@ -6,9 +6,11 @@ from django import forms
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.shortcuts import redirect, render
+from django.templatetags.static import static
 from django.views.decorators.http import require_http_methods, require_safe
 
 from core.validators import validar_rut
+from sitio.rubros import Foto
 
 
 class FormularioDeReferencia(forms.Form):
@@ -102,6 +104,14 @@ def componentes(request):
             {"titulo": "Imagen de muestra", "tipo": "imagen", "tamano": 734_003},
         ],
         "fecha": fecha,
+        # Una foto del repositorio en el lugar de una subida, para ver la tarjeta de rubro.
+        "foto_rubro": Foto(
+            src=static("img/contacto-960.webp"),
+            src_chica=static("img/contacto-960.webp"),
+            ancho=960,
+            alto=640,
+            alt="Casco de seguridad blanco colgado de un gancho en una planta industrial.",
+        ),
         "filas_tabla": [
             ("Nombre de muestra A", "Tipo A", "Pendiente", "error"),
             ("Nombre de muestra B", "Tipo B", "En proceso", "info"),

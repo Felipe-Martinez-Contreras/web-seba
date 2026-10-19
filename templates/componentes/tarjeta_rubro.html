@@ -1,0 +1,17 @@
+{% comment %}
+Tarjeta de rubro (PUB-09, DEC-208): foto en 4:3 con el nombre encima, sobre una franja de
+velo azul marino que asegura el contraste con cualquier foto. No es un enlace.
+Parámetros: nombre; foto (sitio.rubros.Foto, o vacío: fondo neutro con un ícono, del mismo
+tamaño, para no romper la cuadrícula).
+{% endcomment %}
+{% if foto %}
+<div class="tarjeta-rubro sobre-primario bg-primario">
+  <img class="absolute inset-0 -z-20 size-full object-cover" src="{{ foto.src }}" srcset="{{ foto.src_chica }} 400w, {{ foto.src }} 800w" sizes="(min-width: 1024px) 285px, 50vw" width="{{ foto.ancho }}" height="{{ foto.alto }}" alt="{{ foto.alt }}" loading="lazy">
+  <h3 class="velo-nombre">{{ nombre }}</h3>
+</div>
+{% else %}
+<div class="tarjeta-rubro tarjeta-rubro-sin-foto">
+  <span class="icono-rubro" aria-hidden="true">{% include "iconos/hard-hat.svg" %}</span>
+  <h3 class="px-3 pb-3 text-base font-semibold">{{ nombre }}</h3>
+</div>
+{% endif %}

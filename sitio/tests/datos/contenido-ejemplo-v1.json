@@ -1,0 +1,69 @@
+{
+  "formato": "web-seba/contenido",
+  "version": 1,
+  "datos_negocio": {
+    "nombre_comercial": "Prevención Ficticia de Ejemplo",
+    "titular": "Titular ficticio para las pruebas",
+    "bajada": "Bajada ficticia, en una línea, con tildes y eñes: señalización.",
+    "presentacion": "Presentación ficticia.\n\nSegundo párrafo de la presentación.",
+    "telefono": "+56 9 5550 0101",
+    "email_publico": "contacto@prevencion-ficticia.example",
+    "whatsapp": "+56 9 5550 0102",
+    "ubicacion": "Comuna Ficticia, Región de Ejemplo",
+    "horario": "Lunes a viernes, de 9:00 a 18:00",
+    "instagram": "https://www.instagram.com/prevencion.ficticia",
+    "linkedin": "",
+    "facebook": "",
+    "politica_privacidad": "Política ficticia para las pruebas.\n\nNo es un texto legal ni pertenece a ningún negocio."
+  },
+  "servicios": [
+    {
+      "nombre": "Asesoría ficticia",
+      "slug": "asesoria-ficticia",
+      "icono": "shield-check",
+      "resumen": "Resumen ficticio uno.",
+      "descripcion": "Descripción ficticia uno.\nCon una segunda línea.",
+      "activo": true
+    },
+    {
+      "nombre": "Capacitación ficticia",
+      "slug": "capacitacion-ficticia",
+      "icono": "graduation-cap",
+      "resumen": "Resumen ficticio dos.",
+      "descripcion": "Descripción ficticia dos.",
+      "activo": true
+    },
+    {
+      "nombre": "Inspección ficticia",
+      "slug": "inspeccion-ficticia",
+      "icono": "search-check",
+      "resumen": "Resumen ficticio tres.",
+      "descripcion": "Descripción ficticia tres.",
+      "activo": true
+    },
+    {
+      "nombre": "Señalización ficticia",
+      "slug": "senalizacion-ficticia",
+      "icono": "triangle-alert",
+      "resumen": "Resumen ficticio cuatro.",
+      "descripcion": "Descripción ficticia cuatro.",
+      "activo": true
+    },
+    {
+      "nombre": "Documentación ficticia",
+      "slug": "documentacion-ficticia",
+      "icono": "file-check",
+      "resumen": "Resumen ficticio cinco.",
+      "descripcion": "Descripción ficticia cinco.",
+      "activo": true
+    },
+    {
+      "nombre": "Servicio ficticio desactivado",
+      "slug": "servicio-ficticio-desactivado",
+      "icono": "hard-hat",
+      "resumen": "",
+      "descripcion": "",
+      "activo": false
+    }
+  ]
+}

@@ -9,7 +9,7 @@ from django.urls import reverse
 from django.views.decorators.http import require_safe
 from django.views.generic import TemplateView
 
-from sitio import imagenes, pendientes
+from sitio import imagenes, pendientes, rubros
 from sitio.models import DatosNegocio, Servicio, VarianteImagen
 from sitio.paginas import PaginaPublica, paginas_indexables, url_absoluta
 from solicitudes import antispam
@@ -17,7 +17,8 @@ from solicitudes.forms import FormularioCotizacion
 
 
 class Inicio(PaginaPublica, TemplateView):
-    """Inicio según la pantalla 1 del mockup: portada, servicios, contacto y pie (PUB-02)."""
+    """Inicio según la pantalla 1 del mockup: portada, servicios, rubros, contacto y pie
+    (PUB-02, PUB-09)."""
 
     template_name = "sitio/inicio.html"
 
@@ -28,15 +29,19 @@ class Inicio(PaginaPublica, TemplateView):
         contexto = super().get_context_data(**kwargs)
         titular = pendientes.disponible(self.datos.titular)
         servicios = list(Servicio.objects.activos())
+        rubros_publicados = rubros.publicados()
         contexto.update(
             titular=titular,
             bajada=pendientes.disponible(self.datos.bajada),
             servicios=servicios,
+            rubros=rubros_publicados,
             foto_portada=self.imagenes_sitio.foto(imagenes.Ranura.PORTADA),
             foto_contacto=self.imagenes_sitio.foto(imagenes.Ranura.CONTACTO),
             # Sin nada que mostrar, la página quedaba en blanco entre el encabezado y el pie
             # y parecía un error: se muestra un estado neutro, sin datos del negocio.
-            en_preparacion=not (titular or servicios or self.formularios or self.contacto.hay),
+            en_preparacion=not (
+                titular or servicios or rubros_publicados or self.formularios or self.contacto.hay
+            ),
         )
         if self.formularios:
             contexto.update(

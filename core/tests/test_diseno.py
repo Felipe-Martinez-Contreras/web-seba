@@ -159,6 +159,22 @@ def test_el_velo_asegura_el_contraste_del_texto_sobre_cualquier_fotografia():
     assert contraste(TOKENS["sobre-primario-secundario"], peor) < 4.5
 
 
+def test_la_franja_del_nombre_de_un_rubro_asegura_el_contraste_sobre_cualquier_foto():
+    """PUB-09, DEC-208: el nombre va sobre una franja con el mismo velo al 80 %. El degradado
+    que la funde hacia arriba queda fuera del texto (`bottom-full`)."""
+    regla = CSS.split(".velo-nombre {")[1].split("}")[0]
+    opacidad = float(re.search(r"rgb\(27 45 79 / ([0-9.]+)\)", regla).group(1))
+    assert 0.7 <= opacidad <= 0.8
+    assert "text-blanco" in regla and "font-semibold" in regla
+    for fondo_de_la_foto in ("#ffffff", "#ffff00", "#808080", "#000000"):
+        fondo = _mezcla(TOKENS["primario"], fondo_de_la_foto, opacidad)
+        assert contraste("#ffffff", fondo) >= 4.5, fondo_de_la_foto
+    degradado = CSS.split(".velo-nombre::before {")[1].split("}")[0]
+    assert "bottom-full" in degradado and "pointer-events-none" in degradado
+    # Sin foto, el nombre va en el texto principal sobre el fondo suave.
+    assert contraste(TOKENS["texto"], TOKENS["primario-suave"]) >= 4.5
+
+
 def test_el_enlace_de_saltar_al_contenido_mide_44_px_al_recibir_el_foco():
     """`not-sr-only` le quita el relleno: sin reponerlo medía 24 px de alto (medido en Edge)."""
     estilos = (settings.BASE_DIR / "static_src" / "css" / "app.css").read_text(encoding="utf-8")

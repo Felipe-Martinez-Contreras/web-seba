@@ -1,7 +1,7 @@
 from django import forms
 from django.conf import settings
 
-from sitio.models import DatosNegocio, Servicio
+from sitio.models import DatosNegocio, Rubro, Servicio
 
 
 class FormularioDatosNegocio(forms.ModelForm):
@@ -131,4 +131,61 @@ class FormularioImagen(forms.Form):
                 "alt",
                 "El texto describe la foto original. Escriba uno que describa la foto nueva.",
             )
+        return datos
+
+
+SIN_ALT = "Escriba el texto alternativo de la foto."
+
+
+class FormularioRubro(forms.ModelForm):
+    """Nombre, foto y texto alternativo de un rubro (PUB-09, DEC-208). La foto la comprueba
+    `sitio.procesar_imagen` sobre el contenido, como las imágenes del sitio."""
+
+    archivo = forms.FileField(label="Foto", required=False)
+
+    class Meta:
+        model = Rubro
+        fields = ["nombre", "alt"]
+        labels = {"alt": "Texto alternativo de la foto"}
+        help_texts = {
+            "nombre": "Corto, como en la publicidad: «Construcción», «Logística y bodegaje».",
+            "alt": (
+                "Describa lo que se ve, para quien no puede ver la imagen. Por ejemplo: "
+                "«Grúa horquilla moviendo pallets en una bodega». Obligatorio si hay foto."
+            ),
+        }
+
+    def __init__(self, *args, tiene_foto=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.tiene_foto = tiene_foto
+        archivo = self.fields["archivo"]
+        archivo.widget.attrs["accept"] = "image/jpeg,image/png,image/webp"
+        archivo.help_text = (
+            f"JPG, PNG o WebP, de hasta {settings.IMAGENES_TAMANO_MAXIMO_MB} MB. Mejor "
+            "horizontal: se recorta al centro en proporción 4:3 y se le quitan los datos de la "
+            "cámara."
+        )
+        if tiene_foto:
+            archivo.label = "Foto nueva"
+            archivo.help_text += " Déjelo vacío para conservar la actual."
+            # Con foto, la etiqueta no dice «(opcional)»: el texto es obligatorio.
+            self.fields["alt"].required = True
+            self.fields["alt"].error_messages["required"] = SIN_ALT
+
+    def clean_nombre(self):
+        nombre = " ".join(self.cleaned_data["nombre"].split())
+        repetido = Rubro.objects.filter(nombre__iexact=nombre)
+        if self.instance.pk:
+            repetido = repetido.exclude(pk=self.instance.pk)
+        if repetido.exists():
+            raise forms.ValidationError("Ya existe un rubro con ese nombre.")
+        return nombre
+
+    def clean_alt(self):
+        return " ".join(self.cleaned_data["alt"].split())
+
+    def clean(self):
+        datos = super().clean()
+        if datos.get("archivo") and not datos.get("alt") and "alt" not in self.errors:
+            self.add_error("alt", SIN_ALT)
         return datos

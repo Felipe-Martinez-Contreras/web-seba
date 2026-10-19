@@ -1,0 +1,74 @@
+{% extends "base_panel.html" %}
+{% block titulo %}Rubros{% endblock %}
+{% block contenido %}
+<h1 class="text-2xl">Contenido del sitio</h1>
+<p class="mt-1 max-w-lectura text-sm text-texto-secundario">Los rubros activos se muestran en el inicio, en «Áreas en las que trabajamos», en este orden. Sin rubros activos, la sección no aparece.</p>
+
+<div class="mt-6">{% include "componentes/pestanas.html" with pestanas=pestanas pestanas_etiqueta="Contenido del sitio" only %}</div>
+
+<section class="mt-6" aria-labelledby="rubros-titulo">
+  <div class="flex flex-wrap items-center justify-between gap-4">
+    <h2 class="text-lg" id="rubros-titulo">Rubros</h2>
+    {% url 'panel:rubro_nuevo' as url_nuevo %}
+    {% include "componentes/boton.html" with texto="Nuevo rubro" href=url_nuevo variante="secundario" icono="plus" only %}
+  </div>
+
+  <div class="mt-3">
+    {% if rubros %}
+    <ul class="lista-filas">
+      {% for rubro, foto in rubros %}
+      <li class="fila flex-wrap">
+        {% if foto %}
+        <img class="miniatura-rubro" src="{{ foto.src_chica }}" width="96" height="72" alt="" loading="lazy">
+        {% else %}
+        <span class="miniatura-rubro tarjeta-rubro-sin-foto" aria-hidden="true">{% include "componentes/icono.html" with nombre="hard-hat" only %}</span>
+        {% endif %}
+        <span class="min-w-0 flex-1 basis-32">
+          <span class="fila-titulo block">{{ rubro.nombre }}</span>
+          <span class="fila-meta block">{% if foto %}Con foto{% else %}Sin foto{% endif %}</span>
+        </span>
+        {% if rubro.activo %}
+        {% include "componentes/insignia.html" with texto="Activo" tono="exito" only %}
+        {% else %}
+        {% include "componentes/insignia.html" with texto="Inactivo" only %}
+        {% endif %}
+        <span class="flex flex-wrap items-center gap-1">
+          <form method="post" action="{% url 'panel:rubro_mover' rubro.pk %}">
+            {% csrf_token %}
+            <button class="boton boton-fantasma px-3" type="submit" name="direccion" value="subir" aria-label="Subir {{ rubro.nombre }}"{% if forloop.first %} disabled{% endif %}>
+              {% include "componentes/icono.html" with nombre="arrow-up" clase="icono-chico" only %}
+            </button>
+            <button class="boton boton-fantasma px-3" type="submit" name="direccion" value="bajar" aria-label="Bajar {{ rubro.nombre }}"{% if forloop.last %} disabled{% endif %}>
+              {% include "componentes/icono.html" with nombre="arrow-down" clase="icono-chico" only %}
+            </button>
+          </form>
+          <a class="boton boton-fantasma" href="{% url 'panel:rubro_editar' rubro.pk %}">
+            {% include "componentes/icono.html" with nombre="pencil" clase="icono-chico" only %}
+            <span>Editar<span class="sr-only"> {{ rubro.nombre }}</span></span>
+          </a>
+          <form method="post" action="{% url 'panel:rubro_estado' rubro.pk %}">
+            {% csrf_token %}
+            {% if rubro.activo %}
+            <button class="boton boton-fantasma" type="submit" name="activo" value="no"><span>Desactivar<span class="sr-only"> {{ rubro.nombre }}</span></span></button>
+            {% else %}
+            <button class="boton boton-fantasma" type="submit" name="activo" value="si"><span>Activar<span class="sr-only"> {{ rubro.nombre }}</span></span></button>
+            {% endif %}
+          </form>
+          <button class="boton boton-fantasma" type="button" data-abre-dialogo="eliminar-rubro-{{ rubro.pk }}">
+            {% include "componentes/icono.html" with nombre="trash-2" clase="icono-chico" only %}
+            <span>Eliminar<span class="sr-only"> {{ rubro.nombre }}</span></span>
+          </button>
+        </span>
+        {% url 'panel:rubro_eliminar' rubro.pk as url_eliminar %}
+        {% with pk=rubro.pk|stringformat:"s" %}
+        {% include "componentes/dialogo_confirmacion.html" with id="eliminar-rubro-"|add:pk titulo="¿Eliminar el rubro "|add:rubro.nombre|add:"?" mensaje="El rubro y su foto se borran y dejan de mostrarse en el sitio. No se puede deshacer: si lo quiere de nuevo, tendrá que crearlo y volver a subir la foto. Para ocultarlo por un tiempo, desactívelo." accion=url_eliminar confirmar_texto="Eliminar rubro" peligro=True campo_nombre="" %}
+        {% endwith %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    {% include "componentes/estado_vacio.html" with titulo="Aún no hay rubros" texto="Cree el primer rubro para que el inicio muestre la sección «Áreas en las que trabajamos»." accion_texto="Nuevo rubro" accion_url=url_nuevo only %}
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

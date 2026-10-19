@@ -96,7 +96,8 @@ La guía de uso para el profesional está en [`docs/MANUAL_ADMIN.md`](docs/MANUA
 | Borrar definitivamente lo que lleva más de 30 días en la papelera | `docker compose run --rm web python manage.py purgar_papelera` |
 | Listar el contenido del sitio que falta completar | `docker compose run --rm web python manage.py contenido_pendiente` (con `--estricto` termina con error si queda algo) |
 | Cargar datos de demostración, marcados DEMO | `docker compose run --rm web python manage.py cargar_demo` |
-| Sacar a un archivo el contenido del sitio (datos del negocio y servicios, sin lo DEMO) | `docker compose run --rm web python manage.py exportar_contenido contenido-sitio.json` (trae datos de contacto; ese nombre está en `.gitignore`) |
+| Crear los ocho rubros de partida, sin fotos (solo si no hay ninguno) | `docker compose run --rm web python manage.py cargar_rubros` |
+| Sacar a un archivo el contenido del sitio (datos del negocio, servicios y rubros, sin fotos ni lo DEMO) | `docker compose run --rm web python manage.py exportar_contenido contenido-sitio.json` (trae datos de contacto; ese nombre está en `.gitignore`) |
 | Cargar ese archivo en una base sin contenido | `docker compose run --rm web python manage.py importar_contenido contenido-sitio.json` (repetirlo no duplica; en el servidor, `docs/DESPLIEGUE.md` §11) |
 | Reintentar las notificaciones de solicitudes que fallaron | `docker compose run --rm web python manage.py reintentar_notificaciones` |
 | Comprobar el almacenamiento de documentos configurado | `docker compose run --rm web python manage.py comprobar_almacenamiento` |

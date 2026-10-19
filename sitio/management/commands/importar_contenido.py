@@ -41,7 +41,8 @@ class Command(BaseCommand):
             return
         self.stdout.write(
             self.style.SUCCESS(
-                f"Importado: {importacion.campos} datos del negocio y "
-                f"{importacion.servicios_creados} servicios."
+                f"Importado: {importacion.campos} datos del negocio, "
+                f"{importacion.servicios_creados} servicios y {importacion.rubros_creados} "
+                "rubros. Las fotos de los rubros se suben en el panel."
             )
         )
